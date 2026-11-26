@@ -4,7 +4,7 @@
 /// Start the desktop application.
 ///
 /// # Panics
-/// Panics if the Tauri runtime cannot start (e.g. no WebView available).
+/// Panics if the Tauri runtime cannot start (e.g. no system web view available).
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
