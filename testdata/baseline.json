@@ -1,0 +1,61 @@
+{
+  "cases": {
+    "synthetic__01-shapes.svg": {
+      "delta_e_mean": 0.3237348421435601,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 33.8225402779076,
+      "paths": 4,
+      "nodes": 50,
+      "bytes": 1818,
+      "ms": 5.145023
+    },
+    "synthetic__02-rounded-badge.svg": {
+      "delta_e_mean": 0.6536485991772998,
+      "delta_e_p95": 0.3684071008072447,
+      "psnr": 29.556061700754952,
+      "paths": 5,
+      "nodes": 191,
+      "bytes": 7350,
+      "ms": 7.8396799999999995
+    },
+    "synthetic__03-star-ring.svg": {
+      "delta_e_mean": 0.6643331199787441,
+      "delta_e_p95": 0.38198566807132256,
+      "psnr": 26.216649024982722,
+      "paths": 4,
+      "nodes": 150,
+      "bytes": 5457,
+      "ms": 12.561994
+    },
+    "synthetic__04-thin-lines.svg": {
+      "delta_e_mean": 3.1373314310660163,
+      "delta_e_p95": 4.4490970008191795,
+      "psnr": 18.89077232249359,
+      "paths": 4,
+      "nodes": 50,
+      "bytes": 1900,
+      "ms": 4.577935
+    },
+    "synthetic__05-adjacent-colors.svg": {
+      "delta_e_mean": 0.29004658623091556,
+      "delta_e_p95": 0.3055965227983264,
+      "psnr": 32.05950256632056,
+      "paths": 6,
+      "nodes": 78,
+      "bytes": 2537,
+      "ms": 6.345352999999999
+    },
+    "synthetic__06-small-icon.svg": {
+      "delta_e_mean": 1.520589026686042,
+      "delta_e_p95": 10.450389061020857,
+      "psnr": 23.88163738363415,
+      "paths": 2,
+      "nodes": 41,
+      "bytes": 1595,
+      "ms": 0.265912
+    }
+  },
+  "mean_delta_e": 1.0982806008804296,
+  "mean_p95": 2.708826030899219,
+  "total_nodes": 560
+}

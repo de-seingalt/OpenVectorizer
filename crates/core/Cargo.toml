@@ -1,0 +1,20 @@
+[package]
+name = "openvectorizer-core"
+description = "OpenVectorizer engine: raster image (RGBA) to SVG. No I/O, no UI."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+serde.workspace = true
+thiserror.workspace = true
+ts-rs.workspace = true
+vtracer.workspace = true
+
+[dev-dependencies]
+insta.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,9 @@
+dist/
+src-tauri/
+src/lib/engine/pkg/
+src/lib/engine/generated/
+src/lib/components/ui/
+test-results/
+playwright-report/
+pnpm-lock.yaml
+public/samples/

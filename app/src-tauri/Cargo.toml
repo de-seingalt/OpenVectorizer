@@ -1,0 +1,30 @@
+[package]
+name = "openvectorizer-desktop"
+description = "OpenVectorizer desktop shell (Tauri 2). The engine runs as WASM inside the webview."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+name = "openvectorizer_desktop"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[[bin]]
+name = "openvectorizer-desktop"
+path = "src/main.rs"
+
+[build-dependencies]
+tauri-build = { version = "2.7.6", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.7", features = [] }
+tauri-plugin-dialog = "2"
+tauri-plugin-fs = "2"
+tauri-plugin-log = "2"
+log = "0.4"
+
+[lints]
+workspace = true

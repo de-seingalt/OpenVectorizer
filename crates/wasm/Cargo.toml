@@ -1,0 +1,23 @@
+[package]
+name = "openvectorizer-wasm"
+description = "WebAssembly bindings of the engine, consumed by the UI (app/) through a Web Worker."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+openvectorizer-core.workspace = true
+serde-wasm-bindgen.workspace = true
+wasm-bindgen.workspace = true
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+vtracer = { workspace = true, features = ["wasm"] }
+
+[lints]
+workspace = true

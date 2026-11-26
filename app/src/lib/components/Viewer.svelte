@@ -1,0 +1,195 @@
+<script lang="ts">
+  // Zoomable / pannable comparison of the original raster and the SVG result.
+  // The stage is laid out at its zoomed size (not CSS-scaled) so the SVG is
+  // re-rendered crisply by the browser at every zoom level.
+  import { Maximize, Minus, Plus } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button';
+  import * as ToggleGroup from '$lib/components/ui/toggle-group';
+  import { t } from '$lib/i18n';
+
+  type Mode = 'compare' | 'original' | 'vector';
+
+  let {
+    rasterUrl,
+    svgUrl,
+    width,
+    height,
+  }: { rasterUrl: string; svgUrl: string | null; width: number; height: number } = $props();
+
+  let mode = $state<Mode>('compare');
+  let split = $state(0.5);
+  let scale = $state(1);
+  let tx = $state(0);
+  let ty = $state(0);
+  let box: HTMLDivElement | undefined = $state();
+  let boxW = $state(0);
+  let boxH = $state(0);
+
+  const MIN = 0.05;
+  const MAX = 64;
+  const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v));
+
+  function fit() {
+    if (!boxW || !boxH) return;
+    const s = Math.min((boxW - 48) / width, (boxH - 96) / height);
+    scale = clamp(s, MIN, 8);
+    tx = (boxW - width * scale) / 2;
+    ty = (boxH - 40 - height * scale) / 2;
+  }
+
+  function zoomAt(factor: number, mx = boxW / 2, my = boxH / 2) {
+    const next = clamp(scale * factor, MIN, MAX);
+    tx = mx - (mx - tx) * (next / scale);
+    ty = my - (my - ty) * (next / scale);
+    scale = next;
+  }
+
+  // Refit whenever a new image (size) arrives or the viewport size is first known.
+  $effect(() => {
+    void width;
+    void height;
+    if (boxW && boxH) fit();
+  });
+
+  function onWheel(e: WheelEvent) {
+    e.preventDefault();
+    const r = box!.getBoundingClientRect();
+    zoomAt(Math.exp(-e.deltaY * 0.0015), e.clientX - r.left, e.clientY - r.top);
+  }
+
+  let drag: { kind: 'pan' | 'split'; x: number; y: number } | null = null;
+
+  function onPointerDown(e: PointerEvent, kind: 'pan' | 'split') {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    drag = { kind, x: e.clientX, y: e.clientY };
+    (e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
+  }
+
+  function onPointerMove(e: PointerEvent) {
+    if (!drag) return;
+    if (drag.kind === 'pan') {
+      tx += e.clientX - drag.x;
+      ty += e.clientY - drag.y;
+    } else {
+      const r = box!.getBoundingClientRect();
+      split = clamp((e.clientX - r.left - tx) / (width * scale), 0, 1);
+    }
+    drag = { ...drag, x: e.clientX, y: e.clientY };
+  }
+
+  const endDrag = () => (drag = null);
+  const pixelated = $derived(scale >= 2);
+</script>
+
+<div
+  bind:this={box}
+  bind:clientWidth={boxW}
+  bind:clientHeight={boxH}
+  class="checker relative h-full w-full cursor-grab touch-none overflow-hidden select-none active:cursor-grabbing"
+  onwheel={onWheel}
+  onpointerdown={(e) => onPointerDown(e, 'pan')}
+  onpointermove={onPointerMove}
+  onpointerup={endDrag}
+  onpointercancel={endDrag}
+  role="application"
+  aria-label="Aperçu"
+>
+  <div
+    class="absolute shadow-lg"
+    style:left="{tx}px"
+    style:top="{ty}px"
+    style:width="{width * scale}px"
+    style:height="{height * scale}px"
+  >
+    {#if mode !== 'vector' || !svgUrl}
+      <img
+        src={rasterUrl}
+        alt={t.viewOriginal}
+        draggable="false"
+        class="absolute inset-0 h-full w-full"
+        style:image-rendering={pixelated ? 'pixelated' : 'auto'}
+      />
+    {/if}
+    {#if svgUrl && mode !== 'original'}
+      <img
+        src={svgUrl}
+        alt={t.viewVector}
+        draggable="false"
+        class="absolute inset-0 h-full w-full"
+        style:clip-path={mode === 'compare' ? `inset(0 0 0 ${split * 100}%)` : 'none'}
+      />
+    {/if}
+  </div>
+
+  {#if svgUrl && mode === 'compare'}
+    <!-- Split handle -->
+    <div
+      class="absolute top-0 bottom-0 z-10 w-6 -translate-x-1/2 cursor-ew-resize"
+      style:left="{tx + width * scale * split}px"
+      onpointerdown={(e) => onPointerDown(e, 'split')}
+      role="slider"
+      aria-label={t.viewCompare}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={Math.round(split * 100)}
+      tabindex="0"
+      onkeydown={(e) => {
+        if (e.key === 'ArrowLeft') split = clamp(split - 0.05, 0, 1);
+        if (e.key === 'ArrowRight') split = clamp(split + 0.05, 0, 1);
+      }}
+    >
+      <div class="mx-auto h-full w-0.5 bg-primary shadow"></div>
+      <div
+        class="absolute top-1/2 left-1/2 flex size-7 -translate-1/2 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground shadow-md"
+      >
+        ⇆
+      </div>
+    </div>
+    <span class="absolute top-3 left-3 rounded bg-background/80 px-2 py-0.5 text-xs">{t.viewOriginal}</span>
+    <span class="absolute top-3 right-3 rounded bg-background/80 px-2 py-0.5 text-xs">{t.viewVector}</span>
+  {/if}
+
+  <!-- Toolbar -->
+  <div
+    class="absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-2 rounded-lg border bg-background/90 p-1 shadow-sm backdrop-blur"
+    onpointerdown={(e) => e.stopPropagation()}
+    role="toolbar"
+    tabindex="-1"
+  >
+    <ToggleGroup.Root
+      type="single"
+      size="sm"
+      value={mode}
+      onValueChange={(v) => {
+        if (v) mode = v as Mode;
+      }}
+    >
+      <ToggleGroup.Item value="compare">{t.viewCompare}</ToggleGroup.Item>
+      <ToggleGroup.Item value="original">{t.viewOriginal}</ToggleGroup.Item>
+      <ToggleGroup.Item value="vector" disabled={!svgUrl}>{t.viewVector}</ToggleGroup.Item>
+    </ToggleGroup.Root>
+    <div class="h-5 w-px bg-border"></div>
+    <Button variant="ghost" size="icon-sm" aria-label={t.zoomOut} onclick={() => zoomAt(1 / 1.25)}><Minus /></Button>
+    <span class="w-12 text-center text-xs tabular-nums">{Math.round(scale * 100)} %</span>
+    <Button variant="ghost" size="icon-sm" aria-label={t.zoomIn} onclick={() => zoomAt(1.25)}><Plus /></Button>
+    <Button variant="ghost" size="icon-sm" aria-label={t.fit} title={t.fit} onclick={fit}><Maximize /></Button>
+  </div>
+</div>
+
+<style>
+  .checker {
+    background-color: var(--muted);
+    background-image:
+      linear-gradient(45deg, var(--border) 25%, transparent 25%),
+      linear-gradient(-45deg, var(--border) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, var(--border) 75%),
+      linear-gradient(-45deg, transparent 75%, var(--border) 75%);
+    background-size: 20px 20px;
+    background-position:
+      0 0,
+      0 10px,
+      10px -10px,
+      -10px 0;
+  }
+</style>

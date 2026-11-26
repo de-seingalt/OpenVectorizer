@@ -1,0 +1,25 @@
+[package]
+name = "openvectorizer-cli"
+description = "Command-line interface: convert images to SVG and run the quality benchmark."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[[bin]]
+name = "openvectorizer"
+path = "src/main.rs"
+
+[dependencies]
+openvectorizer-core.workspace = true
+openvectorizer-eval.workspace = true
+anyhow.workspace = true
+clap.workspace = true
+image.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+
+[lints]
+workspace = true

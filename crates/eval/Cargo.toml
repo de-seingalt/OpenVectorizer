@@ -1,0 +1,18 @@
+[package]
+name = "openvectorizer-eval"
+description = "Objective quality metrics: render an SVG with resvg and compare it to the source raster."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+rust-version.workspace = true
+publish = false
+
+[dependencies]
+openvectorizer-core.workspace = true
+resvg.workspace = true
+serde.workspace = true
+thiserror.workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,76 @@
+name: Release
+
+# Push a tag like v0.2.0 to build and publish portable desktop apps.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+env:
+  WASM_BINDGEN_VERSION: 0.2.130
+  OV_SKIP_WASM: '1'
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-22.04 # older glibc = AppImage runs on more distributions
+            args: ''
+          - os: windows-latest
+            args: ''
+          - os: macos-latest # low priority
+            args: '--target universal-apple-darwin'
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.os == 'macos-latest' && 'wasm32-unknown-unknown,aarch64-apple-darwin,x86_64-apple-darwin' || 'wasm32-unknown-unknown' }}
+      - uses: Swatinem/rust-cache@v2
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-bindgen-cli@${{ env.WASM_BINDGEN_VERSION }}
+      - name: Tauri system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev
+      - name: Build WASM engine
+        shell: bash
+        run: scripts/build-wasm.sh
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: app/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          cache-dependency-path: app/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+        working-directory: app
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          projectPath: app
+          tauriScript: pnpm tauri
+          tagName: ${{ github.ref_type == 'tag' && github.ref_name || '' }}
+          releaseName: 'OpenVectorizer ${{ github.ref_name }}'
+          releaseBody: 'Linux : AppImage · Windows : .exe portable (ou installateur) · macOS : .dmg'
+          releaseDraft: false
+          prerelease: true
+          args: ${{ matrix.args }}
+      - name: Upload Windows portable .exe
+        if: runner.os == 'Windows' && github.ref_type == 'tag'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          cp target/release/openvectorizer-desktop.exe "OpenVectorizer_${VERSION}_x64_portable.exe"
+          gh release upload "$GITHUB_REF_NAME" "OpenVectorizer_${VERSION}_x64_portable.exe" --clobber

@@ -1,0 +1,21 @@
+# Rust
+/target/
+
+# Node / app
+node_modules/
+/app/dist/
+/app/test-results/
+/app/playwright-report/
+/app/src/lib/engine/pkg/
+/app/src-tauri/target/
+/app/src-tauri/gen/
+
+# Editors / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Claude Code: personal settings stay local
+.claude/settings.local.json
