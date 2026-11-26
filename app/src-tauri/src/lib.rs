@@ -1,6 +1,10 @@
 //! Desktop shell. Deliberately thin: native file dialogs and file access only.
 //! All image processing happens in the WASM engine loaded by the frontend.
 
+/// Start the desktop application.
+///
+/// # Panics
+/// Panics if the Tauri runtime cannot start (e.g. no WebView available).
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
