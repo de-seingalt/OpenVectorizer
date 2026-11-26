@@ -1,61 +1,1802 @@
 {
+  "overall": {
+    "cases": 192,
+    "mean_delta_e": 2.0308083694558663,
+    "mean_p95": 8.382348485282522,
+    "total_nodes": 140999
+  },
+  "by_variant": {
+    "blur": {
+      "cases": 32,
+      "mean_delta_e": 3.190074888603837,
+      "mean_p95": 16.60072578853464,
+      "total_nodes": 28865
+    },
+    "clean": {
+      "cases": 32,
+      "mean_delta_e": 1.2545070856044818,
+      "mean_p95": 4.1621736285614865,
+      "total_nodes": 6998
+    },
+    "half": {
+      "cases": 32,
+      "mean_delta_e": 3.1276707315445478,
+      "mean_p95": 13.662922201136336,
+      "total_nodes": 6310
+    },
+    "jpeg35": {
+      "cases": 32,
+      "mean_delta_e": 1.5545624875624728,
+      "mean_p95": 5.718700515300704,
+      "total_nodes": 38231
+    },
+    "jpeg75": {
+      "cases": 32,
+      "mean_delta_e": 1.3838839581729825,
+      "mean_p95": 4.824458892347276,
+      "total_nodes": 23685
+    },
+    "noise": {
+      "cases": 32,
+      "mean_delta_e": 1.6741510652468774,
+      "mean_p95": 5.325109885814702,
+      "total_nodes": 36910
+    }
+  },
+  "by_category": {
+    "emoji": {
+      "cases": 60,
+      "mean_delta_e": 2.2128036126086785,
+      "mean_p95": 10.06684528391266,
+      "total_nodes": 60428
+    },
+    "flags": {
+      "cases": 60,
+      "mean_delta_e": 1.272195070787757,
+      "mean_p95": 4.36552852613936,
+      "total_nodes": 55557
+    },
+    "icons": {
+      "cases": 36,
+      "mean_delta_e": 3.414269684207854,
+      "mean_p95": 14.938909918347797,
+      "total_nodes": 12312
+    },
+    "synthetic": {
+      "cases": 36,
+      "mean_delta_e": 1.6083771472293746,
+      "mean_p95": 5.712992319738962,
+      "total_nodes": 12702
+    }
+  },
   "cases": {
-    "synthetic__01-shapes.svg": {
+    "corpus/emoji/1f30d.svg@blur": {
+      "delta_e_mean": 6.272380100459348,
+      "delta_e_p95": 19.560391602306517,
+      "psnr": 14.980765961296553,
+      "paths": 125,
+      "nodes": 2063,
+      "bytes": 65397,
+      "ms": 11.301823
+    },
+    "corpus/emoji/1f30d.svg@clean": {
+      "delta_e_mean": 3.6548569683265026,
+      "delta_e_p95": 10.923000439725858,
+      "psnr": 21.89333445067867,
+      "paths": 10,
+      "nodes": 332,
+      "bytes": 12154,
+      "ms": 5.768337
+    },
+    "corpus/emoji/1f30d.svg@half": {
+      "delta_e_mean": 5.119435015058018,
+      "delta_e_p95": 21.47083104990991,
+      "psnr": 17.635369919116687,
+      "paths": 30,
+      "nodes": 438,
+      "bytes": 13808,
+      "ms": 2.287322
+    },
+    "corpus/emoji/1f30d.svg@jpeg35": {
+      "delta_e_mean": 2.947470066031657,
+      "delta_e_p95": 10.72994773473173,
+      "psnr": 23.61527447873992,
+      "paths": 204,
+      "nodes": 3158,
+      "bytes": 93265,
+      "ms": 16.69888
+    },
+    "corpus/emoji/1f30d.svg@jpeg75": {
+      "delta_e_mean": 2.735219540175539,
+      "delta_e_p95": 9.645012978890602,
+      "psnr": 23.95829111235819,
+      "paths": 142,
+      "nodes": 2368,
+      "bytes": 73131,
+      "ms": 16.129659
+    },
+    "corpus/emoji/1f30d.svg@noise": {
+      "delta_e_mean": 1.5646333996010795,
+      "delta_e_p95": 4.333972238943782,
+      "psnr": 24.03458791514039,
+      "paths": 66,
+      "nodes": 2120,
+      "bytes": 67831,
+      "ms": 36.018668
+    },
+    "corpus/emoji/1f34e.svg@blur": {
+      "delta_e_mean": 4.207147395038091,
+      "delta_e_p95": 28.268565276237606,
+      "psnr": 14.427784571853241,
+      "paths": 58,
+      "nodes": 1033,
+      "bytes": 34856,
+      "ms": 8.740530999999999
+    },
+    "corpus/emoji/1f34e.svg@clean": {
+      "delta_e_mean": 0.8670267608296399,
+      "delta_e_p95": 0.5179376840333243,
+      "psnr": 23.24376059815405,
+      "paths": 9,
+      "nodes": 221,
+      "bytes": 7985,
+      "ms": 3.325233
+    },
+    "corpus/emoji/1f34e.svg@half": {
+      "delta_e_mean": 3.503431876847686,
+      "delta_e_p95": 16.796372458324424,
+      "psnr": 16.537882836775214,
+      "paths": 10,
+      "nodes": 179,
+      "bytes": 6069,
+      "ms": 1.4057220000000001
+    },
+    "corpus/emoji/1f34e.svg@jpeg35": {
+      "delta_e_mean": 1.1065421609195194,
+      "delta_e_p95": 3.3684445979890953,
+      "psnr": 26.003904206712534,
+      "paths": 93,
+      "nodes": 1206,
+      "bytes": 36386,
+      "ms": 9.832638
+    },
+    "corpus/emoji/1f34e.svg@jpeg75": {
+      "delta_e_mean": 0.9198119998730921,
+      "delta_e_p95": 1.7165709301034897,
+      "psnr": 26.232799671016124,
+      "paths": 56,
+      "nodes": 656,
+      "bytes": 19862,
+      "ms": 8.64823
+    },
+    "corpus/emoji/1f34e.svg@noise": {
+      "delta_e_mean": 1.2269397150872505,
+      "delta_e_p95": 1.0007704774048543,
+      "psnr": 22.51374607226832,
+      "paths": 18,
+      "nodes": 942,
+      "bytes": 34404,
+      "ms": 30.634013000000003
+    },
+    "corpus/emoji/1f3e0.svg@blur": {
+      "delta_e_mean": 4.188923112667067,
+      "delta_e_p95": 21.505105211791673,
+      "psnr": 15.02692464449986,
+      "paths": 58,
+      "nodes": 2031,
+      "bytes": 71983,
+      "ms": 14.199093
+    },
+    "corpus/emoji/1f3e0.svg@clean": {
+      "delta_e_mean": 0.9345661222686623,
+      "delta_e_p95": 3.6137157604001464,
+      "psnr": 24.422499990197615,
+      "paths": 26,
+      "nodes": 629,
+      "bytes": 22541,
+      "ms": 5.525245
+    },
+    "corpus/emoji/1f3e0.svg@half": {
+      "delta_e_mean": 3.5106169292744385,
+      "delta_e_p95": 18.96050530476214,
+      "psnr": 17.832533301018508,
+      "paths": 28,
+      "nodes": 544,
+      "bytes": 17723,
+      "ms": 2.70725
+    },
+    "corpus/emoji/1f3e0.svg@jpeg35": {
+      "delta_e_mean": 1.0732559103624373,
+      "delta_e_p95": 4.37059596293312,
+      "psnr": 27.582387075220062,
+      "paths": 91,
+      "nodes": 1915,
+      "bytes": 59538,
+      "ms": 15.291923
+    },
+    "corpus/emoji/1f3e0.svg@jpeg75": {
+      "delta_e_mean": 0.9002663884631511,
+      "delta_e_p95": 3.4626139535272182,
+      "psnr": 27.64287368600716,
+      "paths": 48,
+      "nodes": 1065,
+      "bytes": 33963,
+      "ms": 12.453107
+    },
+    "corpus/emoji/1f3e0.svg@noise": {
+      "delta_e_mean": 1.0570868533077118,
+      "delta_e_p95": 4.145019062901103,
+      "psnr": 24.23039763340277,
+      "paths": 48,
+      "nodes": 1192,
+      "bytes": 39520,
+      "ms": 28.443802
+    },
+    "corpus/emoji/1f437.svg@blur": {
+      "delta_e_mean": 4.056828176273025,
+      "delta_e_p95": 26.210423274344812,
+      "psnr": 15.496014193201603,
+      "paths": 83,
+      "nodes": 1194,
+      "bytes": 39033,
+      "ms": 8.176813
+    },
+    "corpus/emoji/1f437.svg@clean": {
+      "delta_e_mean": 0.5992141709778692,
+      "delta_e_p95": 1.7959769310060978,
+      "psnr": 30.600525030703416,
+      "paths": 11,
+      "nodes": 194,
+      "bytes": 6965,
+      "ms": 2.810885
+    },
+    "corpus/emoji/1f437.svg@half": {
+      "delta_e_mean": 2.8325946270570173,
+      "delta_e_p95": 11.310295105545354,
+      "psnr": 22.516644146666415,
+      "paths": 14,
+      "nodes": 193,
+      "bytes": 6133,
+      "ms": 1.313546
+    },
+    "corpus/emoji/1f437.svg@jpeg35": {
+      "delta_e_mean": 0.8815927432135552,
+      "delta_e_p95": 2.4880946295650195,
+      "psnr": 29.469255417949014,
+      "paths": 57,
+      "nodes": 869,
+      "bytes": 25970,
+      "ms": 8.119075
+    },
+    "corpus/emoji/1f437.svg@jpeg75": {
+      "delta_e_mean": 0.6818920798224574,
+      "delta_e_p95": 1.40957446482029,
+      "psnr": 31.380000841952857,
+      "paths": 29,
+      "nodes": 479,
+      "bytes": 14785,
+      "ms": 7.022241
+    },
+    "corpus/emoji/1f437.svg@noise": {
+      "delta_e_mean": 0.9877722288886038,
+      "delta_e_p95": 2.256044058043391,
+      "psnr": 28.879827719062078,
+      "paths": 47,
+      "nodes": 1496,
+      "bytes": 45521,
+      "ms": 31.676022999999997
+    },
+    "corpus/emoji/1f4a1.svg@blur": {
+      "delta_e_mean": 3.1937897895308187,
+      "delta_e_p95": 12.208781135402248,
+      "psnr": 16.188337069122497,
+      "paths": 107,
+      "nodes": 1680,
+      "bytes": 52504,
+      "ms": 9.357375
+    },
+    "corpus/emoji/1f4a1.svg@clean": {
+      "delta_e_mean": 0.6534859134920149,
+      "delta_e_p95": 2.057457132688869,
+      "psnr": 25.47055491576874,
+      "paths": 26,
+      "nodes": 412,
+      "bytes": 13562,
+      "ms": 3.1982909999999998
+    },
+    "corpus/emoji/1f4a1.svg@half": {
+      "delta_e_mean": 2.7533068402419096,
+      "delta_e_p95": 13.433259079961765,
+      "psnr": 18.5030965347987,
+      "paths": 34,
+      "nodes": 446,
+      "bytes": 13437,
+      "ms": 1.887346
+    },
+    "corpus/emoji/1f4a1.svg@jpeg35": {
+      "delta_e_mean": 0.9298314072822977,
+      "delta_e_p95": 4.060109814039256,
+      "psnr": 25.735887986596794,
+      "paths": 122,
+      "nodes": 1826,
+      "bytes": 53881,
+      "ms": 10.555722999999999
+    },
+    "corpus/emoji/1f4a1.svg@jpeg75": {
+      "delta_e_mean": 0.7955878860297229,
+      "delta_e_p95": 3.1216239650236997,
+      "psnr": 26.855867090278885,
+      "paths": 80,
+      "nodes": 1088,
+      "bytes": 34113,
+      "ms": 9.275219
+    },
+    "corpus/emoji/1f4a1.svg@noise": {
+      "delta_e_mean": 0.8844221920768901,
+      "delta_e_p95": 3.1697781846479764,
+      "psnr": 24.742509894009082,
+      "paths": 80,
+      "nodes": 1297,
+      "bytes": 39969,
+      "ms": 15.632607
+    },
+    "corpus/emoji/1f525.svg@blur": {
+      "delta_e_mean": 4.354629142800447,
+      "delta_e_p95": 14.371554420427229,
+      "psnr": 15.23643032779022,
+      "paths": 54,
+      "nodes": 899,
+      "bytes": 29322,
+      "ms": 7.042387
+    },
+    "corpus/emoji/1f525.svg@clean": {
+      "delta_e_mean": 1.7801825641831241,
+      "delta_e_p95": 7.573470646313915,
+      "psnr": 23.096520585361503,
+      "paths": 14,
+      "nodes": 248,
+      "bytes": 8029,
+      "ms": 2.9266219999999996
+    },
+    "corpus/emoji/1f525.svg@half": {
+      "delta_e_mean": 3.461315283170127,
+      "delta_e_p95": 11.549797330584905,
+      "psnr": 17.53028597352994,
+      "paths": 8,
+      "nodes": 117,
+      "bytes": 3701,
+      "ms": 1.093121
+    },
+    "corpus/emoji/1f525.svg@jpeg35": {
+      "delta_e_mean": 1.3619507519104919,
+      "delta_e_p95": 4.634589623933541,
+      "psnr": 25.968414402875982,
+      "paths": 100,
+      "nodes": 1513,
+      "bytes": 44014,
+      "ms": 9.360524999999999
+    },
+    "corpus/emoji/1f525.svg@jpeg75": {
+      "delta_e_mean": 1.5899375002634575,
+      "delta_e_p95": 5.999857527015976,
+      "psnr": 25.81640338377388,
+      "paths": 73,
+      "nodes": 921,
+      "bytes": 27173,
+      "ms": 7.661312
+    },
+    "corpus/emoji/1f525.svg@noise": {
+      "delta_e_mean": 1.179641690354931,
+      "delta_e_p95": 2.880430598760063,
+      "psnr": 23.185066883710178,
+      "paths": 31,
+      "nodes": 1068,
+      "bytes": 32760,
+      "ms": 18.045626
+    },
+    "corpus/emoji/1f600.svg@blur": {
+      "delta_e_mean": 5.105412678016682,
+      "delta_e_p95": 26.24934633251219,
+      "psnr": 15.49532531207432,
+      "paths": 82,
+      "nodes": 1198,
+      "bytes": 39420,
+      "ms": 10.092006000000001
+    },
+    "corpus/emoji/1f600.svg@clean": {
+      "delta_e_mean": 2.2553626268081466,
+      "delta_e_p95": 7.849773962504744,
+      "psnr": 23.917955318194274,
+      "paths": 10,
+      "nodes": 126,
+      "bytes": 4473,
+      "ms": 3.265388
+    },
+    "corpus/emoji/1f600.svg@half": {
+      "delta_e_mean": 4.606686836586132,
+      "delta_e_p95": 28.20693110759982,
+      "psnr": 16.842372144574195,
+      "paths": 34,
+      "nodes": 362,
+      "bytes": 11292,
+      "ms": 1.990069
+    },
+    "corpus/emoji/1f600.svg@jpeg35": {
+      "delta_e_mean": 2.259254107357162,
+      "delta_e_p95": 6.223612755838408,
+      "psnr": 24.23990160416652,
+      "paths": 115,
+      "nodes": 1478,
+      "bytes": 43665,
+      "ms": 11.57573
+    },
+    "corpus/emoji/1f600.svg@jpeg75": {
+      "delta_e_mean": 2.17891040723952,
+      "delta_e_p95": 5.933587293425368,
+      "psnr": 24.870988823737385,
+      "paths": 67,
+      "nodes": 802,
+      "bytes": 24543,
+      "ms": 10.200252
+    },
+    "corpus/emoji/1f600.svg@noise": {
+      "delta_e_mean": 1.5042051716723646,
+      "delta_e_p95": 5.132415516053709,
+      "psnr": 23.785145556513907,
+      "paths": 68,
+      "nodes": 1708,
+      "bytes": 51736,
+      "ms": 29.914492
+    },
+    "corpus/emoji/1f680.svg@blur": {
+      "delta_e_mean": 5.579611571859168,
+      "delta_e_p95": 52.0985682392649,
+      "psnr": 13.68297895536739,
+      "paths": 144,
+      "nodes": 2450,
+      "bytes": 81479,
+      "ms": 15.176065000000001
+    },
+    "corpus/emoji/1f680.svg@clean": {
+      "delta_e_mean": 1.1239579142423377,
+      "delta_e_p95": 5.728266733850479,
+      "psnr": 23.32637392613487,
+      "paths": 32,
+      "nodes": 618,
+      "bytes": 21851,
+      "ms": 6.080373
+    },
+    "corpus/emoji/1f680.svg@half": {
+      "delta_e_mean": 4.764039797782016,
+      "delta_e_p95": 33.01628098006923,
+      "psnr": 15.73801903028163,
+      "paths": 47,
+      "nodes": 703,
+      "bytes": 22351,
+      "ms": 3.020601
+    },
+    "corpus/emoji/1f680.svg@jpeg35": {
+      "delta_e_mean": 1.2738491179295615,
+      "delta_e_p95": 5.623705155560061,
+      "psnr": 25.50657288639301,
+      "paths": 174,
+      "nodes": 3060,
+      "bytes": 94395,
+      "ms": 16.42712
+    },
+    "corpus/emoji/1f680.svg@jpeg75": {
+      "delta_e_mean": 1.1606355069741823,
+      "delta_e_p95": 4.687207978376696,
+      "psnr": 25.35453173892781,
+      "paths": 114,
+      "nodes": 1767,
+      "bytes": 56644,
+      "ms": 14.198421
+    },
+    "corpus/emoji/1f680.svg@noise": {
+      "delta_e_mean": 1.2723445653587016,
+      "delta_e_p95": 5.373297379611144,
+      "psnr": 22.879542608574948,
+      "paths": 73,
+      "nodes": 1338,
+      "bytes": 43341,
+      "ms": 20.903966
+    },
+    "corpus/emoji/1f981.svg@blur": {
+      "delta_e_mean": 4.717652993367083,
+      "delta_e_p95": 36.97700877580418,
+      "psnr": 14.355758568573425,
+      "paths": 72,
+      "nodes": 1309,
+      "bytes": 41991,
+      "ms": 8.204540999999999
+    },
+    "corpus/emoji/1f981.svg@clean": {
+      "delta_e_mean": 1.026226715091923,
+      "delta_e_p95": 1.915158548380107,
+      "psnr": 24.27629824786016,
+      "paths": 8,
+      "nodes": 221,
+      "bytes": 7991,
+      "ms": 3.0622409999999998
+    },
+    "corpus/emoji/1f981.svg@half": {
+      "delta_e_mean": 3.8544013916010007,
+      "delta_e_p95": 27.1675190899626,
+      "psnr": 17.2223546320763,
+      "paths": 11,
+      "nodes": 188,
+      "bytes": 6049,
+      "ms": 1.37255
+    },
+    "corpus/emoji/1f981.svg@jpeg35": {
+      "delta_e_mean": 1.32446706277877,
+      "delta_e_p95": 5.733369104004734,
+      "psnr": 26.40780711392277,
+      "paths": 116,
+      "nodes": 1388,
+      "bytes": 40228,
+      "ms": 10.457412
+    },
+    "corpus/emoji/1f981.svg@jpeg75": {
+      "delta_e_mean": 1.0949897979082854,
+      "delta_e_p95": 3.4000679444716346,
+      "psnr": 26.86437432623744,
+      "paths": 58,
+      "nodes": 719,
+      "bytes": 21466,
+      "ms": 9.050111
+    },
+    "corpus/emoji/1f981.svg@noise": {
+      "delta_e_mean": 1.2032210642476127,
+      "delta_e_p95": 3.31363713673282,
+      "psnr": 24.03441136245849,
+      "paths": 37,
+      "nodes": 802,
+      "bytes": 25475,
+      "ms": 24.375854999999998
+    },
+    "corpus/emoji/2b50.svg@blur": {
+      "delta_e_mean": 3.2954312093220035,
+      "delta_e_p95": 14.58299045507952,
+      "psnr": 15.523097896805734,
+      "paths": 31,
+      "nodes": 680,
+      "bytes": 23639,
+      "ms": 5.307914
+    },
+    "corpus/emoji/2b50.svg@clean": {
+      "delta_e_mean": 0.26954386712206285,
+      "delta_e_p95": 0.01442297093029371,
+      "psnr": 27.487206611343545,
+      "paths": 3,
+      "nodes": 129,
+      "bytes": 4995,
+      "ms": 1.921701
+    },
+    "corpus/emoji/2b50.svg@half": {
+      "delta_e_mean": 2.534551067859565,
+      "delta_e_p95": 8.10778850215938,
+      "psnr": 20.07022948510486,
+      "paths": 4,
+      "nodes": 93,
+      "bytes": 3519,
+      "ms": 0.835874
+    },
+    "corpus/emoji/2b50.svg@jpeg35": {
+      "delta_e_mean": 0.5722976007437226,
+      "delta_e_p95": 0.5926140141060873,
+      "psnr": 29.485341959855024,
+      "paths": 44,
+      "nodes": 602,
+      "bytes": 18715,
+      "ms": 5.922572
+    },
+    "corpus/emoji/2b50.svg@jpeg75": {
+      "delta_e_mean": 0.5025573096228869,
+      "delta_e_p95": 0.3508187745790221,
+      "psnr": 30.721787151135555,
+      "paths": 23,
+      "nodes": 345,
+      "bytes": 11219,
+      "ms": 5.3416440000000005
+    },
+    "corpus/emoji/2b50.svg@noise": {
+      "delta_e_mean": 0.5210210728701506,
+      "delta_e_p95": 0.8118376368414624,
+      "psnr": 27.023004352716317,
+      "paths": 5,
+      "nodes": 310,
+      "bytes": 10800,
+      "ms": 14.520937
+    },
+    "corpus/flags/br.svg@blur": {
+      "delta_e_mean": 1.2183186665905719,
+      "delta_e_p95": 5.409360359113916,
+      "psnr": 25.090786036360026,
+      "paths": 118,
+      "nodes": 1351,
+      "bytes": 39736,
+      "ms": 10.565619
+    },
+    "corpus/flags/br.svg@clean": {
+      "delta_e_mean": 0.784896081710898,
+      "delta_e_p95": 0.971840030808256,
+      "psnr": 26.899051525233535,
+      "paths": 47,
+      "nodes": 560,
+      "bytes": 16523,
+      "ms": 7.4804379999999995
+    },
+    "corpus/flags/br.svg@half": {
+      "delta_e_mean": 1.4898479240222613,
+      "delta_e_p95": 3.156308221350003,
+      "psnr": 23.269884446631043,
+      "paths": 20,
+      "nodes": 269,
+      "bytes": 8479,
+      "ms": 2.427474
+    },
+    "corpus/flags/br.svg@jpeg35": {
+      "delta_e_mean": 0.9766229035026568,
+      "delta_e_p95": 4.092076895312429,
+      "psnr": 26.01107437182165,
+      "paths": 177,
+      "nodes": 2018,
+      "bytes": 55661,
+      "ms": 13.927577
+    },
+    "corpus/flags/br.svg@jpeg75": {
+      "delta_e_mean": 0.977408658734265,
+      "delta_e_p95": 2.597419921251513,
+      "psnr": 27.033604833682677,
+      "paths": 126,
+      "nodes": 1448,
+      "bytes": 40785,
+      "ms": 13.572614999999999
+    },
+    "corpus/flags/br.svg@noise": {
+      "delta_e_mean": 0.808635742011255,
+      "delta_e_p95": 2.4733887619892854,
+      "psnr": 27.23467605802659,
+      "paths": 139,
+      "nodes": 2007,
+      "bytes": 57340,
+      "ms": 96.894963
+    },
+    "corpus/flags/ca.svg@blur": {
+      "delta_e_mean": 0.5346004758462192,
+      "delta_e_p95": 0.5728317132966916,
+      "psnr": 29.960094088318105,
+      "paths": 26,
+      "nodes": 414,
+      "bytes": 13177,
+      "ms": 7.487363
+    },
+    "corpus/flags/ca.svg@clean": {
+      "delta_e_mean": 0.25991354101954867,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 32.4064369007494,
+      "paths": 4,
+      "nodes": 94,
+      "bytes": 3273,
+      "ms": 5.541794
+    },
+    "corpus/flags/ca.svg@half": {
+      "delta_e_mean": 0.5186605691600688,
+      "delta_e_p95": 0.5728317132966916,
+      "psnr": 27.88424220220641,
+      "paths": 4,
+      "nodes": 72,
+      "bytes": 2440,
+      "ms": 1.772463
+    },
+    "corpus/flags/ca.svg@jpeg35": {
+      "delta_e_mean": 0.5196435705389864,
+      "delta_e_p95": 0.3554529494160932,
+      "psnr": 31.267104064160304,
+      "paths": 62,
+      "nodes": 749,
+      "bytes": 20867,
+      "ms": 8.561614
+    },
+    "corpus/flags/ca.svg@jpeg75": {
+      "delta_e_mean": 0.42004572341372354,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 32.27498370370923,
+      "paths": 33,
+      "nodes": 390,
+      "bytes": 11461,
+      "ms": 7.654422
+    },
+    "corpus/flags/ca.svg@noise": {
+      "delta_e_mean": 0.8531881832364546,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 30.886421316375184,
+      "paths": 39,
+      "nodes": 772,
+      "bytes": 22716,
+      "ms": 85.75104
+    },
+    "corpus/flags/ch.svg@blur": {
+      "delta_e_mean": 0.29889267905997613,
+      "delta_e_p95": 0.24569579087047522,
+      "psnr": 28.863777228766118,
+      "paths": 6,
+      "nodes": 252,
+      "bytes": 8791,
+      "ms": 5.772904
+    },
+    "corpus/flags/ch.svg@clean": {
+      "delta_e_mean": 0.0,
+      "delta_e_p95": 0.0,
+      "psnr": 99.0,
+      "paths": 2,
+      "nodes": 20,
+      "bytes": 744,
+      "ms": 4.214029
+    },
+    "corpus/flags/ch.svg@half": {
+      "delta_e_mean": 0.5250862716059208,
+      "delta_e_p95": 2.2105632157687483,
+      "psnr": 25.33257124054796,
+      "paths": 2,
+      "nodes": 20,
+      "bytes": 717,
+      "ms": 1.212585
+    },
+    "corpus/flags/ch.svg@jpeg35": {
+      "delta_e_mean": 0.6263027392807148,
+      "delta_e_p95": 0.6065905908159916,
+      "psnr": 39.23920898069083,
+      "paths": 7,
+      "nodes": 162,
+      "bytes": 5373,
+      "ms": 5.815853000000001
+    },
+    "corpus/flags/ch.svg@jpeg75": {
+      "delta_e_mean": 0.3880784321851092,
+      "delta_e_p95": 0.4039928212172446,
+      "psnr": 47.04674795155027,
+      "paths": 2,
+      "nodes": 20,
+      "bytes": 744,
+      "ms": 4.690662
+    },
+    "corpus/flags/ch.svg@noise": {
+      "delta_e_mean": 1.0513215165367906,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 35.22329746961253,
+      "paths": 3,
+      "nodes": 459,
+      "bytes": 14177,
+      "ms": 75.781603
+    },
+    "corpus/flags/fr.svg@blur": {
+      "delta_e_mean": 0.17666256877581044,
+      "delta_e_p95": 0.5299877063274329,
+      "psnr": 48.1308036086816,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 693,
+      "ms": 5.840949
+    },
+    "corpus/flags/fr.svg@clean": {
+      "delta_e_mean": 0.0,
+      "delta_e_p95": 0.0,
+      "psnr": 99.0,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 693,
+      "ms": 5.269557
+    },
+    "corpus/flags/fr.svg@half": {
+      "delta_e_mean": 0.09916027729277645,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 52.902016155882066,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 677,
+      "ms": 1.493532
+    },
+    "corpus/flags/fr.svg@jpeg35": {
+      "delta_e_mean": 0.12948317085815703,
+      "delta_e_p95": 0.2066714398961927,
+      "psnr": 54.66292874643024,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 693,
+      "ms": 5.258349
+    },
+    "corpus/flags/fr.svg@jpeg75": {
+      "delta_e_mean": 0.04349646771960431,
+      "delta_e_p95": 0.09110848757205695,
+      "psnr": 54.66292874643024,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 693,
+      "ms": 5.273331
+    },
+    "corpus/flags/fr.svg@noise": {
+      "delta_e_mean": 0.7650268642271704,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 36.70412857299034,
+      "paths": 3,
+      "nodes": 18,
+      "bytes": 693,
+      "ms": 89.886266
+    },
+    "corpus/flags/gb.svg@blur": {
+      "delta_e_mean": 2.3803598810774598,
+      "delta_e_p95": 12.907771062254808,
+      "psnr": 22.228363883753723,
+      "paths": 82,
+      "nodes": 882,
+      "bytes": 27591,
+      "ms": 14.339179
+    },
+    "corpus/flags/gb.svg@clean": {
+      "delta_e_mean": 1.357767206627909,
+      "delta_e_p95": 1.5692522642947417,
+      "psnr": 24.15689415840925,
+      "paths": 17,
+      "nodes": 260,
+      "bytes": 8934,
+      "ms": 8.269203
+    },
+    "corpus/flags/gb.svg@half": {
+      "delta_e_mean": 2.49709699971643,
+      "delta_e_p95": 2.4347248263924035,
+      "psnr": 20.763566552513936,
+      "paths": 17,
+      "nodes": 199,
+      "bytes": 6551,
+      "ms": 2.992934
+    },
+    "corpus/flags/gb.svg@jpeg35": {
+      "delta_e_mean": 1.7740724051214583,
+      "delta_e_p95": 5.958319415964571,
+      "psnr": 24.233066049700103,
+      "paths": 179,
+      "nodes": 1854,
+      "bytes": 52431,
+      "ms": 18.640673
+    },
+    "corpus/flags/gb.svg@jpeg75": {
+      "delta_e_mean": 1.4520061955266215,
+      "delta_e_p95": 3.2438570516205507,
+      "psnr": 24.30704523785021,
+      "paths": 95,
+      "nodes": 845,
+      "bytes": 24578,
+      "ms": 14.830655
+    },
+    "corpus/flags/gb.svg@noise": {
+      "delta_e_mean": 1.7674959322432624,
+      "delta_e_p95": 6.957352182431471,
+      "psnr": 24.294034246690455,
+      "paths": 115,
+      "nodes": 1714,
+      "bytes": 52100,
+      "ms": 88.546812
+    },
+    "corpus/flags/jp.svg@blur": {
+      "delta_e_mean": 0.5181729193385566,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 28.60718776127723,
+      "paths": 19,
+      "nodes": 241,
+      "bytes": 7720,
+      "ms": 5.397458
+    },
+    "corpus/flags/jp.svg@clean": {
+      "delta_e_mean": 0.328131416904247,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 33.41123012306962,
+      "paths": 2,
+      "nodes": 23,
+      "bytes": 995,
+      "ms": 4.410798
+    },
+    "corpus/flags/jp.svg@half": {
+      "delta_e_mean": 0.4931217338187164,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 28.348519132607368,
+      "paths": 2,
+      "nodes": 18,
+      "bytes": 773,
+      "ms": 1.252936
+    },
+    "corpus/flags/jp.svg@jpeg35": {
+      "delta_e_mean": 0.46218485361423006,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 30.960702808650495,
+      "paths": 35,
+      "nodes": 356,
+      "bytes": 10587,
+      "ms": 5.836256
+    },
+    "corpus/flags/jp.svg@jpeg75": {
+      "delta_e_mean": 0.39378588401438475,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 33.57448197462334,
+      "paths": 28,
+      "nodes": 252,
+      "bytes": 7331,
+      "ms": 5.626874
+    },
+    "corpus/flags/jp.svg@noise": {
+      "delta_e_mean": 1.3236893181164124,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 30.55615436586357,
+      "paths": 31,
+      "nodes": 684,
+      "bytes": 20923,
+      "ms": 82.538664
+    },
+    "corpus/flags/kr.svg@blur": {
+      "delta_e_mean": 3.418255205416951,
+      "delta_e_p95": 17.13224100084311,
+      "psnr": 20.463687769655294,
+      "paths": 108,
+      "nodes": 1424,
+      "bytes": 43568,
+      "ms": 10.47544
+    },
+    "corpus/flags/kr.svg@clean": {
+      "delta_e_mean": 1.8091837515101172,
+      "delta_e_p95": 9.418978005340616,
+      "psnr": 23.924369967829044,
+      "paths": 21,
+      "nodes": 343,
+      "bytes": 11689,
+      "ms": 6.129452
+    },
+    "corpus/flags/kr.svg@half": {
+      "delta_e_mean": 3.7489793527861384,
+      "delta_e_p95": 16.580799625716953,
+      "psnr": 18.537415205545294,
+      "paths": 38,
+      "nodes": 486,
+      "bytes": 15193,
+      "ms": 2.7324509999999997
+    },
+    "corpus/flags/kr.svg@jpeg35": {
+      "delta_e_mean": 2.359772426768962,
+      "delta_e_p95": 12.573703520072513,
+      "psnr": 22.963568745408928,
+      "paths": 121,
+      "nodes": 1605,
+      "bytes": 47367,
+      "ms": 11.242541
+    },
+    "corpus/flags/kr.svg@jpeg75": {
+      "delta_e_mean": 2.2356361805757587,
+      "delta_e_p95": 10.614000030635639,
+      "psnr": 23.67008013531799,
+      "paths": 60,
+      "nodes": 777,
+      "bytes": 24290,
+      "ms": 8.895452
+    },
+    "corpus/flags/kr.svg@noise": {
+      "delta_e_mean": 2.993453942106195,
+      "delta_e_p95": 10.623865372552881,
+      "psnr": 23.306644661624688,
+      "paths": 196,
+      "nodes": 3283,
+      "bytes": 99200,
+      "ms": 102.688474
+    },
+    "corpus/flags/np.svg@blur": {
+      "delta_e_mean": 2.609021254709253,
+      "delta_e_p95": 10.36010557714915,
+      "psnr": 17.17489127064392,
+      "paths": 51,
+      "nodes": 1163,
+      "bytes": 36513,
+      "ms": 9.843715
+    },
+    "corpus/flags/np.svg@clean": {
+      "delta_e_mean": 0.9818080283559454,
+      "delta_e_p95": 1.2817196232618162,
+      "psnr": 23.380501210432655,
+      "paths": 5,
+      "nodes": 237,
+      "bytes": 8196,
+      "ms": 4.589843
+    },
+    "corpus/flags/np.svg@half": {
+      "delta_e_mean": 2.5046275403077236,
+      "delta_e_p95": 3.431893769791549,
+      "psnr": 17.868160103464668,
+      "paths": 5,
+      "nodes": 193,
+      "bytes": 6353,
+      "ms": 1.758858
+    },
+    "corpus/flags/np.svg@jpeg35": {
+      "delta_e_mean": 1.0696803892371178,
+      "delta_e_p95": 4.439159856308229,
+      "psnr": 26.502988251789574,
+      "paths": 164,
+      "nodes": 2176,
+      "bytes": 61142,
+      "ms": 15.520444
+    },
+    "corpus/flags/np.svg@jpeg75": {
+      "delta_e_mean": 1.0755958881112402,
+      "delta_e_p95": 2.9590744671339433,
+      "psnr": 25.594230190155876,
+      "paths": 107,
+      "nodes": 1319,
+      "bytes": 38136,
+      "ms": 13.596077
+    },
+    "corpus/flags/np.svg@noise": {
+      "delta_e_mean": 1.0823505841049448,
+      "delta_e_p95": 1.946046241283057,
+      "psnr": 23.182889139621196,
+      "paths": 55,
+      "nodes": 1013,
+      "bytes": 31008,
+      "ms": 27.967724
+    },
+    "corpus/flags/us.svg@blur": {
+      "delta_e_mean": 3.188048319233915,
+      "delta_e_p95": 16.55895862563574,
+      "psnr": 21.750410518284383,
+      "paths": 260,
+      "nodes": 2787,
+      "bytes": 71496,
+      "ms": 18.440108
+    },
+    "corpus/flags/us.svg@clean": {
+      "delta_e_mean": 1.386096497862258,
+      "delta_e_p95": 8.805539958117606,
+      "psnr": 24.743969713206063,
+      "paths": 64,
+      "nodes": 873,
+      "bytes": 23606,
+      "ms": 9.577587
+    },
+    "corpus/flags/us.svg@half": {
+      "delta_e_mean": 3.7150487198950635,
+      "delta_e_p95": 18.143672534845525,
+      "psnr": 19.437783977904083,
+      "paths": 64,
+      "nodes": 525,
+      "bytes": 13435,
+      "ms": 3.6596710000000003
+    },
+    "corpus/flags/us.svg@jpeg35": {
+      "delta_e_mean": 1.8701110482052377,
+      "delta_e_p95": 8.842651315038404,
+      "psnr": 24.200130658196972,
+      "paths": 237,
+      "nodes": 4392,
+      "bytes": 123358,
+      "ms": 31.065296
+    },
+    "corpus/flags/us.svg@jpeg75": {
+      "delta_e_mean": 1.5413739806923148,
+      "delta_e_p95": 8.437556643311465,
+      "psnr": 24.6764999541419,
+      "paths": 189,
+      "nodes": 3831,
+      "bytes": 111191,
+      "ms": 27.899766
+    },
+    "corpus/flags/us.svg@noise": {
+      "delta_e_mean": 1.8151391628639122,
+      "delta_e_p95": 7.6289555455554225,
+      "psnr": 24.596134979586136,
+      "paths": 247,
+      "nodes": 6059,
+      "bytes": 173499,
+      "ms": 101.689795
+    },
+    "corpus/flags/za.svg@blur": {
+      "delta_e_mean": 1.6288317420054117,
+      "delta_e_p95": 5.982026001090074,
+      "psnr": 26.24518359350201,
+      "paths": 40,
+      "nodes": 584,
+      "bytes": 18804,
+      "ms": 9.725228000000001
+    },
+    "corpus/flags/za.svg@clean": {
+      "delta_e_mean": 0.5758067621209706,
+      "delta_e_p95": 0.7162674835585869,
+      "psnr": 25.505577658596586,
+      "paths": 7,
+      "nodes": 230,
+      "bytes": 8695,
+      "ms": 7.544116
+    },
+    "corpus/flags/za.svg@half": {
+      "delta_e_mean": 2.3268861052079863,
+      "delta_e_p95": 4.241842394185771,
+      "psnr": 19.15874392735708,
+      "paths": 7,
+      "nodes": 161,
+      "bytes": 5766,
+      "ms": 2.353151
+    },
+    "corpus/flags/za.svg@jpeg35": {
+      "delta_e_mean": 1.319526731058481,
+      "delta_e_p95": 3.695762896305728,
+      "psnr": 25.888469028943604,
+      "paths": 129,
+      "nodes": 1559,
+      "bytes": 45103,
+      "ms": 12.816763
+    },
+    "corpus/flags/za.svg@jpeg75": {
+      "delta_e_mean": 1.2614243510732086,
+      "delta_e_p95": 3.695762896305728,
+      "psnr": 24.249236077812107,
+      "paths": 89,
+      "nodes": 916,
+      "bytes": 27450,
+      "ms": 11.842042000000001
+    },
+    "corpus/flags/za.svg@noise": {
+      "delta_e_mean": 1.6018685096076906,
+      "delta_e_p95": 7.915344839110778,
+      "psnr": 25.35150258190527,
+      "paths": 43,
+      "nodes": 1108,
+      "bytes": 35248,
+      "ms": 96.427375
+    },
+    "corpus/icons/anchor.svg@blur": {
+      "delta_e_mean": 3.7276593542216365,
+      "delta_e_p95": 19.034052430283918,
+      "psnr": 20.72512248757105,
+      "paths": 22,
+      "nodes": 290,
+      "bytes": 9030,
+      "ms": 2.088683
+    },
+    "corpus/icons/anchor.svg@clean": {
+      "delta_e_mean": 1.678885039390758,
+      "delta_e_p95": 2.3968997902598677,
+      "psnr": 24.39791093273831,
+      "paths": 3,
+      "nodes": 73,
+      "bytes": 2496,
+      "ms": 1.054702
+    },
+    "corpus/icons/anchor.svg@half": {
+      "delta_e_mean": 4.5505879283051955,
+      "delta_e_p95": 12.66029979284352,
+      "psnr": 18.32306936460145,
+      "paths": 3,
+      "nodes": 52,
+      "bytes": 1676,
+      "ms": 0.432992
+    },
+    "corpus/icons/anchor.svg@jpeg35": {
+      "delta_e_mean": 2.2236800517351005,
+      "delta_e_p95": 8.608454200137903,
+      "psnr": 23.27603661030048,
+      "paths": 36,
+      "nodes": 475,
+      "bytes": 13578,
+      "ms": 2.547949
+    },
+    "corpus/icons/anchor.svg@jpeg75": {
+      "delta_e_mean": 1.9932171765237081,
+      "delta_e_p95": 7.166220009501953,
+      "psnr": 23.0330058900177,
+      "paths": 20,
+      "nodes": 250,
+      "bytes": 7711,
+      "ms": 2.054411
+    },
+    "corpus/icons/anchor.svg@noise": {
+      "delta_e_mean": 2.7376131894905207,
+      "delta_e_p95": 8.516724532422467,
+      "psnr": 22.394071708107127,
+      "paths": 45,
+      "nodes": 587,
+      "bytes": 16590,
+      "ms": 7.432603
+    },
+    "corpus/icons/bike.svg@blur": {
+      "delta_e_mean": 4.651700844997296,
+      "delta_e_p95": 27.83200440795958,
+      "psnr": 18.840733136955304,
+      "paths": 29,
+      "nodes": 436,
+      "bytes": 14070,
+      "ms": 2.437168
+    },
+    "corpus/icons/bike.svg@clean": {
+      "delta_e_mean": 1.8248042004067138,
+      "delta_e_p95": 3.9484417012367654,
+      "psnr": 24.677617624670013,
+      "paths": 7,
+      "nodes": 88,
+      "bytes": 3248,
+      "ms": 1.1010149999999999
+    },
+    "corpus/icons/bike.svg@half": {
+      "delta_e_mean": 4.521466020472954,
+      "delta_e_p95": 15.574566937683098,
+      "psnr": 18.71794682529893,
+      "paths": 8,
+      "nodes": 76,
+      "bytes": 2635,
+      "ms": 0.508093
+    },
+    "corpus/icons/bike.svg@jpeg35": {
+      "delta_e_mean": 2.7883675662186325,
+      "delta_e_p95": 12.173858148278248,
+      "psnr": 21.523900897166754,
+      "paths": 46,
+      "nodes": 514,
+      "bytes": 14956,
+      "ms": 2.941669
+    },
+    "corpus/icons/bike.svg@jpeg75": {
+      "delta_e_mean": 2.283914096048413,
+      "delta_e_p95": 7.43999742838927,
+      "psnr": 22.973735394400613,
+      "paths": 23,
+      "nodes": 240,
+      "bytes": 7352,
+      "ms": 2.086709
+    },
+    "corpus/icons/bike.svg@noise": {
+      "delta_e_mean": 3.0462650967962173,
+      "delta_e_p95": 10.284373891529755,
+      "psnr": 21.645806683213724,
+      "paths": 62,
+      "nodes": 873,
+      "bytes": 25820,
+      "ms": 7.882632000000001
+    },
+    "corpus/icons/camera.svg@blur": {
+      "delta_e_mean": 5.212348269872057,
+      "delta_e_p95": 25.09399034824893,
+      "psnr": 19.22384395268785,
+      "paths": 19,
+      "nodes": 413,
+      "bytes": 14213,
+      "ms": 2.936715
+    },
+    "corpus/icons/camera.svg@clean": {
+      "delta_e_mean": 2.6176596016685467,
+      "delta_e_p95": 17.695518526794455,
+      "psnr": 20.828224038873422,
+      "paths": 5,
+      "nodes": 159,
+      "bytes": 5849,
+      "ms": 1.5489469999999999
+    },
+    "corpus/icons/camera.svg@half": {
+      "delta_e_mean": 5.80433943546796,
+      "delta_e_p95": 22.70874500298587,
+      "psnr": 16.7807798666521,
+      "paths": 5,
+      "nodes": 124,
+      "bytes": 4329,
+      "ms": 0.695047
+    },
+    "corpus/icons/camera.svg@jpeg35": {
+      "delta_e_mean": 2.8407574932020263,
+      "delta_e_p95": 17.078636740282136,
+      "psnr": 20.815871272995487,
+      "paths": 26,
+      "nodes": 405,
+      "bytes": 12676,
+      "ms": 2.728566
+    },
+    "corpus/icons/camera.svg@jpeg75": {
+      "delta_e_mean": 2.6034969164504735,
+      "delta_e_p95": 16.485545939717685,
+      "psnr": 21.199116744903908,
+      "paths": 16,
+      "nodes": 296,
+      "bytes": 9553,
+      "ms": 2.378968
+    },
+    "corpus/icons/camera.svg@noise": {
+      "delta_e_mean": 3.502962053228635,
+      "delta_e_p95": 14.971293343942005,
+      "psnr": 19.89917218817108,
+      "paths": 38,
+      "nodes": 600,
+      "bytes": 18576,
+      "ms": 7.707838
+    },
+    "corpus/icons/heart.svg@blur": {
+      "delta_e_mean": 4.181189579348711,
+      "delta_e_p95": 20.222553659944754,
+      "psnr": 19.132787544346236,
+      "paths": 17,
+      "nodes": 225,
+      "bytes": 7230,
+      "ms": 2.268493
+    },
+    "corpus/icons/heart.svg@clean": {
+      "delta_e_mean": 1.950371087794996,
+      "delta_e_p95": 3.5644354690967788,
+      "psnr": 22.82968247009865,
+      "paths": 3,
+      "nodes": 71,
+      "bytes": 2650,
+      "ms": 1.250189
+    },
+    "corpus/icons/heart.svg@half": {
+      "delta_e_mean": 4.767162672853635,
+      "delta_e_p95": 23.534747217247872,
+      "psnr": 17.113881922373814,
+      "paths": 3,
+      "nodes": 64,
+      "bytes": 2101,
+      "ms": 0.548768
+    },
+    "corpus/icons/heart.svg@jpeg35": {
+      "delta_e_mean": 2.554806688552647,
+      "delta_e_p95": 8.484707916648633,
+      "psnr": 21.87444688052111,
+      "paths": 48,
+      "nodes": 619,
+      "bytes": 17622,
+      "ms": 3.321488
+    },
+    "corpus/icons/heart.svg@jpeg75": {
+      "delta_e_mean": 1.998591088500284,
+      "delta_e_p95": 6.174402790941527,
+      "psnr": 23.364488529409773,
+      "paths": 21,
+      "nodes": 270,
+      "bytes": 8041,
+      "ms": 2.614194
+    },
+    "corpus/icons/heart.svg@noise": {
+      "delta_e_mean": 2.7456475046627618,
+      "delta_e_p95": 8.162504676657543,
+      "psnr": 22.579072099255903,
+      "paths": 44,
+      "nodes": 440,
+      "bytes": 12603,
+      "ms": 7.16267
+    },
+    "corpus/icons/house.svg@blur": {
+      "delta_e_mean": 5.119682746106342,
+      "delta_e_p95": 20.292111700054168,
+      "psnr": 19.17784411491555,
+      "paths": 12,
+      "nodes": 354,
+      "bytes": 12326,
+      "ms": 2.671217
+    },
+    "corpus/icons/house.svg@clean": {
+      "delta_e_mean": 2.2368815335883308,
+      "delta_e_p95": 15.06413154792531,
+      "psnr": 23.09083928509121,
+      "paths": 4,
+      "nodes": 118,
+      "bytes": 4338,
+      "ms": 1.445703
+    },
+    "corpus/icons/house.svg@half": {
+      "delta_e_mean": 6.582087442021968,
+      "delta_e_p95": 41.63297455913907,
+      "psnr": 15.993314391215087,
+      "paths": 4,
+      "nodes": 77,
+      "bytes": 2697,
+      "ms": 0.53792
+    },
+    "corpus/icons/house.svg@jpeg35": {
+      "delta_e_mean": 2.5186094988102408,
+      "delta_e_p95": 12.902891395911773,
+      "psnr": 22.791147399482302,
+      "paths": 26,
+      "nodes": 389,
+      "bytes": 12007,
+      "ms": 3.1904899999999996
+    },
+    "corpus/icons/house.svg@jpeg75": {
+      "delta_e_mean": 2.7228712584455197,
+      "delta_e_p95": 14.790768714707509,
+      "psnr": 21.161661497466007,
+      "paths": 12,
+      "nodes": 232,
+      "bytes": 7610,
+      "ms": 2.5873519999999997
+    },
+    "corpus/icons/house.svg@noise": {
+      "delta_e_mean": 3.0074805736985546,
+      "delta_e_p95": 9.286646259769299,
+      "psnr": 22.135487739086027,
+      "paths": 31,
+      "nodes": 578,
+      "bytes": 17620,
+      "ms": 7.7746949999999995
+    },
+    "corpus/icons/settings.svg@blur": {
+      "delta_e_mean": 5.733090498984162,
+      "delta_e_p95": 29.337746438466105,
+      "psnr": 17.926572071271497,
+      "paths": 36,
+      "nodes": 566,
+      "bytes": 18385,
+      "ms": 3.308676
+    },
+    "corpus/icons/settings.svg@clean": {
+      "delta_e_mean": 2.5979147617573255,
+      "delta_e_p95": 8.919433054286879,
+      "psnr": 21.41288835266159,
+      "paths": 5,
+      "nodes": 141,
+      "bytes": 4754,
+      "ms": 1.6739350000000002
+    },
+    "corpus/icons/settings.svg@half": {
+      "delta_e_mean": 5.862182377435674,
+      "delta_e_p95": 25.593658177613506,
+      "psnr": 16.886081833709202,
+      "paths": 5,
+      "nodes": 118,
+      "bytes": 3609,
+      "ms": 0.714434
+    },
+    "corpus/icons/settings.svg@jpeg35": {
+      "delta_e_mean": 3.4112844553993664,
+      "delta_e_p95": 13.549504482915697,
+      "psnr": 20.33813118504112,
+      "paths": 71,
+      "nodes": 868,
+      "bytes": 24774,
+      "ms": 4.386239
+    },
+    "corpus/icons/settings.svg@jpeg75": {
+      "delta_e_mean": 2.843602592935487,
+      "delta_e_p95": 12.8931933252815,
+      "psnr": 21.07694267400018,
+      "paths": 41,
+      "nodes": 510,
+      "bytes": 14705,
+      "ms": 3.484624
+    },
+    "corpus/icons/settings.svg@noise": {
+      "delta_e_mean": 3.4705279360898946,
+      "delta_e_p95": 13.724722501415352,
+      "psnr": 20.637558257533833,
+      "paths": 67,
+      "nodes": 721,
+      "bytes": 20429,
+      "ms": 7.9437310000000005
+    },
+    "synthetic/01-shapes.svg@blur": {
+      "delta_e_mean": 0.9302884667224458,
+      "delta_e_p95": 0.6998349013561175,
+      "psnr": 27.854627560123248,
+      "paths": 17,
+      "nodes": 243,
+      "bytes": 7848,
+      "ms": 4.478725
+    },
+    "synthetic/01-shapes.svg@clean": {
       "delta_e_mean": 0.3237348421435601,
       "delta_e_p95": 0.297480831878383,
       "psnr": 33.8225402779076,
       "paths": 4,
       "nodes": 50,
-      "bytes": 1818,
-      "ms": 5.145023
+      "bytes": 1840,
+      "ms": 3.036625
     },
-    "synthetic__02-rounded-badge.svg": {
+    "synthetic/01-shapes.svg@half": {
+      "delta_e_mean": 0.873339909331222,
+      "delta_e_p95": 0.7178239472306637,
+      "psnr": 27.396082508510766,
+      "paths": 4,
+      "nodes": 45,
+      "bytes": 1643,
+      "ms": 1.052357
+    },
+    "synthetic/01-shapes.svg@jpeg35": {
+      "delta_e_mean": 0.4955374213720392,
+      "delta_e_p95": 0.44462330619292056,
+      "psnr": 31.525980659198154,
+      "paths": 33,
+      "nodes": 353,
+      "bytes": 10252,
+      "ms": 5.051168
+    },
+    "synthetic/01-shapes.svg@jpeg75": {
+      "delta_e_mean": 0.3998707338077228,
+      "delta_e_p95": 0.297480831878383,
+      "psnr": 32.59574893153031,
+      "paths": 22,
+      "nodes": 200,
+      "bytes": 5812,
+      "ms": 4.469727
+    },
+    "synthetic/01-shapes.svg@noise": {
+      "delta_e_mean": 1.1303090757235499,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 31.798231925997854,
+      "paths": 20,
+      "nodes": 328,
+      "bytes": 10400,
+      "ms": 40.435818
+    },
+    "synthetic/02-rounded-badge.svg@blur": {
+      "delta_e_mean": 2.0254519548947956,
+      "delta_e_p95": 11.64273016736236,
+      "psnr": 24.117428899988536,
+      "paths": 28,
+      "nodes": 580,
+      "bytes": 20165,
+      "ms": 7.779116
+    },
+    "synthetic/02-rounded-badge.svg@clean": {
       "delta_e_mean": 0.6536485991772998,
       "delta_e_p95": 0.3684071008072447,
       "psnr": 29.556061700754952,
       "paths": 5,
       "nodes": 191,
-      "bytes": 7350,
-      "ms": 7.8396799999999995
+      "bytes": 7372,
+      "ms": 4.849621999999999
     },
-    "synthetic__03-star-ring.svg": {
+    "synthetic/02-rounded-badge.svg@half": {
+      "delta_e_mean": 1.883694611306881,
+      "delta_e_p95": 1.7311521855473706,
+      "psnr": 22.59430896011702,
+      "paths": 7,
+      "nodes": 213,
+      "bytes": 7659,
+      "ms": 1.859473
+    },
+    "synthetic/02-rounded-badge.svg@jpeg35": {
+      "delta_e_mean": 1.0753750206426833,
+      "delta_e_p95": 0.6612625859569536,
+      "psnr": 27.618024941910953,
+      "paths": 33,
+      "nodes": 468,
+      "bytes": 14930,
+      "ms": 8.263637000000001
+    },
+    "synthetic/02-rounded-badge.svg@jpeg75": {
+      "delta_e_mean": 0.8067665691606112,
+      "delta_e_p95": 0.4296658203752052,
+      "psnr": 28.12842762741849,
+      "paths": 19,
+      "nodes": 288,
+      "bytes": 9906,
+      "ms": 7.572132
+    },
+    "synthetic/02-rounded-badge.svg@noise": {
+      "delta_e_mean": 0.9989767791368752,
+      "delta_e_p95": 0.7723981966066515,
+      "psnr": 28.688699792295402,
+      "paths": 31,
+      "nodes": 551,
+      "bytes": 17325,
+      "ms": 45.592213
+    },
+    "synthetic/03-star-ring.svg@blur": {
+      "delta_e_mean": 1.3483874276639902,
+      "delta_e_p95": 6.038909907385761,
+      "psnr": 23.604492797243076,
+      "paths": 80,
+      "nodes": 1042,
+      "bytes": 33357,
+      "ms": 11.410784
+    },
+    "synthetic/03-star-ring.svg@clean": {
       "delta_e_mean": 0.6643331199787441,
       "delta_e_p95": 0.38198566807132256,
       "psnr": 26.216649024982722,
       "paths": 4,
       "nodes": 150,
-      "bytes": 5457,
-      "ms": 12.561994
+      "bytes": 5479,
+      "ms": 7.469731
     },
-    "synthetic__04-thin-lines.svg": {
+    "synthetic/03-star-ring.svg@half": {
+      "delta_e_mean": 1.72287211693093,
+      "delta_e_p95": 1.9428714207820816,
+      "psnr": 20.510593091345683,
+      "paths": 5,
+      "nodes": 108,
+      "bytes": 3697,
+      "ms": 2.445946
+    },
+    "synthetic/03-star-ring.svg@jpeg35": {
+      "delta_e_mean": 1.0798522523695164,
+      "delta_e_p95": 3.284670128933378,
+      "psnr": 24.423560111086896,
+      "paths": 117,
+      "nodes": 1447,
+      "bytes": 42407,
+      "ms": 12.950956
+    },
+    "synthetic/03-star-ring.svg@jpeg75": {
+      "delta_e_mean": 0.8774345524408446,
+      "delta_e_p95": 1.6345352004929579,
+      "psnr": 25.597691407335272,
+      "paths": 78,
+      "nodes": 853,
+      "bytes": 25440,
+      "ms": 11.830186
+    },
+    "synthetic/03-star-ring.svg@noise": {
+      "delta_e_mean": 1.6654947289260482,
+      "delta_e_p95": 1.5231967006036453,
+      "psnr": 25.42807020985064,
+      "paths": 67,
+      "nodes": 764,
+      "bytes": 21854,
+      "ms": 63.393951
+    },
+    "synthetic/04-thin-lines.svg@blur": {
+      "delta_e_mean": 2.59394279105995,
+      "delta_e_p95": 19.47471462769837,
+      "psnr": 21.03145859224581,
+      "paths": 54,
+      "nodes": 687,
+      "bytes": 21668,
+      "ms": 5.598722
+    },
+    "synthetic/04-thin-lines.svg@clean": {
       "delta_e_mean": 3.1373314310660163,
       "delta_e_p95": 4.4490970008191795,
       "psnr": 18.89077232249359,
       "paths": 4,
       "nodes": 50,
-      "bytes": 1900,
-      "ms": 4.577935
+      "bytes": 1922,
+      "ms": 2.946246
     },
-    "synthetic__05-adjacent-colors.svg": {
+    "synthetic/04-thin-lines.svg@half": {
+      "delta_e_mean": 4.013816852470136,
+      "delta_e_p95": 21.113697622264358,
+      "psnr": 17.541733135975573,
+      "paths": 11,
+      "nodes": 128,
+      "bytes": 4230,
+      "ms": 1.204875
+    },
+    "synthetic/04-thin-lines.svg@jpeg35": {
+      "delta_e_mean": 3.260424864644754,
+      "delta_e_p95": 5.992988382851665,
+      "psnr": 18.743264472926896,
+      "paths": 44,
+      "nodes": 438,
+      "bytes": 12817,
+      "ms": 4.993409
+    },
+    "synthetic/04-thin-lines.svg@jpeg75": {
+      "delta_e_mean": 3.20421901566655,
+      "delta_e_p95": 5.73933516984335,
+      "psnr": 18.790949733838083,
+      "paths": 27,
+      "nodes": 265,
+      "bytes": 7822,
+      "ms": 3.9459530000000003
+    },
+    "synthetic/04-thin-lines.svg@noise": {
+      "delta_e_mean": 3.37192129698287,
+      "delta_e_p95": 13.892242602087205,
+      "psnr": 20.47928121098895,
+      "paths": 94,
+      "nodes": 1476,
+      "bytes": 45746,
+      "ms": 43.235386
+    },
+    "synthetic/05-adjacent-colors.svg@blur": {
+      "delta_e_mean": 0.4752441627112479,
+      "delta_e_p95": 0.3508187745790221,
+      "psnr": 28.59210780930132,
+      "paths": 20,
+      "nodes": 303,
+      "bytes": 9458,
+      "ms": 4.596581
+    },
+    "synthetic/05-adjacent-colors.svg@clean": {
       "delta_e_mean": 0.29004658623091556,
       "delta_e_p95": 0.3055965227983264,
       "psnr": 32.05950256632056,
       "paths": 6,
       "nodes": 78,
-      "bytes": 2537,
-      "ms": 6.345352999999999
+      "bytes": 2559,
+      "ms": 3.513561
     },
-    "synthetic__06-small-icon.svg": {
+    "synthetic/05-adjacent-colors.svg@half": {
+      "delta_e_mean": 0.4317688701252636,
+      "delta_e_p95": 0.8239887793686616,
+      "psnr": 28.17305371294551,
+      "paths": 6,
+      "nodes": 65,
+      "bytes": 2061,
+      "ms": 1.150322
+    },
+    "synthetic/05-adjacent-colors.svg@jpeg35": {
+      "delta_e_mean": 0.4095685019453509,
+      "delta_e_p95": 0.5339400972814762,
+      "psnr": 31.797701093128442,
+      "paths": 23,
+      "nodes": 280,
+      "bytes": 8158,
+      "ms": 4.969963
+    },
+    "synthetic/05-adjacent-colors.svg@jpeg75": {
+      "delta_e_mean": 0.3268206698004622,
+      "delta_e_p95": 0.35521426384146315,
+      "psnr": 32.59814168299423,
+      "paths": 17,
+      "nodes": 198,
+      "bytes": 5999,
+      "ms": 4.803784
+    },
+    "synthetic/05-adjacent-colors.svg@noise": {
+      "delta_e_mean": 0.4729914095035899,
+      "delta_e_p95": 1.4896348172306795,
+      "psnr": 32.569815839456325,
+      "paths": 15,
+      "nodes": 478,
+      "bytes": 14293,
+      "ms": 39.471993
+    },
+    "synthetic/06-small-icon.svg@blur": {
+      "delta_e_mean": 5.140440457352292,
+      "delta_e_p95": 29.174564478138677,
+      "psnr": 15.158892031734467,
+      "paths": 8,
+      "nodes": 73,
+      "bytes": 2360,
+      "ms": 0.334356
+    },
+    "synthetic/06-small-icon.svg@clean": {
       "delta_e_mean": 1.520589026686042,
       "delta_e_p95": 10.450389061020857,
       "psnr": 23.88163738363415,
       "paths": 2,
       "nodes": 41,
-      "bytes": 1595,
-      "ms": 0.265912
+      "bytes": 1615,
+      "ms": 0.189867
+    },
+    "synthetic/06-small-icon.svg@half": {
+      "delta_e_mean": 4.213250013412707,
+      "delta_e_p95": 27.791806819672733,
+      "psnr": 18.026219185741965,
+      "paths": 2,
+      "nodes": 16,
+      "bytes": 618,
+      "ms": 0.081342
+    },
+    "synthetic/06-small-icon.svg@jpeg35": {
+      "delta_e_mean": 2.249824620391596,
+      "delta_e_p95": 10.389926000522106,
+      "psnr": 24.591418232868726,
+      "paths": 9,
+      "nodes": 71,
+      "bytes": 2054,
+      "ms": 0.398258
+    },
+    "synthetic/06-small-icon.svg@jpeg75": {
+      "delta_e_mean": 1.8748218133368322,
+      "delta_e_p95": 8.611655267103137,
+      "psnr": 24.705137892165254,
+      "paths": 8,
+      "nodes": 57,
+      "bytes": 1731,
+      "ms": 0.363207
+    },
+    "synthetic/06-small-icon.svg@noise": {
+      "delta_e_mean": 1.95918673514117,
+      "delta_e_p95": 10.369449504789282,
+      "psnr": 23.569899906302698,
+      "paths": 4,
+      "nodes": 124,
+      "bytes": 4094,
+      "ms": 1.0293290000000002
     }
-  },
-  "mean_delta_e": 1.0982806008804296,
-  "mean_p95": 2.708826030899219,
-  "total_nodes": 560
+  }
 }

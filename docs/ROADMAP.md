@@ -8,7 +8,9 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [x] Banc d'évaluation (`openvectorizer eval`) + corpus synthétique + cartes d'erreur
 - [x] Interface : dépôt/collage/ouverture, comparaison avant/après avec curseur, zoom/déplacement, réglages, export SVG
 - [x] Tauri 2, CI, publication web et binaires
-- [ ] Corpus d'images réelles libres de droits (logos JPEG compressés, icônes, captures, pixel art)
+- [x] Banc d'essai : 32 SVG de référence × 6 dégradations (JPEG, basse résolution, flou, bruit) + rapport HTML
+- [ ] Compléter le corpus : images réelles libres de droits (photos, captures, pixel art, texte)
+- [ ] Interface responsive (mobile : panneau de réglages sous l'aperçu, en tiroir)
 - [ ] PWA (service worker) pour un usage web hors ligne
 
 ## M1 — Palette et carte planaire (frontières partagées)

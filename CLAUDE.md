@@ -13,7 +13,7 @@ crates/cli     `openvectorizer convert|eval` — the agent's main feedback loop.
 crates/wasm    wasm-bindgen wrapper used by the UI's Web Worker.
 app/           Svelte 5 + TS strict + Tailwind 4 + shadcn-svelte UI (Vite).
 app/src-tauri  Tauri 2 desktop shell (dialogs + file access only; engine stays in WASM).
-testdata/      benchmark corpus (synthetic ground-truth SVGs + real images) and baseline.json.
+testdata/      benchmark: ground-truth SVGs (synthetic, flags, emoji, icons) × degradations (jpeg, half, blur, noise); see testdata/README.md.
 docs/          STACK.md (decisions), ROADMAP.md (milestones), ETUDE-PREALABLE.md (research).
 ```
 
@@ -22,7 +22,8 @@ docs/          STACK.md (decisions), ROADMAP.md (milestones), ETUDE-PREALABLE.md
 |---|---|
 | Everything CI checks | `scripts/check.sh` (`--quick` skips e2e) |
 | Engine tests | `cargo test` |
-| Quality benchmark | `cargo run --release -p openvectorizer-cli -- eval testdata --baseline testdata/baseline.json` |
+| Quality benchmark | `cargo run --release -p openvectorizer-cli -- eval testdata --baseline testdata/baseline.json` (`--filter flags`, `--variants clean,jpeg35`) → `target/eval/index.html` |
+| Re-download third-party corpus | `scripts/fetch-corpus.sh` |
 | Convert one file | `cargo run --release -p openvectorizer-cli -- convert in.png -o out.svg` |
 | Build WASM for the UI | `scripts/build-wasm.sh` |
 | UI dev server | `cd app && pnpm dev` (http://localhost:5173) |
@@ -33,6 +34,7 @@ docs/          STACK.md (decisions), ROADMAP.md (milestones), ETUDE-PREALABLE.md
 - **Quality is measured, not eyeballed.** Any engine change: run `eval`, report the ΔE/p95/nodes delta vs
   baseline in the PR. Inspect `target/eval/*.diff.png` heatmaps (Read them as images) to locate defects.
   Only update `testdata/baseline.json` when an improvement is validated, in a dedicated commit.
+- Never commit personal or copyrighted images to testdata: the repo is public.
 - **Never regress**: `eval --baseline` fails if mean ΔE worsens by more than 0.25.
 - `crates/core` stays pure: no `std::fs`, threads, clocks, or platform crates. Must build for
   `wasm32-unknown-unknown`.
