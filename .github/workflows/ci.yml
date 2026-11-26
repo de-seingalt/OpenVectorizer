@@ -18,7 +18,7 @@ jobs:
     name: Engine (Rust + quality benchmark)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy, rustfmt
@@ -34,13 +34,13 @@ jobs:
         run: git diff --exit-code -- app/src/lib/engine/generated
       - name: Quality benchmark (no regression vs baseline)
         run: cargo run --release -p openvectorizer-cli -- eval testdata --baseline testdata/baseline.json --out target/eval
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: eval-report
           path: target/eval/
       - run: scripts/build-wasm.sh
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: wasm-pkg
           path: app/src/lib/engine/pkg/
@@ -55,15 +55,15 @@ jobs:
     env:
       OV_SKIP_WASM: '1'
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/download-artifact@v4
+      - uses: actions/checkout@v7
+      - uses: actions/download-artifact@v8
         with:
           name: wasm-pkg
           path: app/src/lib/engine/pkg/
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         with:
           package_json_file: app/package.json
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: pnpm
@@ -75,7 +75,7 @@ jobs:
       - run: pnpm build
       - run: pnpm exec playwright install --with-deps chromium
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: e2e-screenshots
@@ -85,7 +85,7 @@ jobs:
     name: Desktop shell compiles (Linux)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy
