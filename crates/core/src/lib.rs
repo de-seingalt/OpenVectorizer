@@ -4,14 +4,17 @@
 //! No file I/O, no threads, no platform APIs, so it compiles unchanged to native
 //! and to `wasm32-unknown-unknown`.
 //!
-//! Pipeline (see `docs/ROADMAP.md`): today [`baseline`] delegates to `VTracer`.
+//! Pipeline (see `docs/ROADMAP.md`): [`palette`] cleans the colors, then [`baseline`]
+//! delegates the tracing to `VTracer`.
 //! Each future stage (palette, planar map, sub-pixel edges, corners, primitives,
 //! SVG writer) gets its own module and replaces part of the baseline.
 
 pub mod baseline;
+mod color;
 mod error;
 mod image;
 mod options;
+pub mod palette;
 
 pub use error::Error;
 pub use image::RgbaImage;
@@ -49,7 +52,14 @@ pub struct Stats {
 /// Returns [`Error`] if the image is empty or the tracer fails.
 pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> {
     let options = options.validated()?;
-    let svg = baseline::trace(image, &options)?;
+    let svg = match options.preset {
+        // Photos keep VTracer's own gradient layering until M2.
+        Preset::Photo => baseline::trace(image, &options)?,
+        Preset::Logo | Preset::Illustration => {
+            let quantized = palette::quantize(image, &options);
+            baseline::trace_flat(&quantized.to_image(), &options)?
+        }
+    };
     let stats = Stats {
         width: image.width(),
         height: image.height(),

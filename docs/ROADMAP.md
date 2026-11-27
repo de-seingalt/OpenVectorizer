@@ -14,9 +14,9 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [ ] PWA (service worker) pour un usage web hors ligne
 
 ## M1 — Palette et carte planaire (frontières partagées)
-- [ ] Quantification k-means en Oklab, nombre de couleurs automatique (fusion selon ΔE et surface)
-- [ ] Pixels d'anticrénelage rattachés à la région voisine, et non transformés en nouvelles couleurs
-- [ ] Nettoyage des étiquettes (taches, îlots)
+- [x] Quantification k-means en Oklab, nombre de couleurs automatique (fusion selon ΔE et surface) — `palette.rs`
+- [x] Pixels d'anticrénelage rattachés à la région voisine, et non transformés en nouvelles couleurs
+- [x] Nettoyage des étiquettes (taches, îlots) — ΔE 3,28 → 1,71, p95 17,7 → 7,5
 - [ ] Graphe planaire : chaque frontière entre deux régions est stockée une seule fois, avec ses jonctions
 - [ ] Écriture SVG à partir du graphe : modes découpé (cutout) et empilé, sans jour entre couleurs
 - [ ] Interface : palette affichée et nombre de couleurs réglable
