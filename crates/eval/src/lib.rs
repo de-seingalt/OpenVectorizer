@@ -141,13 +141,16 @@ fn srgb_to_linear(c: f64) -> f64 {
     if c <= 0.040_45 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
 }
 
-/// Oklab (Björn Ottosson, 2020).
-#[allow(clippy::many_single_char_names)] // standard Oklab notation
+/// Oklab (Björn Ottosson, 2020), with a CIELAB-style linear toe below (6/29)³: the plain cube
+/// root has an infinite slope at zero and counts invisible near-black differences
+/// (`#010101` vs `#000000`) as ~7 ΔE.
 fn oklab(rgb: [f64; 3]) -> [f64; 3] {
+    const DELTA: f64 = 6.0 / 29.0;
+    let toe = |t: f64| if t > DELTA.powi(3) { t.cbrt() } else { t / (3.0 * DELTA * DELTA) + 4.0 / 29.0 };
     let [r, g, b] = rgb.map(srgb_to_linear);
-    let l = (0.412_221_470_8 * r + 0.536_332_536_3 * g + 0.051_445_992_9 * b).cbrt();
-    let m = (0.211_903_498_2 * r + 0.680_699_545_1 * g + 0.107_396_956_6 * b).cbrt();
-    let s = (0.088_302_461_9 * r + 0.281_718_837_6 * g + 0.629_978_700_5 * b).cbrt();
+    let l = toe(0.412_221_470_8 * r + 0.536_332_536_3 * g + 0.051_445_992_9 * b);
+    let m = toe(0.211_903_498_2 * r + 0.680_699_545_1 * g + 0.107_396_956_6 * b);
+    let s = toe(0.088_302_461_9 * r + 0.281_718_837_6 * g + 0.629_978_700_5 * b);
     [
         0.210_454_255_3 * l + 0.793_617_785_0 * m - 0.004_072_046_8 * s,
         1.977_998_495_1 * l - 2.428_592_205_0 * m + 0.450_593_709_9 * s,
