@@ -20,7 +20,7 @@ pub mod planar;
 
 pub use error::Error;
 pub use image::RgbaImage;
-pub use options::{Options, Preset, Stacking};
+pub use options::{CornerMode, Corners, Options, Preset, Stacking};
 pub use palette::{ColorGroup, Palette, PaletteEdit, SourceColor};
 
 use serde::{Deserialize, Serialize};
@@ -49,6 +49,9 @@ pub struct Stats {
     pub path_count: u32,
     /// Size of the SVG document in bytes.
     pub bytes: u32,
+    /// Corner candidates found, and how many of them are sharp.
+    pub corners: u32,
+    pub sharp_corners: u32,
 }
 
 /// Vectorize an RGBA image.
@@ -57,15 +60,13 @@ pub struct Stats {
 /// Returns [`Error`] if the image is empty or the tracer fails.
 pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> {
     let options = options.validated()?;
-    let (svg, palette) = match options.preset {
-        // Photos keep VTracer's own gradient layering until M2.
-        Preset::Photo => (baseline::trace(image, &options)?, None),
+    let (svg, palette, corners) = match options.preset {
+        // Photos keep VTracer's own gradient layering for now.
+        Preset::Photo => (baseline::trace(image, &options)?, None, planar::CornerStats::default()),
         Preset::Logo | Preset::Illustration => {
             let quantized = palette::quantize(image, &options);
-            (
-                planar::to_svg(&quantized, Some(image), options.stacking, &fit_params(&options)),
-                Some(quantized.info),
-            )
+            let (svg, corners) = planar::to_svg(&quantized, Some(image), &options, &fit_params(&options));
+            (svg, Some(quantized.info), corners)
         }
     };
     let stats = Stats {
@@ -73,16 +74,17 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         height: image.height(),
         path_count: svg.matches("<path").count() as u32,
         bytes: svg.len() as u32,
+        corners: corners.total,
+        sharp_corners: corners.sharp,
     };
     Ok(Output { svg, stats, palette })
 }
 
 /// Curve fitting settings derived from the user options.
 fn fit_params(o: &Options) -> fit::FitParams {
-    // detail 0 → 1.25 px tolerance, 1 → 0.35 px; smoothness 0 → corners from 25°, 1 → 135°.
+    // detail 0 → 1.25 px tolerance, 1 → 0.35 px.
     let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
-    let corner = 25.0 + f64::from(o.smoothness) * 110.0;
-    fit::FitParams { tolerance, corner_cos: corner.to_radians().cos() }
+    fit::FitParams { tolerance, radius: f64::from(o.corners.radius) }
 }
 
 #[cfg(test)]

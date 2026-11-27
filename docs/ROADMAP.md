@@ -29,9 +29,11 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 ## M2 — Bords sous-pixel et coins
 - [x] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage) ; tangentes de découpe sur une fenêtre large et pas de facettes droites dans les courbes : fin des ondulations
 - [x] Jonctions placées entre les pixels (moyenne des points des arêtes qui s'y rejoignent)
-- [ ] Coins : écart au sommet théorique, rayon ajusté (souvent sous le pixel), rayon max ; arcs tangents
-- [ ] Outil **Coins** : tous vifs / tous ronds / auto, curseur « nombre de coins vifs » classés par écart,
-      rayon relatif −100..100, bascule et rayon par coin
+- [x] Coins : écart au sommet théorique (droites ajustées de part et d'autre), sommet placé entre les pixels,
+      rayon ajusté et rayon max (moitié des côtés), arcs tangents ; les coins du cadre de l'image sont ignorés
+- [x] Outil **Coins** : auto / tous vifs / tous ronds, curseur « nombre de coins vifs » classés par écart,
+      rayon relatif −100..100
+- [ ] Coins : bascule et rayon coin par coin (clic dans l'aperçu), groupes de coins (symétries)
 
 ## M3 — Géométrie
 - [ ] Ajustement par segment : droite, puis arc de cercle, puis arc d'ellipse, puis Bézier cubique, choix par erreur + complexité

@@ -38,6 +38,17 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(colors).toHaveCount(2);
   await page.screenshot({ path: 'test-results/screens/02b-two-colors.png' });
 
+  // Corners tool: all round → no sharp corner; all sharp → every corner is sharp.
+  const cornerCount = page.locator('#corners-label');
+  await page.getByRole('radio', { name: 'Tous ronds' }).click();
+  await expect(cornerCount).toContainText(/\b0\s+vifs\s+sur\s+[1-9]/);
+  await page.getByRole('radio', { name: 'Tous vifs' }).click();
+  await expect(cornerCount).toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);
+  const autoCorners = page.getByRole('radio', { name: 'Auto', exact: true });
+  await autoCorners.click();
+  await expect(autoCorners).toBeChecked();
+  await page.screenshot({ path: 'test-results/screens/02c-corners.png' });
+
   // Changing an option triggers a new vectorization.
   await page.getByRole('radio', { name: 'Photo' }).click();
   await expect(page.locator('footer')).toContainText('formes');

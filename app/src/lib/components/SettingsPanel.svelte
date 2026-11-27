@@ -6,11 +6,15 @@
   import { Slider } from '$lib/components/ui/slider';
   import { Switch } from '$lib/components/ui/switch';
   import * as ToggleGroup from '$lib/components/ui/toggle-group';
-  import { DEFAULT_OPTIONS, type Options, type Palette, type Preset } from '$lib/engine';
+  import { DEFAULT_OPTIONS, type CornerMode, type Options, type Palette, type Preset, type Stats } from '$lib/engine';
   import PaletteEditor from './PaletteEditor.svelte';
   import { t } from '$lib/i18n';
 
-  let { options = $bindable(), palette = null }: { options: Options; palette?: Palette | null } = $props();
+  let {
+    options = $bindable(),
+    palette = null,
+    stats = null,
+  }: { options: Options; palette?: Palette | null; stats?: Stats | null } = $props();
 
   const auto = $derived(options.maxColors === 0);
   const maxSources = $derived(Math.max(2, palette?.sources.length ?? 24));
@@ -60,23 +64,6 @@
     <p class="text-xs text-muted-foreground">{t.detailHint}</p>
   </section>
 
-  <section class="flex flex-col gap-3">
-    <div class="flex items-baseline justify-between">
-      <Label for="smoothness">{t.smoothness}</Label>
-      <span class="text-xs text-muted-foreground tabular-nums">{pct(options.smoothness)}</span>
-    </div>
-    <Slider
-      id="smoothness"
-      label={t.smoothness}
-      type="single"
-      min={0}
-      max={1}
-      step={0.05}
-      bind:value={options.smoothness}
-    />
-    <p class="text-xs text-muted-foreground">{t.smoothnessHint}</p>
-  </section>
-
   <section class="flex flex-col gap-3" aria-labelledby="colors-label">
     <div class="flex items-center justify-between">
       <span id="colors-label" class="text-sm leading-none font-medium">
@@ -122,6 +109,84 @@
     {/if}
   </section>
 
+  <section class="flex flex-col gap-3" aria-labelledby="corners-label">
+    <div class="flex items-center justify-between">
+      <span id="corners-label" class="text-sm leading-none font-medium">
+        {t.corners}
+        {#if stats && options.preset !== 'photo'}
+          <span class="ml-1 text-xs font-normal text-muted-foreground tabular-nums">
+            {stats.sharpCorners}
+            {t.sharpOf}
+            {stats.corners}
+          </span>
+        {/if}
+      </span>
+    </div>
+    {#if options.preset === 'photo'}
+      <p class="text-xs text-muted-foreground">{t.cornersPhoto}</p>
+    {:else}
+      <ToggleGroup.Root
+        type="single"
+        variant="outline"
+        size="sm"
+        class="w-full"
+        aria-label={t.corners}
+        value={options.corners.sharpCount === null ? options.corners.mode : ''}
+        onValueChange={(v) => {
+          if (v) options.corners = { ...options.corners, mode: v as CornerMode, sharpCount: null };
+        }}
+      >
+        <ToggleGroup.Item value="automatic" class="flex-1">{t.cornersAuto}</ToggleGroup.Item>
+        <ToggleGroup.Item value="sharp" class="flex-1">{t.cornersSharp}</ToggleGroup.Item>
+        <ToggleGroup.Item value="round" class="flex-1">{t.cornersRound}</ToggleGroup.Item>
+      </ToggleGroup.Root>
+
+      {#if stats && stats.corners > 0}
+        <div class="flex flex-col gap-2">
+          <div class="flex items-baseline justify-between">
+            <Label for="sharp-count">{t.sharpCount}</Label>
+            <span class="text-xs text-muted-foreground tabular-nums">
+              {options.corners.sharpCount ?? stats.sharpCorners} / {stats.corners}
+            </span>
+          </div>
+          <Slider
+            id="sharp-count"
+            label={t.sharpCount}
+            type="single"
+            min={0}
+            max={stats.corners}
+            step={1}
+            value={options.corners.sharpCount ?? stats.sharpCorners}
+            onValueChange={(v) => (options.corners = { ...options.corners, sharpCount: v })}
+          />
+          <div class="flex justify-between text-xs text-muted-foreground">
+            <span>{t.fewerSharp}</span><span>{t.moreSharp}</span>
+          </div>
+        </div>
+      {/if}
+
+      <div class="flex flex-col gap-2">
+        <div class="flex items-baseline justify-between">
+          <Label for="radius">{t.radius}</Label>
+          <span class="text-xs text-muted-foreground tabular-nums">{Math.round(options.corners.radius * 100)}</span>
+        </div>
+        <Slider
+          id="radius"
+          label={t.radius}
+          type="single"
+          min={-1}
+          max={1}
+          step={0.05}
+          value={options.corners.radius}
+          onValueChange={(v) => (options.corners = { ...options.corners, radius: v })}
+        />
+        <div class="flex justify-between text-xs text-muted-foreground">
+          <span>{t.sharper}</span><span>{t.bestFit}</span><span>{t.rounder}</span>
+        </div>
+      </div>
+    {/if}
+  </section>
+
   <Collapsible.Root>
     <Collapsible.Trigger
       class="group flex w-full items-center gap-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase hover:text-foreground"
@@ -130,6 +195,22 @@
       {t.advanced}
     </Collapsible.Trigger>
     <Collapsible.Content class="flex flex-col gap-5 pt-4">
+      <section class="flex flex-col gap-3">
+        <div class="flex items-baseline justify-between">
+          <Label for="smoothness">{t.smoothness}</Label>
+          <span class="text-xs text-muted-foreground tabular-nums">{pct(options.smoothness)}</span>
+        </div>
+        <Slider
+          id="smoothness"
+          label={t.smoothness}
+          type="single"
+          min={0}
+          max={1}
+          step={0.05}
+          bind:value={options.smoothness}
+        />
+        <p class="text-xs text-muted-foreground">{t.smoothnessHint}</p>
+      </section>
       <section class="flex flex-col gap-3">
         <div class="flex items-baseline justify-between">
           <Label for="minarea">{t.minArea}</Label>

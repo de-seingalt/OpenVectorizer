@@ -14,7 +14,7 @@ use std::time::Instant;
 use anyhow::{Context, Result};
 use bench::Variant;
 use clap::{Args, Parser, Subcommand, ValueEnum};
-use openvectorizer_core::{Options, Preset, Stacking, vectorize};
+use openvectorizer_core::{CornerMode, Options, Preset, Stacking, vectorize};
 
 #[derive(Parser, Debug)]
 #[command(version, about = "Convert raster images to clean SVG.")]
@@ -76,6 +76,22 @@ struct OptArgs {
     /// Maximum number of colors (0 = automatic)
     #[arg(long)]
     colors: Option<u32>,
+    /// Corner mode
+    #[arg(long, value_enum)]
+    corners: Option<CornerArg>,
+    /// Exactly this many sharp corners (closest to their apex first)
+    #[arg(long)]
+    sharp_corners: Option<u32>,
+    /// Rounded corner radius: -1 sharp, 0 best fit, 1 largest
+    #[arg(long, allow_hyphen_values = true)]
+    radius: Option<f32>,
+}
+
+#[derive(ValueEnum, Clone, Copy, Debug)]
+enum CornerArg {
+    Auto,
+    Sharp,
+    Round,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -106,6 +122,17 @@ impl OptArgs {
         }
         if let Some(v) = self.colors {
             o.max_colors = v;
+        }
+        if let Some(m) = self.corners {
+            o.corners.mode = match m {
+                CornerArg::Auto => CornerMode::Automatic,
+                CornerArg::Sharp => CornerMode::Sharp,
+                CornerArg::Round => CornerMode::Round,
+            };
+        }
+        o.corners.sharp_count = self.sharp_corners;
+        if let Some(r) = self.radius {
+            o.corners.radius = r;
         }
         if self.cutout {
             o.stacking = Stacking::Cutout;

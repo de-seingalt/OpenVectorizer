@@ -30,6 +30,39 @@ pub enum Stacking {
     Cutout,
 }
 
+/// How corners are decided.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum CornerMode {
+    /// Sharp when the traced boundary reaches the theoretical apex (small gap) and the turn
+    /// exceeds the angle set by `smoothness`.
+    #[default]
+    Automatic,
+    /// Every corner candidate is sharp.
+    Sharp,
+    /// Every corner is rounded.
+    Round,
+}
+
+/// Corner settings (the "Coins" tool).
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase", default)]
+#[ts(export)]
+pub struct Corners {
+    pub mode: CornerMode,
+    /// When set, exactly this many corners are sharp: those closest to their apex.
+    pub sharp_count: Option<u32>,
+    /// Radius of rounded corners: −1 = sharp, 0 = best fit, 1 = largest radius.
+    pub radius: f32,
+}
+
+impl Default for Corners {
+    fn default() -> Self {
+        Self { mode: CornerMode::Automatic, sharp_count: None, radius: 0.0 }
+    }
+}
+
 /// User-facing vectorization options. Keep this small: every field is a UI control.
 /// Values outside their documented range are rejected by [`Options::validated`].
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
@@ -49,6 +82,7 @@ pub struct Options {
     /// Manual regrouping of the colors (palette editor). Ignored when it was made for other
     /// source colors (its key no longer matches).
     pub palette_edit: Option<PaletteEdit>,
+    pub corners: Corners,
 }
 
 impl Default for Options {
@@ -61,6 +95,7 @@ impl Default for Options {
             stacking: Stacking::Stacked,
             max_colors: 0,
             palette_edit: None,
+            corners: Corners::default(),
         }
     }
 }
@@ -85,6 +120,12 @@ impl Options {
             return Err(Error::InvalidOption(format!(
                 "maxColors must be 0 or 2..=64, got {}",
                 self.max_colors
+            )));
+        }
+        if !(-1.0..=1.0).contains(&self.corners.radius) {
+            return Err(Error::InvalidOption(format!(
+                "corners.radius must be in -1..=1, got {}",
+                self.corners.radius
             )));
         }
         if let Some(edit) = &self.palette_edit {

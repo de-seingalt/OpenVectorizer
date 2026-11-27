@@ -16,9 +16,9 @@ use std::collections::HashMap;
 use std::fmt::Write as _;
 
 use crate::RgbaImage;
-use crate::Stacking;
-use crate::fit::{Curve, FitParams, P, Seg, fit_run};
+use crate::fit::{Curve, FitParams, P, Prepared, Seg, fit_prepared, prepare};
 use crate::palette::{Quantized, TRANSPARENT};
+use crate::{CornerMode, Options, Stacking};
 
 /// Component id of transparent pixels and of the outside of the image.
 const NONE: u32 = u32::MAX;
@@ -126,15 +126,63 @@ struct Cycle {
 
 struct Runs {
     index: HashMap<u64, usize>,
-    curves: Vec<Curve>,
+    prepared: Vec<Prepared>,
+}
+
+/// Corner candidates of the whole image and how many are sharp.
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+pub struct CornerStats {
+    pub total: u32,
+    pub sharp: u32,
+}
+
+/// In automatic mode, a corner is sharp when the boundary passes this close to its apex.
+const AUTO_SHARP_GAP: f64 = 0.75;
+
+/// Decide which corners are sharp, over the whole image (the count is global).
+fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<bool>>, CornerStats) {
+    let mut sharp: Vec<Vec<bool>> = runs.iter().map(|r| vec![false; r.corners.len()]).collect();
+    let mut all: Vec<(usize, usize)> =
+        runs.iter().enumerate().flat_map(|(r, run)| (0..run.corners.len()).map(move |c| (r, c))).collect();
+    let corner = |&(r, c): &(usize, usize)| runs[r].corners[c];
+    let min_turn = (25.0 + f64::from(options.smoothness) * 110.0).to_radians();
+    match (options.corners.sharp_count, options.corners.mode) {
+        (Some(n), _) => {
+            // The n corners closest to their apex (then the sharpest turns) are sharp.
+            all.sort_by(|a, b| {
+                let (ca, cb) = (corner(a), corner(b));
+                ca.gap.total_cmp(&cb.gap).then(cb.turn.total_cmp(&ca.turn))
+            });
+            for &(r, c) in all.iter().take(n as usize) {
+                sharp[r][c] = true;
+            }
+        }
+        (None, CornerMode::Sharp) => sharp.iter_mut().for_each(|s| s.fill(true)),
+        (None, CornerMode::Round) => {}
+        (None, CornerMode::Automatic) => {
+            for &(r, c) in &all {
+                let k = runs[r].corners[c];
+                sharp[r][c] = k.gap <= AUTO_SHARP_GAP && k.turn >= min_turn;
+            }
+        }
+    }
+    let total = all.len() as u32;
+    let count = sharp.iter().flatten().filter(|&&b| b).count() as u32;
+    (sharp, CornerStats { total, sharp: count })
 }
 
 /// Trace all regions and write the SVG document.
-pub fn to_svg(q: &Quantized, image: Option<&RgbaImage>, stacking: Stacking, params: &FitParams) -> String {
+pub fn to_svg(
+    q: &Quantized,
+    image: Option<&RgbaImage>,
+    options: &Options,
+    params: &FitParams,
+) -> (String, CornerStats) {
+    let stacking = options.stacking;
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
     let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
-    let mut runs = Runs { index: HashMap::new(), curves: Vec::new() };
+    let mut runs = Runs { index: HashMap::new(), prepared: Vec::new() };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
 
@@ -152,11 +200,15 @@ pub fn to_svg(q: &Quantized, image: Option<&RgbaImage>, stacking: Stacking, para
                 if left == NONE {
                     continue;
                 }
-                let cycle = trace_cycle(&grid, &edge_point, (x, y, d), left, &mut visited, &mut runs, params);
+                let cycle = trace_cycle(&grid, &edge_point, (x, y, d), left, &mut visited, &mut runs);
                 cycles[left as usize].push(cycle);
             }
         }
     }
+
+    let (sharp, corner_stats) = decide_corners(&runs.prepared, options);
+    let curves: Vec<Curve> =
+        runs.prepared.iter().zip(&sharp).map(|(run, sharp)| fit_prepared(run, sharp, params)).collect();
 
     // Draw order: largest outline first.
     let outer_area = |c: &[Cycle]| c.iter().map(|k| -k.area).fold(0.0, f64::max);
@@ -187,13 +239,13 @@ pub fn to_svg(q: &Quantized, image: Option<&RgbaImage>, stacking: Stacking, para
                 }
             };
             if keep {
-                write_cycle(&mut d, cycle, &runs.curves);
+                write_cycle(&mut d, cycle, &curves);
             }
         }
         let _ = writeln!(svg, r##"<path fill="#{r:02x}{g:02x}{b:02x}" d="{d}"/>"##);
     }
     svg.push_str("</svg>\n");
-    svg
+    (svg, corner_stats)
 }
 
 #[allow(clippy::too_many_lines)]
@@ -204,7 +256,6 @@ fn trace_cycle(
     c: u32,
     visited: &mut [bool],
     runs: &mut Runs,
-    params: &FitParams,
 ) -> Cycle {
     // 1. Walk the crack edges with `c` on the left (4-connectivity turn rule).
     let mut edges = Vec::new();
@@ -245,13 +296,13 @@ fn trace_cycle(
     let junctions: Vec<usize> = (0..n).filter(|&i| grid.degree(edges[i].0, edges[i].1) >= 3).collect();
     let mut out = Vec::new();
     if junctions.is_empty() {
-        out.push(lookup_run(grid, edge_point, &edges, true, runs, params));
+        out.push(lookup_run(grid, edge_point, &edges, true, runs));
     } else {
         for (k, &a) in junctions.iter().enumerate() {
             let b = junctions[(k + 1) % junctions.len()];
             let len = (b + n - a - 1) % n + 1;
             let run: Vec<_> = (0..len).map(|i| edges[(a + i) % n]).collect();
-            out.push(lookup_run(grid, edge_point, &run, false, runs, params));
+            out.push(lookup_run(grid, edge_point, &run, false, runs));
         }
     }
     Cycle { runs: out, area: area / 2.0, outside_pixel: outside }
@@ -264,7 +315,6 @@ fn lookup_run(
     edges: &[(i64, i64, u8)],
     closed: bool,
     runs: &mut Runs,
-    params: &FitParams,
 ) -> (usize, bool) {
     let ids: Vec<(u64, bool)> = edges.iter().map(|&(x, y, d)| grid.edge_id(x, y, d)).collect();
     let (pos, &(key, canonical)) =
@@ -293,9 +343,13 @@ fn lookup_run(
     let count = if closed { n } else { n - 1 };
     let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
-    let curve = fit_run(&vertices, &mids, ends, closed, params);
-    let idx = runs.curves.len();
-    runs.curves.push(curve);
+    let idx = runs.prepared.len();
+    let mut prepared = prepare(&vertices, &mids, ends, closed);
+    // Corners of the image frame are not shape corners: never round or count them.
+    let (w, h) = (grid.w as f64, grid.h as f64);
+    let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;
+    prepared.corners.retain(|c| !on_frame(c.apex));
+    runs.prepared.push(prepared);
     runs.index.insert(key, idx);
     (idx, reversed)
 }
@@ -466,17 +520,21 @@ mod tests {
     }
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, corner_cos: 60f64.to_radians().cos() }
+        FitParams { tolerance: 0.7, radius: 0.0 }
+    }
+
+    fn svg(q: &Quantized, stacking: Stacking) -> String {
+        to_svg(q, None, &Options { stacking, ..Options::default() }, &params()).0
     }
 
     #[test]
     fn square_in_background_cutout_and_stacked() {
         let q = quantized(20, 20, |x, y| u16::from((5..15).contains(&x) && (5..15).contains(&y)));
-        let cut = to_svg(&q, None, Stacking::Cutout, &params());
+        let cut = svg(&q, Stacking::Cutout);
         assert_eq!(cut.matches("<path").count(), 2);
         // Background has an outer boundary and a hole in cutout mode.
         assert_eq!(cut.matches('M').count(), 3, "{cut}");
-        let stacked = to_svg(&q, None, Stacking::Stacked, &params());
+        let stacked = svg(&q, Stacking::Stacked);
         assert_eq!(stacked.matches('M').count(), 2, "{stacked}");
         assert!(stacked.find("#ffffff") < stacked.find("#c80000"), "{stacked}");
         assert!(stacked.contains("M5 5") || stacked.contains("L5 5"), "{stacked}");
@@ -486,7 +544,7 @@ mod tests {
     fn neighbors_share_the_same_boundary() {
         // Three vertical bands: the two red/blue boundary points must appear in both paths.
         let q = quantized(30, 10, |x, _| (x / 10) as u16);
-        let svg = to_svg(&q, None, Stacking::Cutout, &params());
+        let svg = svg(&q, Stacking::Cutout);
         let paths: Vec<&str> = svg.lines().filter(|l| l.starts_with("<path")).collect();
         let [white, red, blue] = paths[..] else { panic!("{svg}") };
         for p in ["10 0", "10 10"] {
@@ -505,7 +563,7 @@ mod tests {
                 *l = TRANSPARENT;
             }
         }
-        let svg = to_svg(&q, None, Stacking::Stacked, &params());
+        let svg = svg(&q, Stacking::Stacked);
         assert_eq!(svg.matches('M').count(), 2, "{svg}");
     }
 }

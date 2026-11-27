@@ -3,6 +3,7 @@ import type { Options } from './generated/Options';
 import type { Output } from './generated/Output';
 import type { WorkerRequest, WorkerResponse } from './worker';
 
+export type { CornerMode } from './generated/CornerMode';
 export type { Options } from './generated/Options';
 export type { Palette } from './generated/Palette';
 export type { PaletteEdit } from './generated/PaletteEdit';
@@ -20,6 +21,7 @@ export const DEFAULT_OPTIONS: Options = {
   stacking: 'stacked',
   maxColors: 0,
   paletteEdit: null,
+  corners: { mode: 'automatic', sharpCount: null, radius: 0 },
 };
 
 export type Result = { output: Output; ms: number };

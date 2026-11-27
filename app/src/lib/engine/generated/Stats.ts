@@ -11,4 +11,8 @@ pathCount: number,
 /**
  * Size of the SVG document in bytes.
  */
-bytes: number, };
+bytes: number, 
+/**
+ * Corner candidates found, and how many of them are sharp.
+ */
+corners: number, sharpCorners: number, };

@@ -216,7 +216,7 @@
 
     <!-- Settings -->
     <aside class="w-80 shrink-0 overflow-y-auto border-l">
-      <SettingsPanel bind:options {palette} />
+      <SettingsPanel bind:options {palette} {stats} />
     </aside>
   </div>
 
