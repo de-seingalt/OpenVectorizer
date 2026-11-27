@@ -14,19 +14,6 @@ pub fn trace(image: &RgbaImage, options: &Options) -> Result<String, Error> {
     run(image, to_vtracer_config(options))
 }
 
-/// Trace an image whose colors were already quantized by [`crate::palette`]:
-/// `VTracer` must keep every color as is and not filter specks again.
-///
-/// # Errors
-/// Propagates `VTracer` failures as [`Error::Trace`].
-pub fn trace_flat(image: &RgbaImage, options: &Options) -> Result<String, Error> {
-    let mut c = to_vtracer_config(options);
-    c.color_precision = 8;
-    c.layer_difference = 1;
-    c.filter_speckle = 0;
-    run(image, c)
-}
-
 fn run(image: &RgbaImage, config: vtracer::Config) -> Result<String, Error> {
     let img = vtracer::ColorImage {
         pixels: image.data().to_vec(),

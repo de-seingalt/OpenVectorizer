@@ -37,7 +37,6 @@ fn linear_lut() -> &'static [f32; 256] {
     })
 }
 
-#[allow(clippy::many_single_char_names)]
 pub fn srgb_to_oklab(rgb: [u8; 3]) -> Lab {
     let lut = linear_lut();
     let (r, g, b) = (lut[rgb[0] as usize], lut[rgb[1] as usize], lut[rgb[2] as usize]);
@@ -51,7 +50,6 @@ pub fn srgb_to_oklab(rgb: [u8; 3]) -> Lab {
     }
 }
 
-#[allow(clippy::many_single_char_names)]
 pub fn oklab_to_srgb(c: Lab) -> [u8; 3] {
     let l = (c.l + 0.396_337_78 * c.a + 0.215_803_76 * c.b).powi(3);
     let m = (c.l - 0.105_561_346 * c.a - 0.063_854_17 * c.b).powi(3);

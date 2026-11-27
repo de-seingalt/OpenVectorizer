@@ -4,17 +4,19 @@
 //! No file I/O, no threads, no platform APIs, so it compiles unchanged to native
 //! and to `wasm32-unknown-unknown`.
 //!
-//! Pipeline (see `docs/ROADMAP.md`): [`palette`] cleans the colors, then [`baseline`]
-//! delegates the tracing to `VTracer`.
+//! Pipeline (see `docs/ROADMAP.md`): [`palette`] cleans the colors, [`planar`] traces shared
+//! boundaries and writes the SVG. The Photo preset still uses `VTracer` ([`baseline`]).
 //! Each future stage (palette, planar map, sub-pixel edges, corners, primitives,
 //! SVG writer) gets its own module and replaces part of the baseline.
 
 pub mod baseline;
 mod color;
 mod error;
+mod fit;
 mod image;
 mod options;
 pub mod palette;
+pub mod planar;
 
 pub use error::Error;
 pub use image::RgbaImage;
@@ -57,7 +59,7 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         Preset::Photo => baseline::trace(image, &options)?,
         Preset::Logo | Preset::Illustration => {
             let quantized = palette::quantize(image, &options);
-            baseline::trace_flat(&quantized.to_image(), &options)?
+            planar::to_svg(&quantized, options.stacking, &fit_params(&options))
         }
     };
     let stats = Stats {
@@ -67,6 +69,14 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         bytes: svg.len() as u32,
     };
     Ok(Output { svg, stats })
+}
+
+/// Curve fitting settings derived from the user options.
+fn fit_params(o: &Options) -> fit::FitParams {
+    // detail 0 → 1.25 px tolerance, 1 → 0.35 px; smoothness 0 → corners from 25°, 1 → 135°.
+    let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
+    let corner = 25.0 + f64::from(o.smoothness) * 110.0;
+    fit::FitParams { tolerance, corner_cos: corner.to_radians().cos() }
 }
 
 #[cfg(test)]

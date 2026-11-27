@@ -17,8 +17,8 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [x] Quantification k-means en Oklab, nombre de couleurs automatique (fusion selon ΔE et surface) — `palette.rs`
 - [x] Pixels d'anticrénelage rattachés à la région voisine, et non transformés en nouvelles couleurs
 - [x] Nettoyage des étiquettes (taches, îlots) — ΔE 3,28 → 1,71, p95 17,7 → 7,5
-- [ ] Graphe planaire : chaque frontière entre deux régions est stockée une seule fois, avec ses jonctions
-- [ ] Écriture SVG à partir du graphe : modes découpé (cutout) et empilé, sans jour entre couleurs
+- [x] Graphe planaire : chaque frontière entre deux régions est stockée une seule fois, avec ses jonctions — `planar.rs`
+- [x] Écriture SVG à partir du graphe : modes découpé (cutout) et empilé, sans jour entre couleurs ; ajustement Bézier (Schneider) + coins — `fit.rs`. ΔE 1,71 → 1,31, p95 7,5 → 5,0 ; VTracer ne sert plus qu'au préréglage Photo
 - [ ] Interface : palette affichée et nombre de couleurs réglable
 
 ## M2 — Bords sous-pixel et coins

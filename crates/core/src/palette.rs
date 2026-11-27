@@ -12,9 +12,6 @@
 //!    A thin line (no flat pixel of its own) keeps its color when it is much closer.
 //! 4. Connected components smaller than `min_area_px` join their main neighbor.
 
-// Image code: x, y, w, h, i, j are the clearest names here.
-#![allow(clippy::many_single_char_names)]
-
 use crate::color::{Lab, oklab_to_srgb, srgb_to_oklab};
 use crate::{Options, RgbaImage};
 
