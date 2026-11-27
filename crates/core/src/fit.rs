@@ -108,20 +108,22 @@ pub struct FitParams {
 
 const RDP_EPSILON: f64 = 0.8;
 const SMOOTHING_PASSES: usize = 3;
+/// Points on each side used to estimate a tangent.
+const TANGENT_WINDOW: usize = 4;
 
-/// Fit a run given by its grid vertices. Open runs keep their end vertices exactly.
-pub fn fit_run(vertices: &[(i64, i64)], closed: bool, params: &FitParams) -> Curve {
+/// Fit a run given by its grid vertices and one boundary point per crack edge (`mids[i]` lies on
+/// the edge from `vertices[i]` to the next vertex: its midpoint, or a sub-pixel estimate of
+/// the color transition). Open runs keep their end vertices exactly.
+pub fn fit_run(vertices: &[(i64, i64)], mids: &[P], closed: bool, params: &FitParams) -> Curve {
     let v = |i: usize| P::new(vertices[i].0 as f64, vertices[i].1 as f64);
-    let mid = |a: usize, b: usize| (v(a) + v(b)) * 0.5;
     if closed {
         let n = vertices.len();
-        let pts: Vec<P> = (0..n).map(|i| mid(i, (i + 1) % n)).collect();
         let ends: Vec<(P, P)> = (0..n).map(|i| (v(i), v((i + 1) % n))).collect();
-        fit_closed(pts, &ends, params)
+        fit_closed(mids.to_vec(), &ends, params)
     } else {
         let k = vertices.len() - 1;
         let mut pts = vec![v(0)];
-        pts.extend((1..=k).map(|i| mid(i - 1, i)));
+        pts.extend_from_slice(&mids[..k]);
         pts.push(v(k));
         let mut ends = vec![(v(0), v(0))];
         ends.extend((1..=k).map(|i| (v(i - 1), v(i))));
@@ -137,6 +139,19 @@ pub fn fit_run(vertices: &[(i64, i64)], closed: bool, params: &FitParams) -> Cur
         breaks.dedup();
         fit_spans(&pts, &breaks, params)
     }
+}
+
+/// Midpoints of the crack edges of a run (no sub-pixel information).
+#[cfg(test)]
+fn grid_mids(vertices: &[(i64, i64)], closed: bool) -> Vec<P> {
+    let n = vertices.len();
+    let edges = if closed { n } else { n - 1 };
+    (0..edges)
+        .map(|i| {
+            let (a, b) = (vertices[i], vertices[(i + 1) % n]);
+            P::new((a.0 + b.0) as f64 * 0.5, (a.1 + b.1) as f64 * 0.5)
+        })
+        .collect()
 }
 
 fn fit_closed(pts: Vec<P>, ends: &[(P, P)], params: &FitParams) -> Curve {
@@ -275,7 +290,7 @@ fn smooth(pts: &mut [P], closed: bool) {
 fn end_tangent(mut it: impl Iterator<Item = P>) -> P {
     let Some(p0) = it.next() else { return P::default() };
     let mut sum = P::default();
-    for p in it.take(3) {
+    for p in it.take(TANGENT_WINDOW) {
         sum = sum + (p - p0).normalized();
     }
     sum.normalized()
@@ -293,8 +308,10 @@ fn fit_cubic(pts: &[P], t1: P, t2: P, tol: f64, out: &mut Vec<Seg>, depth: u32) 
         out.push(Seg::Line(p3));
         return;
     }
+    // Only a whole span (between corners) may become a line: inside a curve, a line facet
+    // would break the tangent continuity.
     let straight = pts[1..n - 1].iter().map(|&p| dist_to_segment(p, p0, p3)).fold(0.0, f64::max);
-    if straight <= tol * 0.5 && (p3 - p0).len() > 1e-9 {
+    if depth == 0 && straight <= tol * 0.5 && (p3 - p0).len() > 1e-9 {
         out.push(Seg::Line(p3));
         return;
     }
@@ -321,7 +338,9 @@ fn fit_cubic(pts: &[P], t1: P, t2: P, tol: f64, out: &mut Vec<Seg>, depth: u32) 
         return;
     }
     let split = split.clamp(1, n - 2);
-    let tc = (pts[split - 1] - pts[split + 1]).normalized();
+    // Tangent at the split from a wider window: two neighbors alone are too noisy.
+    let k = TANGENT_WINDOW.min(split).min(n - 1 - split);
+    let tc = (pts[split - k] - pts[split + k]).normalized();
     fit_cubic(&pts[..=split], t1, tc, tol, out, depth + 1);
     fit_cubic(&pts[split..], -tc, t2, tol, out, depth + 1);
 }
@@ -412,7 +431,8 @@ mod tests {
 
     #[test]
     fn square_keeps_four_sharp_corners() {
-        let c = fit_run(&square(10), true, &params());
+        let sq = square(10);
+        let c = fit_run(&sq, &grid_mids(&sq, true), true, &params());
         assert_eq!(c.segs.len(), 4, "{c:?}");
         assert!(c.segs.iter().all(|s| matches!(s, Seg::Line(_))));
         let mut corners: Vec<(i64, i64)> =
@@ -424,7 +444,7 @@ mod tests {
     #[test]
     fn open_run_keeps_endpoints_and_reverses() {
         let v: Vec<(i64, i64)> = (0..=8).map(|i| (i, i / 3)).collect();
-        let c = fit_run(&v, false, &params());
+        let c = fit_run(&v, &grid_mids(&v, false), false, &params());
         assert_eq!(c.start, P::new(0.0, 0.0));
         assert_eq!(c.segs.last().map(|s| s.end()), Some(P::new(8.0, 2.0)));
         let r = c.reversed();

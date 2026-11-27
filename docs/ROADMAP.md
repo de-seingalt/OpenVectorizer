@@ -27,7 +27,7 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 
 ## M2 — Bords sous-pixel et coins
-- [ ] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage) : fin des ondulations
+- [x] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage) ; tangentes de découpe sur une fenêtre large et pas de facettes droites dans les courbes : fin des ondulations
 - [ ] Jonctions de 3 régions sans cassure (tangentes cohérentes)
 - [ ] Coins : écart au sommet théorique, rayon ajusté (souvent sous le pixel), rayon max ; arcs tangents
 - [ ] Outil **Coins** : tous vifs / tous ronds / auto, curseur « nombre de coins vifs » classés par écart,

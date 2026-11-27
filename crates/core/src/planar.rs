@@ -15,6 +15,7 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
+use crate::RgbaImage;
 use crate::Stacking;
 use crate::fit::{Curve, FitParams, P, Seg, fit_run};
 use crate::palette::{Quantized, TRANSPARENT};
@@ -56,6 +57,16 @@ impl Grid<'_> {
         }
         let (l, r) = self.sides(x, y, d);
         l != r
+    }
+
+    /// Pixel coordinates (left, right) of the directed crack edge, as in [`Grid::sides`].
+    fn side_pixels(x: i64, y: i64, d: u8) -> ((i64, i64), (i64, i64)) {
+        match d {
+            0 => ((x, y - 1), (x, y)),
+            1 => ((x, y), (x - 1, y)),
+            2 => ((x - 1, y), (x - 1, y - 1)),
+            _ => ((x - 1, y - 1), (x, y - 1)),
+        }
     }
 
     /// Undirected edge id and whether `d` is its canonical direction (+x or +y).
@@ -119,9 +130,10 @@ struct Runs {
 }
 
 /// Trace all regions and write the SVG document.
-pub fn to_svg(q: &Quantized, stacking: Stacking, params: &FitParams) -> String {
+pub fn to_svg(q: &Quantized, image: Option<&RgbaImage>, stacking: Stacking, params: &FitParams) -> String {
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
+    let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
     let mut runs = Runs { index: HashMap::new(), curves: Vec::new() };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
@@ -140,7 +152,7 @@ pub fn to_svg(q: &Quantized, stacking: Stacking, params: &FitParams) -> String {
                 if left == NONE {
                     continue;
                 }
-                let cycle = trace_cycle(&grid, (x, y, d), left, &mut visited, &mut runs, params);
+                let cycle = trace_cycle(&grid, &edge_point, (x, y, d), left, &mut visited, &mut runs, params);
                 cycles[left as usize].push(cycle);
             }
         }
@@ -187,6 +199,7 @@ pub fn to_svg(q: &Quantized, stacking: Stacking, params: &FitParams) -> String {
 #[allow(clippy::too_many_lines)]
 fn trace_cycle(
     grid: &Grid,
+    edge_point: &EdgePoint,
     start: (i64, i64, u8),
     c: u32,
     visited: &mut [bool],
@@ -232,13 +245,13 @@ fn trace_cycle(
     let junctions: Vec<usize> = (0..n).filter(|&i| grid.degree(edges[i].0, edges[i].1) >= 3).collect();
     let mut out = Vec::new();
     if junctions.is_empty() {
-        out.push(lookup_run(grid, &edges, true, runs, params));
+        out.push(lookup_run(grid, edge_point, &edges, true, runs, params));
     } else {
         for (k, &a) in junctions.iter().enumerate() {
             let b = junctions[(k + 1) % junctions.len()];
             let len = (b + n - a - 1) % n + 1;
             let run: Vec<_> = (0..len).map(|i| edges[(a + i) % n]).collect();
-            out.push(lookup_run(grid, &run, false, runs, params));
+            out.push(lookup_run(grid, edge_point, &run, false, runs, params));
         }
     }
     Cycle { runs: out, area: area / 2.0, outside_pixel: outside }
@@ -247,6 +260,7 @@ fn trace_cycle(
 /// Find or fit the run made of `edges` (as traversed); returns (run index, reversed?).
 fn lookup_run(
     grid: &Grid,
+    edge_point: &EdgePoint,
     edges: &[(i64, i64, u8)],
     closed: bool,
     runs: &mut Runs,
@@ -275,11 +289,78 @@ fn lookup_run(
             vertices.rotate_right(2);
         }
     }
-    let curve = fit_run(&vertices, closed, params);
+    let n = vertices.len();
+    let count = if closed { n } else { n - 1 };
+    let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
+    let curve = fit_run(&vertices, &mids, closed, params);
     let idx = runs.curves.len();
     runs.curves.push(curve);
     runs.index.insert(key, idx);
     (idx, reversed)
+}
+
+/// Where a boundary crosses a crack edge. Pixels on both sides are mixes of their two region
+/// colors (anti-aliasing, blur); their coverage locates the 50 % transition between the two
+/// pixel centers, so the boundary moves off the pixel grid by up to [`MAX_SHIFT`] px.
+struct EdgePoint<'a> {
+    q: &'a Quantized,
+    image: Option<&'a RgbaImage>,
+    w: i64,
+    h: i64,
+}
+
+/// Largest sub-pixel shift: keeps neighboring boundaries from crossing.
+const MAX_SHIFT: f64 = 0.45;
+
+impl EdgePoint<'_> {
+    fn at(&self, a: (i64, i64), b: (i64, i64)) -> P {
+        let mid = P::new((a.0 + b.0) as f64 * 0.5, (a.1 + b.1) as f64 * 0.5);
+        let d = match (b.0 - a.0, b.1 - a.1) {
+            (1, 0) => 0,
+            (0, 1) => 1,
+            (-1, 0) => 2,
+            _ => 3,
+        };
+        let (l, r) = Grid::side_pixels(a.0, a.1, d);
+        match self.shift(l, r) {
+            Some(e) => mid + P::new((r.0 - l.0) as f64, (r.1 - l.1) as f64) * e,
+            None => mid,
+        }
+    }
+
+    /// Offset of the transition from the crack toward `r` (in px), if both pixels are opaque
+    /// and their region colors differ enough to measure coverage.
+    fn shift(&self, l: (i64, i64), r: (i64, i64)) -> Option<f64> {
+        let image = self.image?;
+        let inside = |p: (i64, i64)| p.0 >= 0 && p.1 >= 0 && p.0 < self.w && p.1 < self.h;
+        if !inside(l) || !inside(r) {
+            return None;
+        }
+        let (il, ir) = ((l.1 * self.w + l.0) as usize, (r.1 * self.w + r.0) as usize);
+        let (la, lb) = (self.q.labels[il], self.q.labels[ir]);
+        if la == TRANSPARENT || lb == TRANSPARENT || la == lb {
+            return None;
+        }
+        let color = |i: usize| {
+            let px = &image.data()[i * 4..i * 4 + 3];
+            [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])]
+        };
+        let model = |l: u16| self.q.model[l as usize].map(f64::from);
+        let (ca, cb) = (model(la), model(lb));
+        let ab: [f64; 3] = std::array::from_fn(|k| cb[k] - ca[k]);
+        let len2: f64 = ab.iter().map(|v| v * v).sum();
+        if len2 < 40.0 * 40.0 {
+            return None;
+        }
+        // Fraction of color b in a pixel (projection on the a→b segment).
+        let cover_b = |c: [f64; 3]| {
+            (ab.iter().zip(c.iter().zip(&ca)).map(|(d, (x, a))| d * (x - a)).sum::<f64>() / len2)
+                .clamp(0.0, 1.0)
+        };
+        // b occupies the axis beyond e (crack at 0, l covers [-1, 0], r covers [0, 1]).
+        let e = (1.0 - cover_b(color(ir))) - cover_b(color(il));
+        Some(e.clamp(-MAX_SHIFT, MAX_SHIFT))
+    }
 }
 
 fn fmt(v: f64, out: &mut String) {
@@ -357,6 +438,7 @@ mod tests {
             height: h,
             palette: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]],
             labels,
+            model: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]],
             info: crate::Palette::default(),
         }
     }
@@ -368,11 +450,11 @@ mod tests {
     #[test]
     fn square_in_background_cutout_and_stacked() {
         let q = quantized(20, 20, |x, y| u16::from((5..15).contains(&x) && (5..15).contains(&y)));
-        let cut = to_svg(&q, Stacking::Cutout, &params());
+        let cut = to_svg(&q, None, Stacking::Cutout, &params());
         assert_eq!(cut.matches("<path").count(), 2);
         // Background has an outer boundary and a hole in cutout mode.
         assert_eq!(cut.matches('M').count(), 3, "{cut}");
-        let stacked = to_svg(&q, Stacking::Stacked, &params());
+        let stacked = to_svg(&q, None, Stacking::Stacked, &params());
         assert_eq!(stacked.matches('M').count(), 2, "{stacked}");
         assert!(stacked.find("#ffffff") < stacked.find("#c80000"), "{stacked}");
         assert!(stacked.contains("M5 5") || stacked.contains("L5 5"), "{stacked}");
@@ -382,7 +464,7 @@ mod tests {
     fn neighbors_share_the_same_boundary() {
         // Three vertical bands: the two red/blue boundary points must appear in both paths.
         let q = quantized(30, 10, |x, _| (x / 10) as u16);
-        let svg = to_svg(&q, Stacking::Cutout, &params());
+        let svg = to_svg(&q, None, Stacking::Cutout, &params());
         let paths: Vec<&str> = svg.lines().filter(|l| l.starts_with("<path")).collect();
         let [white, red, blue] = paths[..] else { panic!("{svg}") };
         for p in ["10 0", "10 10"] {
@@ -401,7 +483,7 @@ mod tests {
                 *l = TRANSPARENT;
             }
         }
-        let svg = to_svg(&q, Stacking::Stacked, &params());
+        let svg = to_svg(&q, None, Stacking::Stacked, &params());
         assert_eq!(svg.matches('M').count(), 2, "{svg}");
     }
 }

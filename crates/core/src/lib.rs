@@ -62,7 +62,10 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         Preset::Photo => (baseline::trace(image, &options)?, None),
         Preset::Logo | Preset::Illustration => {
             let quantized = palette::quantize(image, &options);
-            (planar::to_svg(&quantized, options.stacking, &fit_params(&options)), Some(quantized.info))
+            (
+                planar::to_svg(&quantized, Some(image), options.stacking, &fit_params(&options)),
+                Some(quantized.info),
+            )
         }
     };
     let stats = Stats {
