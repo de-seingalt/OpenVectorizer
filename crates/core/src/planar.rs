@@ -292,7 +292,8 @@ fn lookup_run(
     let n = vertices.len();
     let count = if closed { n } else { n - 1 };
     let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
-    let curve = fit_run(&vertices, &mids, closed, params);
+    let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
+    let curve = fit_run(&vertices, &mids, ends, closed, params);
     let idx = runs.curves.len();
     runs.curves.push(curve);
     runs.index.insert(key, idx);
@@ -313,6 +314,27 @@ struct EdgePoint<'a> {
 const MAX_SHIFT: f64 = 0.45;
 
 impl EdgePoint<'_> {
+    /// A junction sits at the mean of the boundary points of its incident crack edges, so the
+    /// runs that meet there all end at the same sub-pixel position. Image-border vertices stay
+    /// on the border.
+    fn junction(&self, grid: &Grid, v: (i64, i64)) -> P {
+        let vertex = P::new(v.0 as f64, v.1 as f64);
+        if v.0 == 0 || v.1 == 0 || v.0 == self.w || v.1 == self.h || self.image.is_none() {
+            return vertex;
+        }
+        let (mut sum, mut n) = (P::default(), 0.0);
+        for d in 0..4u8 {
+            if grid.vertex_edge_exists(v.0, v.1, d) {
+                let s = STEP[d as usize];
+                let m = self.at(v, (v.0 + s.0, v.1 + s.1));
+                // The edge point lies half a pixel along the edge: keep only its normal shift.
+                sum = sum + vertex + (m - (vertex + P::new(s.0 as f64 * 0.5, s.1 as f64 * 0.5)));
+                n += 1.0;
+            }
+        }
+        if n == 0.0 { vertex } else { sum * (1.0 / n) }
+    }
+
     fn at(&self, a: (i64, i64), b: (i64, i64)) -> P {
         let mid = P::new((a.0 + b.0) as f64 * 0.5, (a.1 + b.1) as f64 * 0.5);
         let d = match (b.0 - a.0, b.1 - a.1) {

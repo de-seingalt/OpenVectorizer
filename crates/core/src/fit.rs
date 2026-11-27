@@ -114,7 +114,9 @@ const TANGENT_WINDOW: usize = 4;
 /// Fit a run given by its grid vertices and one boundary point per crack edge (`mids[i]` lies on
 /// the edge from `vertices[i]` to the next vertex: its midpoint, or a sub-pixel estimate of
 /// the color transition). Open runs keep their end vertices exactly.
-pub fn fit_run(vertices: &[(i64, i64)], mids: &[P], closed: bool, params: &FitParams) -> Curve {
+///
+/// `ends` are the positions of the two end junctions of an open run (ignored when closed).
+pub fn fit_run(vertices: &[(i64, i64)], mids: &[P], ends: (P, P), closed: bool, params: &FitParams) -> Curve {
     let v = |i: usize| P::new(vertices[i].0 as f64, vertices[i].1 as f64);
     if closed {
         let n = vertices.len();
@@ -122,12 +124,16 @@ pub fn fit_run(vertices: &[(i64, i64)], mids: &[P], closed: bool, params: &FitPa
         fit_closed(mids.to_vec(), &ends, params)
     } else {
         let k = vertices.len() - 1;
-        let mut pts = vec![v(0)];
+        let mut pts = vec![ends.0];
         pts.extend_from_slice(&mids[..k]);
-        pts.push(v(k));
-        let mut ends = vec![(v(0), v(0))];
-        ends.extend((1..=k).map(|i| (v(i - 1), v(i))));
-        ends.push((v(k), v(k)));
+        pts.push(ends.1);
+        let ends_of_edges = {
+            let mut e = vec![(ends.0, ends.0)];
+            e.extend((1..=k).map(|i| (v(i - 1), v(i))));
+            e.push((ends.1, ends.1));
+            e
+        };
+        let ends = ends_of_edges;
         let mut keep = vec![0, pts.len() - 1];
         rdp(&pts, 0, pts.len() - 1, &mut keep);
         keep.sort_unstable();
@@ -432,7 +438,7 @@ mod tests {
     #[test]
     fn square_keeps_four_sharp_corners() {
         let sq = square(10);
-        let c = fit_run(&sq, &grid_mids(&sq, true), true, &params());
+        let c = fit_run(&sq, &grid_mids(&sq, true), (P::default(), P::default()), true, &params());
         assert_eq!(c.segs.len(), 4, "{c:?}");
         assert!(c.segs.iter().all(|s| matches!(s, Seg::Line(_))));
         let mut corners: Vec<(i64, i64)> =
@@ -444,7 +450,7 @@ mod tests {
     #[test]
     fn open_run_keeps_endpoints_and_reverses() {
         let v: Vec<(i64, i64)> = (0..=8).map(|i| (i, i / 3)).collect();
-        let c = fit_run(&v, &grid_mids(&v, false), false, &params());
+        let c = fit_run(&v, &grid_mids(&v, false), (P::new(0.0, 0.0), P::new(8.0, 2.0)), false, &params());
         assert_eq!(c.start, P::new(0.0, 0.0));
         assert_eq!(c.segs.last().map(|s| s.end()), Some(P::new(8.0, 2.0)));
         let r = c.reversed();
