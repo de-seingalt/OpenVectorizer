@@ -73,6 +73,9 @@ struct OptArgs {
     min_area: Option<u32>,
     #[arg(long)]
     cutout: bool,
+    /// Maximum number of colors (0 = automatic)
+    #[arg(long)]
+    colors: Option<u32>,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -100,6 +103,9 @@ impl OptArgs {
         }
         if let Some(v) = self.min_area {
             o.min_area_px = v;
+        }
+        if let Some(v) = self.colors {
+            o.max_colors = v;
         }
         if self.cutout {
             o.stacking = Stacking::Cutout;

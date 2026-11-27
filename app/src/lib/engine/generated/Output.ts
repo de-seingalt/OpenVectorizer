@@ -8,4 +8,8 @@ export type Output = {
 /**
  * Complete SVG document (UTF-8).
  */
-svg: string, stats: Stats, };
+svg: string, stats: Stats, 
+/**
+ * Colors used by the SVG (`#rrggbb`), most used first. Empty for the Photo preset.
+ */
+palette: Array<string>, };

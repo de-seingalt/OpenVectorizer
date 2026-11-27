@@ -38,6 +38,23 @@ pub struct Quantized {
 }
 
 impl Quantized {
+    /// Palette colors actually used by at least one pixel, most used first, as `#rrggbb`.
+    pub fn used_colors(&self) -> Vec<String> {
+        let mut counts = vec![0u32; self.palette.len()];
+        for &l in &self.labels {
+            if l != TRANSPARENT {
+                counts[l as usize] += 1;
+            }
+        }
+        let mut used: Vec<usize> = (0..counts.len()).filter(|&i| counts[i] > 0).collect();
+        used.sort_by_key(|&i| std::cmp::Reverse(counts[i]));
+        used.iter()
+            .map(|&i| {
+                format!("#{:02x}{:02x}{:02x}", self.palette[i][0], self.palette[i][1], self.palette[i][2])
+            })
+            .collect()
+    }
+
     /// Render the label map as an RGBA image (transparent pixels stay transparent).
     ///
     /// # Panics
@@ -81,10 +98,15 @@ pub fn quantize(image: &RgbaImage, options: &Options) -> Quantized {
 
     let mut clusters = seed(&points, k0);
     lloyd(&points, &mut clusters, KMEANS_ITERATIONS);
-    merge_close(&mut clusters, merge_threshold);
+    merge_close(&mut clusters, merge_threshold, 1);
     lloyd(&points, &mut clusters, 3);
-    remove_spurious(&mut clusters, min_pixels);
+    remove_spurious(&mut clusters, &points, min_pixels);
     lloyd(&points, &mut clusters, 3);
+    if options.max_colors >= 2 {
+        clusters.retain(|c| c.pixels > 0);
+        // No k-means pass afterwards: it would move the kept colors to averages.
+        reduce_to(&mut clusters, options.max_colors as usize);
+    }
     clusters.retain(|c| c.pixels > 0);
     clusters.sort_by_key(|c| std::cmp::Reverse(c.pixels));
 
@@ -242,10 +264,11 @@ fn lloyd(points: &[Cluster], clusters: &mut [Cluster], iterations: usize) {
     }
 }
 
-/// Merge the closest pair of clusters while it is closer than `threshold` (Oklab units).
-fn merge_close(clusters: &mut Vec<Cluster>, threshold: f32) {
+/// Merge the closest pair of clusters while it is closer than `threshold` (Oklab units)
+/// and more than `min_count` clusters remain.
+fn merge_close(clusters: &mut Vec<Cluster>, threshold: f32, min_count: usize) {
     clusters.retain(|c| c.weight > 0.0);
-    loop {
+    while clusters.len() > min_count.max(1) {
         let mut best = (0, 0, f32::MAX);
         for i in 0..clusters.len() {
             for j in i + 1..clusters.len() {
@@ -256,42 +279,63 @@ fn merge_close(clusters: &mut Vec<Cluster>, threshold: f32) {
             }
         }
         let (i, j, d) = best;
-        if d >= threshold * threshold {
+        if d >= threshold * threshold && threshold.is_finite() {
             return;
         }
         let (a, b) = (clusters[i], clusters[j]);
         let weight = a.weight + b.weight;
-        clusters[i] = Cluster {
-            center: a.center.scale(a.weight / weight).add(b.center.scale(b.weight / weight)),
-            weight,
-            pixels: a.pixels + b.pixels,
-            flat: a.flat + b.flat,
+        let center = if threshold.is_finite() {
+            a.center.scale(a.weight / weight).add(b.center.scale(b.weight / weight))
+        } else if a.weight >= b.weight {
+            a.center // forced reduction: keep a color that really is in the image
+        } else {
+            b.center
         };
+        clusters[i] = Cluster { center, weight, pixels: a.pixels + b.pixels, flat: a.flat + b.flat };
         clusters.swap_remove(j);
     }
 }
 
-/// Drop clusters that are too small, or that are anti-aliasing blends of two larger clusters.
-fn remove_spurious(clusters: &mut Vec<Cluster>, min_pixels: u32) {
+/// Merge the closest pairs until at most `max` clusters remain.
+fn reduce_to(clusters: &mut Vec<Cluster>, max: usize) {
+    while clusters.len() > max {
+        merge_close(clusters, f32::INFINITY, max);
+    }
+}
+
+/// Drop clusters that are too small, or that are anti-aliasing blends of real colors.
+///
+/// A cluster made mostly of edge pixels is a blend when its center lies between two heavier
+/// kept clusters. k-means can also pool blends of several color pairs into one small cluster
+/// whose center lies between none: such a cluster (no flat pixel, under 1 % of the image) is
+/// dropped when most of its pixels lie between two heavier kept clusters.
+fn remove_spurious(clusters: &mut Vec<Cluster>, points: &[Cluster], min_pixels: u32) {
     clusters.sort_by(|a, b| b.weight.total_cmp(&a.weight));
+    let total: u32 = clusters.iter().map(|c| c.pixels).sum();
+    let mut members: Vec<Vec<usize>> = vec![Vec::new(); clusters.len()];
+    for (i, p) in points.iter().enumerate() {
+        members[nearest(clusters.iter().map(|c| c.center), p.center).0].push(i);
+    }
     let mut keep = vec![true; clusters.len()];
-    for c in 0..clusters.len() {
+    for c in 1..clusters.len() {
         let cl = clusters[c];
-        if cl.pixels < min_pixels && c > 0 {
+        if cl.pixels < min_pixels {
             keep[c] = false;
             continue;
         }
-        // Mostly edge pixels: is it a mix of two heavier kept clusters?
         if cl.flat * 2 >= cl.pixels {
             continue;
         }
-        'pairs: for a in 0..c {
-            for b in a + 1..c {
-                if keep[a] && keep[b] && is_blend(clusters[a].center, clusters[b].center, cl.center) {
-                    keep[c] = false;
-                    break 'pairs;
-                }
-            }
+        let heavier: Vec<Lab> = (0..c).filter(|&a| keep[a]).map(|a| clusters[a].center).collect();
+        let between = |color: Lab| {
+            heavier.iter().enumerate().any(|(i, &a)| heavier[i + 1..].iter().any(|&b| is_blend(a, b, color)))
+        };
+        if between(cl.center) {
+            keep[c] = false;
+        } else if cl.flat * 10 < cl.pixels && cl.pixels * 100 < total {
+            let blended: u32 =
+                members[c].iter().filter(|&&i| between(points[i].center)).map(|&i| points[i].pixels).sum();
+            keep[c] = blended * 2 < cl.pixels;
         }
     }
     let mut it = keep.iter();
@@ -462,6 +506,24 @@ mod tests {
         let black = q.labels[20];
         assert!((0..48).all(|y| q.labels[y * 48 + 20] == black));
         assert_ne!(q.labels[0], black);
+    }
+
+    #[test]
+    fn max_colors_limits_the_palette() {
+        let img = image(60, 20, |x, _| match x / 10 {
+            0 => [255, 0, 0],
+            1 => [0, 160, 0],
+            2 => [0, 0, 255],
+            3 => [250, 220, 0],
+            4 => [0, 0, 0],
+            _ => [255, 255, 255],
+        });
+        assert_eq!(quantize(&img, &Options::default()).used_colors().len(), 6);
+        let three = Options { max_colors: 3, ..Options::default() };
+        let colors = quantize(&img, &three).used_colors();
+        assert_eq!(colors.len(), 3);
+        let source = ["#ff0000", "#00a000", "#0000ff", "#fadc00", "#000000", "#ffffff"];
+        assert!(colors.iter().all(|c| source.contains(&c.as_str())), "{colors:?}");
     }
 
     #[test]

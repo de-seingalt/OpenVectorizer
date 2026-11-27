@@ -33,6 +33,8 @@ pub struct Output {
     /// Complete SVG document (UTF-8).
     pub svg: String,
     pub stats: Stats,
+    /// Colors used by the SVG (`#rrggbb`), most used first. Empty for the Photo preset.
+    pub palette: Vec<String>,
 }
 
 /// Cheap statistics about the produced SVG, shown in the UI status bar.
@@ -54,12 +56,12 @@ pub struct Stats {
 /// Returns [`Error`] if the image is empty or the tracer fails.
 pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> {
     let options = options.validated()?;
-    let svg = match options.preset {
+    let (svg, palette) = match options.preset {
         // Photos keep VTracer's own gradient layering until M2.
-        Preset::Photo => baseline::trace(image, &options)?,
+        Preset::Photo => (baseline::trace(image, &options)?, Vec::new()),
         Preset::Logo | Preset::Illustration => {
             let quantized = palette::quantize(image, &options);
-            planar::to_svg(&quantized, options.stacking, &fit_params(&options))
+            (planar::to_svg(&quantized, options.stacking, &fit_params(&options)), quantized.used_colors())
         }
     };
     let stats = Stats {
@@ -68,7 +70,7 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         path_count: svg.matches("<path").count() as u32,
         bytes: svg.len() as u32,
     };
-    Ok(Output { svg, stats })
+    Ok(Output { svg, stats, palette })
 }
 
 /// Curve fitting settings derived from the user options.

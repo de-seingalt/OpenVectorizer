@@ -29,6 +29,7 @@
   let svg = $state<string | null>(null);
   let svgUrl = $state<string | null>(null);
   let stats = $state<Stats | null>(null);
+  let palette = $state<string[]>([]);
   let ms = $state(0);
   let working = $state(false);
   let dragging = $state(false);
@@ -81,6 +82,7 @@
         svg = res.output.svg;
         svgUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         stats = res.output.stats;
+        palette = res.output.palette;
         ms = res.ms;
         working = false;
       } catch (e) {
@@ -214,7 +216,7 @@
 
     <!-- Settings -->
     <aside class="w-80 shrink-0 overflow-y-auto border-l">
-      <SettingsPanel bind:options />
+      <SettingsPanel bind:options {palette} />
     </aside>
   </div>
 

@@ -18,4 +18,8 @@ smoothness: number,
 /**
  * Discard shapes smaller than this many pixels (0..=128).
  */
-minAreaPx: number, stacking: Stacking, };
+minAreaPx: number, stacking: Stacking, 
+/**
+ * Maximum number of colors: 0 = automatic, otherwise 2..=64. Ignored by the Photo preset.
+ */
+maxColors: number, };

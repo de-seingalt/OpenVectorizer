@@ -19,7 +19,7 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [x] Nettoyage des étiquettes (taches, îlots) — ΔE 3,28 → 1,71, p95 17,7 → 7,5
 - [x] Graphe planaire : chaque frontière entre deux régions est stockée une seule fois, avec ses jonctions — `planar.rs`
 - [x] Écriture SVG à partir du graphe : modes découpé (cutout) et empilé, sans jour entre couleurs ; ajustement Bézier (Schneider) + coins — `fit.rs`. ΔE 1,71 → 1,31, p95 7,5 → 5,0 ; VTracer ne sert plus qu'au préréglage Photo
-- [ ] Interface : palette affichée et nombre de couleurs réglable
+- [x] Interface : palette affichée et nombre de couleurs réglable (automatique ou 2 à 32) ; noms accessibles pour tous les curseurs
 
 ## M2 — Bords sous-pixel et coins
 - [ ] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage)

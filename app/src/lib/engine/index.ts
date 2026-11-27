@@ -16,6 +16,7 @@ export const DEFAULT_OPTIONS: Options = {
   smoothness: 0.4,
   minAreaPx: 4,
   stacking: 'stacked',
+  maxColors: 0,
 };
 
 export type Result = { output: Output; ms: number };

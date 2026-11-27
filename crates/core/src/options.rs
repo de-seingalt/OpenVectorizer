@@ -43,6 +43,8 @@ pub struct Options {
     /// Discard shapes smaller than this many pixels (0..=128).
     pub min_area_px: u32,
     pub stacking: Stacking,
+    /// Maximum number of colors: 0 = automatic, otherwise 2..=64. Ignored by the Photo preset.
+    pub max_colors: u32,
 }
 
 impl Default for Options {
@@ -53,6 +55,7 @@ impl Default for Options {
             smoothness: 0.4,
             min_area_px: 4,
             stacking: Stacking::Stacked,
+            max_colors: 0,
         }
     }
 }
@@ -72,6 +75,12 @@ impl Options {
         unit("smoothness", self.smoothness)?;
         if self.min_area_px > 128 {
             return Err(Error::InvalidOption(format!("minAreaPx must be <= 128, got {}", self.min_area_px)));
+        }
+        if self.max_colors == 1 || self.max_colors > 64 {
+            return Err(Error::InvalidOption(format!(
+                "maxColors must be 0 or 2..=64, got {}",
+                self.max_colors
+            )));
         }
         Ok(self.clone())
     }

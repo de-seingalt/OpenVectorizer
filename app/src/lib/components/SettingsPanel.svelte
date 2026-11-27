@@ -9,7 +9,14 @@
   import { DEFAULT_OPTIONS, type Options, type Preset } from '$lib/engine';
   import { t } from '$lib/i18n';
 
-  let { options = $bindable() }: { options: Options } = $props();
+  let { options = $bindable(), palette = [] }: { options: Options; palette?: string[] } = $props();
+
+  const MAX_SWATCHES = 48;
+  const auto = $derived(options.maxColors === 0);
+  function setAuto(on: boolean) {
+    // Leaving automatic mode starts from the number of colors currently found.
+    options.maxColors = on ? 0 : Math.min(32, Math.max(2, palette.length || 8));
+  }
 
   const presets: { value: Preset; label: string }[] = [
     { value: 'logo', label: t.presetLogo },
@@ -42,7 +49,7 @@
       <Label for="detail">{t.detail}</Label>
       <span class="text-xs text-muted-foreground tabular-nums">{pct(options.detail)}</span>
     </div>
-    <Slider id="detail" type="single" min={0} max={1} step={0.05} bind:value={options.detail} />
+    <Slider id="detail" label={t.detail} type="single" min={0} max={1} step={0.05} bind:value={options.detail} />
     <p class="text-xs text-muted-foreground">{t.detailHint}</p>
   </section>
 
@@ -51,8 +58,59 @@
       <Label for="smoothness">{t.smoothness}</Label>
       <span class="text-xs text-muted-foreground tabular-nums">{pct(options.smoothness)}</span>
     </div>
-    <Slider id="smoothness" type="single" min={0} max={1} step={0.05} bind:value={options.smoothness} />
+    <Slider
+      id="smoothness"
+      label={t.smoothness}
+      type="single"
+      min={0}
+      max={1}
+      step={0.05}
+      bind:value={options.smoothness}
+    />
     <p class="text-xs text-muted-foreground">{t.smoothnessHint}</p>
+  </section>
+
+  <section class="flex flex-col gap-3" aria-labelledby="colors-label">
+    <div class="flex items-center justify-between">
+      <span id="colors-label" class="text-sm leading-none font-medium">{t.colors}</span>
+      {#if options.preset !== 'photo'}
+        <div class="flex items-center gap-2">
+          <Label for="colors-auto" class="text-xs font-normal text-muted-foreground">{t.colorsAuto}</Label>
+          <Switch id="colors-auto" checked={auto} onCheckedChange={setAuto} />
+        </div>
+      {/if}
+    </div>
+    {#if options.preset === 'photo'}
+      <p class="text-xs text-muted-foreground">{t.colorsPhoto}</p>
+    {:else}
+      {#if !auto}
+        <div class="flex items-center gap-3">
+          <Slider
+            id="colors"
+            type="single"
+            min={2}
+            max={32}
+            step={1}
+            bind:value={options.maxColors}
+            label={t.colorsHint}
+          />
+          <span class="w-6 text-right text-xs text-muted-foreground tabular-nums">{options.maxColors}</span>
+        </div>
+      {/if}
+      {#if palette.length > 0}
+        <ul class="flex flex-wrap gap-1" aria-label={`${palette.length} ${t.colorsFound}`}>
+          {#each palette.slice(0, MAX_SWATCHES) as color (color)}
+            <li class="size-6 rounded-md border border-border shadow-xs" style:background-color={color} title={color}>
+              <span class="sr-only">{color}</span>
+            </li>
+          {/each}
+        </ul>
+        <p class="text-xs text-muted-foreground">
+          {palette.length}
+          {t.colorsFound}{palette.length > MAX_SWATCHES ? ` (${MAX_SWATCHES} ${t.shown})` : ''}
+        </p>
+      {/if}
+    {/if}
   </section>
 
   <Collapsible.Root>
@@ -68,7 +126,7 @@
           <Label for="minarea">{t.minArea}</Label>
           <span class="text-xs text-muted-foreground tabular-nums">{options.minAreaPx}</span>
         </div>
-        <Slider id="minarea" type="single" min={0} max={64} step={1} bind:value={options.minAreaPx} />
+        <Slider id="minarea" label={t.minArea} type="single" min={0} max={64} step={1} bind:value={options.minAreaPx} />
       </section>
       <section class="flex items-start justify-between gap-3">
         <div class="flex flex-col gap-1">
