@@ -54,4 +54,5 @@ docs/          STACK.md (decisions), ROADMAP.md (milestones), ETUDE-PREALABLE.md
 - Each pipeline stage = its own module in `crates/core/src/` with unit tests; replace the `baseline`
   (VTracer) stage by stage.
 - Run `scripts/check.sh` before committing. Conventional commits (`feat:`, `fix:`, `perf:`, `docs:`…).
+- Commit trailer: only `Co-Authored-By: Claude …`. **Never add session links (`Claude-Session: …`) or any personal data** to commits or PRs.
 - Releases: push a `vX.Y.Z` tag → GitHub Actions builds AppImage, Windows portable `.exe` + installer, macOS `.dmg`.

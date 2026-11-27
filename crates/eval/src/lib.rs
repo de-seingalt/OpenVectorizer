@@ -6,7 +6,8 @@
 //! (see `openvectorizer eval`).
 
 use openvectorizer_core::RgbaImage;
-use resvg::{tiny_skia, usvg};
+use resvg::tiny_skia;
+pub use resvg::usvg;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, thiserror::Error)]
@@ -40,7 +41,22 @@ pub struct Metrics {
 /// # Errors
 /// Fails if the SVG cannot be parsed.
 pub fn render_svg(svg: &str, width: u32, height: u32) -> Result<RgbaImage, Error> {
-    let tree = usvg::Tree::from_str(svg, &usvg::Options::default()).map_err(|e| Error::Svg(e.to_string()))?;
+    render_svg_with(svg, width, height, &usvg::Options::default())
+}
+
+/// Like [`render_svg`] with custom parser options, e.g. a font database for SVGs
+/// containing `<text>` (ground-truth typography). No system fonts are ever loaded,
+/// so renders are identical on every machine.
+///
+/// # Errors
+/// Fails if the SVG cannot be parsed.
+pub fn render_svg_with(
+    svg: &str,
+    width: u32,
+    height: u32,
+    options: &usvg::Options,
+) -> Result<RgbaImage, Error> {
+    let tree = usvg::Tree::from_str(svg, options).map_err(|e| Error::Svg(e.to_string()))?;
     let mut pixmap = tiny_skia::Pixmap::new(width, height).ok_or(Error::Pixmap(width, height))?;
     let size = tree.size();
     let transform =

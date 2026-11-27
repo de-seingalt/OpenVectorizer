@@ -10,12 +10,12 @@ import re
 
 
 def normalize(text: str, width: int, height: int, stroke: str | None, background: str | None) -> str:
-    match = re.search(r"<svg\b[^>]*>", text)
+    match = re.search(r"<(?:svg:)?svg(?=[\s>])[^>]*>", text)
     if not match:
         raise ValueError("no <svg> root element")
     tag = match.group(0)
     new_tag = re.sub(r'\s(width|height)="[^"]*"', "", tag)
-    new_tag = new_tag.replace("<svg", f'<svg width="{width}" height="{height}"', 1)
+    new_tag = re.sub(r"^<((?:svg:)?svg)", rf'<\1 width="{width}" height="{height}"', new_tag, count=1)
     if "viewBox" not in new_tag:
         raise ValueError("root element has no viewBox")
     if background:

@@ -1,0 +1,37 @@
+# Wikimedia Commons sources (public domain / CC0 only — enforced by scripts/fetch_commons.py).
+# category	title	size(px: SVG long side / raster thumbnail width)	what it tests
+logos	File:NASA logo.svg	384	logo multicolore, étoiles et orbite fines
+logos	File:US-NationalParkService-Logo.svg	384	logo-illustration complexe dans un écusson
+logos	File:Coca-Cola logo.svg	512	lettrage script calligraphié
+logos	File:Walt Disney wordmark.svg	512	signature-logo manuscrite
+logos	File:Kellogg's-Logo.svg	512	script épais
+logos	File:Ford-Logo-Vector.svg	512	ovale + script, contours imbriqués
+logos	File:IBM logo.svg	512	rayures horizontales fines
+logos	File:Google 2015 logo.svg	512	texte multicolore, courbes
+logos	File:FedEx Express.svg	512	espace négatif (flèche)
+logos	File:Logo NIKE.svg	384	forme courbe unique, pointes
+logos	File:Olympic rings without rims.svg	512	anneaux entrelacés
+logos	File:NOAA logo.svg	384	dégradés, oiseau, cercle
+logos	File:USDA logo.svg	384	monogramme + paysage
+logos	File:Mercedes-Benz free logo.svg	256	symétrie rotationnelle
+logos	File:Volkswagen logo 2019.svg	256	monogramme cerclé, traits réguliers
+emblems	File:Great Seal of the United States (obverse).svg	512	sceau très détaillé (plumes, étoiles)
+emblems	File:Coat of arms of Germany.svg	384	aigle héraldique, pointes
+emblems	File:Coat of arms of Mexico.svg	512	blason très complexe, multicolore
+emblems	File:Escudo de España (mazonado).svg	512	blason, nombreux petits détails
+emblems	File:UK Royal Coat of Arms.svg	512	armoiries complexes (fichier lourd)
+emblems	File:Bundesadler Bundesorgane.svg	256	aigle monochrome stylisé
+signatures	File:Albert Einstein signature 1934.svg	512	signature manuscrite, trait variable
+signatures	File:George Washington signature.svg	512	signature à l'encre, boucles
+signatures	File:Napoleon signature.svg	512	paraphe rapide
+signatures	File:Wolfgang Amadeus Mozart Signature.svg	512	écriture cursive
+pictograms	File:Peace symbol.svg	256	pictogramme découpe vinyle
+pictograms	File:Biohazard symbol.svg	256	pictogramme avec arcs
+pictograms	File:Radiation warning symbol.svg	256	secteurs circulaires
+pictograms	File:Recycling symbol.svg	256	flèches courbes
+pictograms	File:Apple logo black.svg	256	silhouette noire (pochoir)
+drawings	File:Cheshire Cat Tenniel.png	400	gravure au trait (hachures)
+drawings	File:Alice par John Tenniel 21.png	640	illustration à l'encre, hachures
+drawings	File:Dürer's Rhinoceros, 1515.png	640	gravure sur bois scannée
+photos	File:The Earth seen from Apollo 17.jpg	512	photo → effet poster
+photos	File:Tsunami by hokusai 19th century.jpg	640	estampe (aplats + dégradés + texture)

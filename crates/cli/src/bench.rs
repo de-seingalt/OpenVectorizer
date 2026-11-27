@@ -17,7 +17,7 @@ use anyhow::{Context, Result, bail};
 use clap::ValueEnum;
 use image::{DynamicImage, ImageFormat, imageops::FilterType};
 use openvectorizer_core::{Options, RgbaImage, vectorize};
-use openvectorizer_eval::{Metrics, evaluate, heatmap, render_svg};
+use openvectorizer_eval::{Metrics, evaluate, heatmap, render_svg_with, usvg};
 use serde::{Deserialize, Serialize};
 
 #[derive(ValueEnum, Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -220,6 +220,13 @@ pub fn run(args: &EvalArgs) -> Result<()> {
     variants.sort();
     variants.dedup();
 
+    // Fonts for ground-truth SVGs with <text>: only the corpus' own fonts, never system fonts.
+    let mut svg_options = usvg::Options::default();
+    let fonts = args.corpus.join("fonts");
+    if fonts.is_dir() {
+        svg_options.fontdb_mut().load_fonts_dir(&fonts);
+    }
+
     let mut cases = BTreeMap::new();
     let mut categories: BTreeMap<String, Vec<String>> = BTreeMap::new();
     println!(
@@ -231,7 +238,8 @@ pub fn run(args: &EvalArgs) -> Result<()> {
             let svg = fs::read_to_string(&src.path)?;
             let (w, h) = svg_size(&svg)
                 .with_context(|| format!("{}: root <svg> needs width and height", src.path.display()))?;
-            render_svg(&svg, w, h)?
+            render_svg_with(&svg, w, h, &svg_options)
+                .with_context(|| format!("rendering {}", src.path.display()))?
         } else {
             load_raster(&src.path)?
         };
@@ -242,7 +250,8 @@ pub fn run(args: &EvalArgs) -> Result<()> {
             let t = Instant::now();
             let result = vectorize(&input, args.options).with_context(|| key.clone())?;
             let ms = t.elapsed().as_secs_f64() * 1000.0;
-            let metrics = evaluate(&reference, &result.svg)?;
+            let metrics =
+                evaluate(&reference, &result.svg).with_context(|| format!("evaluating output of {key}"))?;
             write_outputs(args.out, &key, &input, &reference, &result.svg)?;
             println!(
                 "{:<40} {:>8.2} {:>8.2} {:>7.2} {:>6} {:>7} {:>6.0}",

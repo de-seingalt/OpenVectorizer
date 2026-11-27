@@ -22,13 +22,25 @@ Métriques : ΔE moyen et p95 (écart de couleur perceptuel, Oklab ×100 ; < 1 i
 nœuds (simplicité d'édition). Le rapport est ventilé par catégorie et par variante.
 
 ## Contenu
-| Dossier | Contenu | Source |
-|---|---|---|
-| `synthetic/` | formes géométriques, badges, traits fins, couleurs adjacentes, petite icône | créé pour le projet |
-| `corpus/flags/` | 10 drapeaux (aplats, étoiles, détails fins, courbes) | flag-icons, MIT |
-| `corpus/emoji/` | 10 emojis (illustrations, dégradés, transparence) | Noto Emoji, Apache-2.0 |
-| `corpus/icons/` | 6 icônes au trait (traits arrondis) | Lucide, ISC |
-| `images/` | images réelles sans vérité terrain (variante `clean` seulement) | voir `images/SOURCES.md` |
+Le corpus couvre les cas d'usage décrits dans [docs/CAS-USAGE.md](../docs/CAS-USAGE.md) :
+90 sources, soit 515 cas une fois les dégradations appliquées (environ 1 min en release).
+
+| Dossier | Contenu |
+|---|---|
+| `synthetic/` | formes de test, traits fins, couleurs adjacentes, petite icône, graphique |
+| `corpus/logos/` | 15 logos (lettrage script, rayures, espace négatif, dégradés, logo-illustration) |
+| `corpus/emblems/` | 6 blasons et sceaux très détaillés |
+| `corpus/lettering/` | 6 compositions typographiques (script, manuscrit, condensé, didone, petit texte, badge) |
+| `corpus/signatures/` | 4 signatures manuscrites |
+| `corpus/pictograms/` | 5 pictogrammes noir et blanc (découpe, pochoir) |
+| `corpus/illustrations/` | 18 emojis (aplats, dégradés, trait noir et blanc) |
+| `corpus/icons/` | 11 icônes (trait, plein, deux tons) |
+| `corpus/flags/` | 10 drapeaux |
+| `corpus/pixelart/` | 3 sprites |
+| `corpus/drawings/`, `corpus/photos/` | gravures et photos réelles (sans vérité vectorielle) |
+| `fonts/` | polices OFL utilisées pour rendre `lettering/` |
+
+Provenance et licences : [corpus/SOURCES.md](corpus/SOURCES.md). Tout se reconstruit avec `scripts/fetch-corpus.sh`.
 
 - Ajouter un cas = déposer un fichier. Pour un SVG, la balise racine doit avoir `width` et `height`.
 - Images réelles : uniquement des images libres de droits, avec leur source dans `images/SOURCES.md`.
