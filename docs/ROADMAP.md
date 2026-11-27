@@ -24,20 +24,31 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [x] Éditeur de palette (comme vectorizer.ai) : teintes d'origine regroupées en couleurs de sortie ; glisser une teinte vers une autre couleur, dans le vide (nouvelle couleur), fusionner deux couleurs, changer une couleur ; réglette du nombre maximal de couleurs
 - [ ] Palette : retirer une couleur du résultat (transparence), afficher la sélection dans l'aperçu
 
-## M2 — Bords sous-pixel et coins
-- [ ] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage)
-- [ ] Détection des coins : angle, courbure et comparaison des erreurs d'ajustement
+Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 
-## M3 — Primitives et régularisation
-- [ ] Ajustement par segment : droite, puis arc de cercle, puis arc d'ellipse, puis Bézier cubique (kurbo), choix par erreur + complexité
-- [ ] Formes entières reconnues (cercle, ellipse, rectangle arrondi)
-- [ ] Alignement horizontal/vertical, rayons égaux, symétries
+## M2 — Bords sous-pixel et coins
+- [ ] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage) : fin des ondulations
+- [ ] Jonctions de 3 régions sans cassure (tangentes cohérentes)
+- [ ] Coins : écart au sommet théorique, rayon ajusté (souvent sous le pixel), rayon max ; arcs tangents
+- [ ] Outil **Coins** : tous vifs / tous ronds / auto, curseur « nombre de coins vifs » classés par écart,
+      rayon relatif −100..100, bascule et rayon par coin
+
+## M3 — Géométrie
+- [ ] Ajustement par segment : droite, puis arc de cercle, puis arc d'ellipse, puis Bézier cubique, choix par erreur + complexité
+- [ ] Formes entières (régions isolées) : cercle, ellipse, rectangle, polygone, étoile ; choix « tracé ou forme »
+- [ ] Symétries détectées (axes actifs ou candidats), formes répétées partageant un contour
+- [ ] Alignement horizontal/vertical, rayons égaux
 
 ## M4 — Édition
-- [ ] Recolorer, fusionner ou supprimer une couleur ; supprimer le fond
-- [ ] Cliquer sur une région pour la modifier ; annuler/rétablir
+- [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu
+- [ ] Outil **Fond** : retrait automatique, bascule par région (masque) ou par couleur
+- [ ] Outil **Régions** : clic sur une région → recolorer, fusionner avec le voisin de plus longue frontière,
+      répartir entre les voisins (transformée de distance)
+- [ ] Brouillon (annuler / appliquer), annuler/rétablir global ; une retouche n'efface que celles des étapes suivantes
 
 ## M5 — Exports et prétraitement
-- [ ] PDF, EPS, DXF (lignes et arcs), PNG ; options de groupement ; remplissage des jointures (gap filler)
+- [ ] Préréglages Général / Édition / Découpe ; style (remplissage, contours, arêtes), groupement, taille
+- [ ] Tolérance 0,3 / 0,1 / 0,03 / 0,01 px ; formes natives (`<circle>`, `<rect>`) ; gap filler 2 px
+- [ ] PDF, EPS, DXF (lignes et arcs), PNG
 - [ ] Agrandissement ×2/×4 par IA (Real-ESRGAN via ONNX Runtime) pour les petites images
 - [ ] Mode pixel art (Kopf-Lischinski, portage MIT)
