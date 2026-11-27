@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::Error;
+use crate::palette::PaletteEdit;
 
 /// Kind of source image; selects sensible defaults for the other options.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default, Serialize, Deserialize, TS)]
@@ -45,6 +46,9 @@ pub struct Options {
     pub stacking: Stacking,
     /// Maximum number of colors: 0 = automatic, otherwise 2..=64. Ignored by the Photo preset.
     pub max_colors: u32,
+    /// Manual regrouping of the colors (palette editor). Ignored when it was made for other
+    /// source colors (its key no longer matches).
+    pub palette_edit: Option<PaletteEdit>,
 }
 
 impl Default for Options {
@@ -56,6 +60,7 @@ impl Default for Options {
             min_area_px: 4,
             stacking: Stacking::Stacked,
             max_colors: 0,
+            palette_edit: None,
         }
     }
 }
@@ -81,6 +86,9 @@ impl Options {
                 "maxColors must be 0 or 2..=64, got {}",
                 self.max_colors
             )));
+        }
+        if let Some(edit) = &self.palette_edit {
+            edit.validate()?;
         }
         Ok(self.clone())
     }

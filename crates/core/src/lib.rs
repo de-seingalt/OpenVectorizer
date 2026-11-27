@@ -21,6 +21,7 @@ pub mod planar;
 pub use error::Error;
 pub use image::RgbaImage;
 pub use options::{Options, Preset, Stacking};
+pub use palette::{ColorGroup, Palette, PaletteEdit, SourceColor};
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -33,8 +34,8 @@ pub struct Output {
     /// Complete SVG document (UTF-8).
     pub svg: String,
     pub stats: Stats,
-    /// Colors used by the SVG (`#rrggbb`), most used first. Empty for the Photo preset.
-    pub palette: Vec<String>,
+    /// Source colors and output groups. `None` for the Photo preset.
+    pub palette: Option<Palette>,
 }
 
 /// Cheap statistics about the produced SVG, shown in the UI status bar.
@@ -58,10 +59,10 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
     let options = options.validated()?;
     let (svg, palette) = match options.preset {
         // Photos keep VTracer's own gradient layering until M2.
-        Preset::Photo => (baseline::trace(image, &options)?, Vec::new()),
+        Preset::Photo => (baseline::trace(image, &options)?, None),
         Preset::Logo | Preset::Illustration => {
             let quantized = palette::quantize(image, &options);
-            (planar::to_svg(&quantized, options.stacking, &fit_params(&options)), quantized.used_colors())
+            (planar::to_svg(&quantized, options.stacking, &fit_params(&options)), Some(quantized.info))
         }
     };
     let stats = Stats {

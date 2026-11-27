@@ -4,6 +4,8 @@ import type { Output } from './generated/Output';
 import type { WorkerRequest, WorkerResponse } from './worker';
 
 export type { Options } from './generated/Options';
+export type { Palette } from './generated/Palette';
+export type { PaletteEdit } from './generated/PaletteEdit';
 export type { Output } from './generated/Output';
 export type { Preset } from './generated/Preset';
 export type { Stacking } from './generated/Stacking';
@@ -17,6 +19,7 @@ export const DEFAULT_OPTIONS: Options = {
   minAreaPx: 4,
   stacking: 'stacked',
   maxColors: 0,
+  paletteEdit: null,
 };
 
 export type Result = { output: Output; ms: number };

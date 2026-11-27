@@ -6,16 +6,23 @@
   import { Slider } from '$lib/components/ui/slider';
   import { Switch } from '$lib/components/ui/switch';
   import * as ToggleGroup from '$lib/components/ui/toggle-group';
-  import { DEFAULT_OPTIONS, type Options, type Preset } from '$lib/engine';
+  import { DEFAULT_OPTIONS, type Options, type Palette, type Preset } from '$lib/engine';
+  import PaletteEditor from './PaletteEditor.svelte';
   import { t } from '$lib/i18n';
 
-  let { options = $bindable(), palette = [] }: { options: Options; palette?: string[] } = $props();
+  let { options = $bindable(), palette = null }: { options: Options; palette?: Palette | null } = $props();
 
-  const MAX_SWATCHES = 48;
   const auto = $derived(options.maxColors === 0);
+  const maxSources = $derived(Math.max(2, palette?.sources.length ?? 24));
   function setAuto(on: boolean) {
     // Leaving automatic mode starts from the number of colors currently found.
-    options.maxColors = on ? 0 : Math.min(32, Math.max(2, palette.length || 8));
+    options.paletteEdit = null;
+    options.maxColors = on ? 0 : Math.min(maxSources, Math.max(2, palette?.groups.length ?? 8));
+  }
+  function setMaxColors(v: number) {
+    // A new color count regroups the tints automatically: manual edits are dropped.
+    options.paletteEdit = null;
+    options.maxColors = v;
   }
 
   const presets: { value: Preset; label: string }[] = [
@@ -72,7 +79,12 @@
 
   <section class="flex flex-col gap-3" aria-labelledby="colors-label">
     <div class="flex items-center justify-between">
-      <span id="colors-label" class="text-sm leading-none font-medium">{t.colors}</span>
+      <span id="colors-label" class="text-sm leading-none font-medium">
+        {t.colors}
+        {#if palette && options.preset !== 'photo'}
+          <span class="ml-1 text-xs font-normal text-muted-foreground tabular-nums">{palette.groups.length}</span>
+        {/if}
+      </span>
       {#if options.preset !== 'photo'}
         <div class="flex items-center gap-2">
           <Label for="colors-auto" class="text-xs font-normal text-muted-foreground">{t.colorsAuto}</Label>
@@ -89,26 +101,23 @@
             id="colors"
             type="single"
             min={2}
-            max={32}
+            max={maxSources}
             step={1}
-            bind:value={options.maxColors}
+            value={options.maxColors}
+            onValueChange={setMaxColors}
             label={t.colorsHint}
           />
           <span class="w-6 text-right text-xs text-muted-foreground tabular-nums">{options.maxColors}</span>
         </div>
       {/if}
-      {#if palette.length > 0}
-        <ul class="flex flex-wrap gap-1" aria-label={`${palette.length} ${t.colorsFound}`}>
-          {#each palette.slice(0, MAX_SWATCHES) as color (color)}
-            <li class="size-6 rounded-md border border-border shadow-xs" style:background-color={color} title={color}>
-              <span class="sr-only">{color}</span>
-            </li>
-          {/each}
-        </ul>
-        <p class="text-xs text-muted-foreground">
-          {palette.length}
-          {t.colorsFound}{palette.length > MAX_SWATCHES ? ` (${MAX_SWATCHES} ${t.shown})` : ''}
-        </p>
+      {#if palette && palette.groups.length > 0}
+        <PaletteEditor bind:options {palette} />
+        {#if options.paletteEdit}
+          <Button variant="outline" size="sm" onclick={() => (options.paletteEdit = null)}>
+            <RotateCcw />
+            {t.resetPalette}
+          </Button>
+        {/if}
       {/if}
     {/if}
   </section>

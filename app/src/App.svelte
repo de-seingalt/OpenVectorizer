@@ -17,7 +17,7 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Toaster } from '$lib/components/ui/sonner';
-  import { DEFAULT_OPTIONS, Engine, SupersededError, type Options, type Stats } from '$lib/engine';
+  import { DEFAULT_OPTIONS, Engine, SupersededError, type Options, type Palette, type Stats } from '$lib/engine';
   import { t } from '$lib/i18n';
   import { ACCEPTED_TYPES, baseName, loadImage, type LoadedImage } from '$lib/image';
   import { pickImage, saveText } from '$lib/platform';
@@ -29,7 +29,7 @@
   let svg = $state<string | null>(null);
   let svgUrl = $state<string | null>(null);
   let stats = $state<Stats | null>(null);
-  let palette = $state<string[]>([]);
+  let palette = $state<Palette | null>(null);
   let ms = $state(0);
   let working = $state(false);
   let dragging = $state(false);

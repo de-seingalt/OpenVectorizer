@@ -11,9 +11,17 @@
 //!    colors of nearby flat pixels, so a black/white transition never becomes gray.
 //!    A thin line (no flat pixel of its own) keeps its color when it is much closer.
 //! 4. Connected components smaller than `min_area_px` join their main neighbor.
+//!
+//! Two levels of colors: **sources** are fine color clusters (at most [`MAX_SOURCES`]),
+//! stable for a given image and detail; **groups** are the output colors. Each source belongs
+//! to one group: automatically (merge threshold from `detail`), limited by `max_colors`, or as
+//! edited by the user ([`PaletteEdit`]). Pixels are labelled with sources, then mapped to groups.
+
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
 
 use crate::color::{Lab, oklab_to_srgb, srgb_to_oklab};
-use crate::{Options, RgbaImage};
+use crate::{Error, Options, RgbaImage};
 
 /// Pixel label for transparent pixels.
 pub const TRANSPARENT: u16 = u16::MAX;
@@ -25,36 +33,101 @@ const EDGE_WEIGHT: f32 = 0.2;
 /// Radius of the window searched for flat neighbors when labelling an edge pixel.
 const EDGE_RADIUS: i64 = 3;
 const KMEANS_ITERATIONS: usize = 12;
+/// Maximum number of source colors offered to the user.
+pub const MAX_SOURCES: usize = 24;
+/// Sources closer than this (Oklab units, ×100 ≈ ΔE) are the same color.
+const SOURCE_MERGE: f32 = 0.035;
+/// An edge-only cluster this close to a heavier color is its anti-aliasing fringe.
+const FRINGE_DISTANCE: f32 = 0.08;
+
+/// Colors of a result: the fine source colors and the output groups they belong to.
+#[derive(Debug, Clone, Default, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct Palette {
+    /// Fingerprint of `sources`; a [`PaletteEdit`] applies only when its key matches.
+    pub key: u32,
+    /// Source colors, most frequent first.
+    pub sources: Vec<SourceColor>,
+    /// Output colors, in order of their first source.
+    pub groups: Vec<ColorGroup>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct SourceColor {
+    /// `#rrggbb`
+    pub color: String,
+    /// Pixels of the image closest to this color.
+    pub pixels: u32,
+    /// Index into [`Palette::groups`].
+    pub group: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct ColorGroup {
+    /// `#rrggbb` used in the SVG.
+    pub color: String,
+    /// Pixels drawn with this color.
+    pub pixels: u32,
+    /// The color was chosen by the user.
+    pub custom: bool,
+}
+
+/// User changes to the automatic grouping (made in the palette editor).
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct PaletteEdit {
+    /// [`Palette::key`] of the palette that was edited.
+    pub key: u32,
+    /// Group id of each source (any numbers; groups are renumbered in the result).
+    pub groups: Vec<u32>,
+    /// Optional custom `#rrggbb` color per group id.
+    pub colors: Vec<Option<String>>,
+}
+
+impl PaletteEdit {
+    /// # Errors
+    /// Returns [`Error::InvalidOption`] for a malformed color.
+    pub fn validate(&self) -> Result<(), Error> {
+        for c in self.colors.iter().flatten() {
+            parse_hex(c).ok_or_else(|| Error::InvalidOption(format!("invalid color {c:?}")))?;
+        }
+        Ok(())
+    }
+}
+
+fn parse_hex(s: &str) -> Option<[u8; 3]> {
+    let h = s.strip_prefix('#')?;
+    if h.len() != 6 || !h.is_ascii() {
+        return None;
+    }
+    let byte = |i: usize| u8::from_str_radix(&h[i..i + 2], 16).ok();
+    Some([byte(0)?, byte(2)?, byte(4)?])
+}
+
+fn hex([r, g, b]: [u8; 3]) -> String {
+    format!("#{r:02x}{g:02x}{b:02x}")
+}
 
 /// Result of [`quantize`].
 #[derive(Debug, Clone)]
 pub struct Quantized {
     pub width: u32,
     pub height: u32,
-    /// Palette colors (sRGB).
+    /// Output colors (sRGB), one per group.
     pub palette: Vec<[u8; 3]>,
     /// One entry per pixel: index into `palette`, or [`TRANSPARENT`].
     pub labels: Vec<u16>,
+    /// Sources and groups, for the palette editor.
+    pub info: Palette,
 }
 
 impl Quantized {
-    /// Palette colors actually used by at least one pixel, most used first, as `#rrggbb`.
-    pub fn used_colors(&self) -> Vec<String> {
-        let mut counts = vec![0u32; self.palette.len()];
-        for &l in &self.labels {
-            if l != TRANSPARENT {
-                counts[l as usize] += 1;
-            }
-        }
-        let mut used: Vec<usize> = (0..counts.len()).filter(|&i| counts[i] > 0).collect();
-        used.sort_by_key(|&i| std::cmp::Reverse(counts[i]));
-        used.iter()
-            .map(|&i| {
-                format!("#{:02x}{:02x}{:02x}", self.palette[i][0], self.palette[i][1], self.palette[i][2])
-            })
-            .collect()
-    }
-
     /// Render the label map as an RGBA image (transparent pixels stay transparent).
     ///
     /// # Panics
@@ -96,31 +169,170 @@ pub fn quantize(image: &RgbaImage, options: &Options) -> Quantized {
     let opaque_count = opaque.iter().filter(|&&o| o).count();
     let min_pixels = (options.min_area_px as usize).max(opaque_count / 10_000).max(1) as u32;
 
+    // Sources: fine clusters, without blends, at most MAX_SOURCES.
     let mut clusters = seed(&points, k0);
     lloyd(&points, &mut clusters, KMEANS_ITERATIONS);
-    merge_close(&mut clusters, merge_threshold, 1);
+    merge_close(&mut clusters, SOURCE_MERGE, 1);
     lloyd(&points, &mut clusters, 3);
     remove_spurious(&mut clusters, &points, min_pixels);
     lloyd(&points, &mut clusters, 3);
-    if options.max_colors >= 2 {
-        clusters.retain(|c| c.pixels > 0);
-        // No k-means pass afterwards: it would move the kept colors to averages.
-        reduce_to(&mut clusters, options.max_colors as usize);
-    }
     clusters.retain(|c| c.pixels > 0);
+    if clusters.len() > MAX_SOURCES {
+        merge_close(&mut clusters, f32::INFINITY, MAX_SOURCES);
+        lloyd(&points, &mut clusters, 2);
+        clusters.retain(|c| c.pixels > 0);
+    }
     clusters.sort_by_key(|c| std::cmp::Reverse(c.pixels));
+    let sources = clusters;
+    let key = fingerprint(&sources);
 
-    let centers: Vec<Lab> = clusters.iter().map(|c| c.center).collect();
-    let mut labels = assign(rgba, &opaque, &flat, w, h, &centers);
+    // Groups: edited by the user, limited to max_colors, or automatic.
+    let (groups, custom) = match &options.palette_edit {
+        Some(edit) if edit.key == key && edit.groups.len() == sources.len() => {
+            let (groups, centers) = renumber(&edit.groups, &sources);
+            let custom: Vec<Option<[u8; 3]>> = edit_colors(edit, &groups, &centers);
+            ((groups, centers), custom)
+        }
+        _ => {
+            let max = if options.max_colors >= 2 { options.max_colors as usize } else { usize::MAX };
+            let g = agglomerate(&sources, merge_threshold, max);
+            let n = g.1.len();
+            (g, vec![None; n])
+        }
+    };
+    let (group_of, group_centers) = groups;
+
+    let source_centers: Vec<Lab> = sources.iter().map(|c| c.center).collect();
+    let mut labels = assign(rgba, &opaque, &flat, w, h, &source_centers);
+    for l in &mut labels {
+        if *l != TRANSPARENT {
+            *l = group_of[*l as usize] as u16;
+        }
+    }
     if options.min_area_px > 0 {
         remove_specks(&mut labels, w, h, options.min_area_px as usize);
     }
-    Quantized {
-        width: image.width(),
-        height: image.height(),
-        palette: centers.iter().map(|&c| oklab_to_srgb(c)).collect(),
-        labels,
+    let palette: Vec<[u8; 3]> = group_centers
+        .iter()
+        .zip(&custom)
+        .map(|(&c, custom)| custom.unwrap_or_else(|| oklab_to_srgb(c)))
+        .collect();
+    let mut group_pixels = vec![0u32; palette.len()];
+    for &l in &labels {
+        if l != TRANSPARENT {
+            group_pixels[l as usize] += 1;
+        }
     }
+    let info = Palette {
+        key,
+        sources: sources
+            .iter()
+            .zip(&group_of)
+            .map(|(c, &g)| SourceColor { color: hex(oklab_to_srgb(c.center)), pixels: c.pixels, group: g })
+            .collect(),
+        groups: palette
+            .iter()
+            .zip(&group_pixels)
+            .zip(&custom)
+            .map(|((&c, &pixels), custom)| ColorGroup { color: hex(c), pixels, custom: custom.is_some() })
+            .collect(),
+    };
+    Quantized { width: image.width(), height: image.height(), palette, labels, info }
+}
+
+/// FNV-1a hash of the source colors.
+fn fingerprint(sources: &[Cluster]) -> u32 {
+    let mut h: u32 = 0x811c_9dc5;
+    for c in sources {
+        for b in oklab_to_srgb(c.center) {
+            h = (h ^ u32::from(b)).wrapping_mul(0x0100_0193);
+        }
+    }
+    h
+}
+
+type Grouping = (Vec<u32>, Vec<Lab>);
+
+/// Renumber user group ids in order of first appearance; group colors are the weighted means.
+fn renumber(ids: &[u32], sources: &[Cluster]) -> (Vec<u32>, Vec<Lab>) {
+    let mut map: Vec<(u32, u32)> = Vec::new();
+    let groups: Vec<u32> = ids
+        .iter()
+        .map(|&id| {
+            if let Some(&(_, g)) = map.iter().find(|(k, _)| *k == id) {
+                g
+            } else {
+                let g = map.len() as u32;
+                map.push((id, g));
+                g
+            }
+        })
+        .collect();
+    let mut sum = vec![(Lab::default(), 0.0f32); map.len()];
+    for (s, &g) in sources.iter().zip(&groups) {
+        let e = &mut sum[g as usize];
+        e.0 = e.0.add(s.center.scale(s.weight));
+        e.1 += s.weight;
+    }
+    let centers = sum.into_iter().map(|(c, w)| c.scale(1.0 / w.max(1e-6))).collect();
+    (groups, centers)
+}
+
+/// Custom colors of the edit, indexed by the renumbered groups.
+fn edit_colors(edit: &PaletteEdit, groups: &[u32], centers: &[Lab]) -> Vec<Option<[u8; 3]>> {
+    let mut out = vec![None; centers.len()];
+    for (&id, &g) in edit.groups.iter().zip(groups) {
+        if let Some(Some(c)) = edit.colors.get(id as usize) {
+            out[g as usize] = parse_hex(c);
+        }
+    }
+    out
+}
+
+/// Agglomerative grouping of the sources: merge the closest groups while they are closer than
+/// `threshold` or more than `max` groups remain. Close colors average (noise, shading); a merge
+/// forced by `max` keeps the dominant color, so every output color exists in the image.
+fn agglomerate(sources: &[Cluster], threshold: f32, max: usize) -> Grouping {
+    let mut groups: Vec<(Cluster, Vec<usize>)> =
+        sources.iter().enumerate().map(|(i, &c)| (c, vec![i])).collect();
+    while groups.len() > 1 {
+        let mut best = (0, 0, f32::MAX);
+        for i in 0..groups.len() {
+            for j in i + 1..groups.len() {
+                let d = groups[i].0.center.dist2(groups[j].0.center);
+                if d < best.2 {
+                    best = (i, j, d);
+                }
+            }
+        }
+        let (i, j, d) = best;
+        let close = d < threshold * threshold;
+        if !close && groups.len() <= max {
+            break;
+        }
+        let (b, members) = groups.swap_remove(j);
+        let a = &mut groups[i];
+        let weight = a.0.weight + b.weight;
+        a.0.center = if close {
+            a.0.center.scale(a.0.weight / weight).add(b.center.scale(b.weight / weight))
+        } else if a.0.weight >= b.weight {
+            a.0.center
+        } else {
+            b.center
+        };
+        a.0.weight = weight;
+        a.0.pixels += b.pixels;
+        a.1.extend(members);
+    }
+    // Number groups in order of their first (most frequent) source.
+    groups.sort_by_key(|g| g.1.iter().copied().min());
+    let mut group_of = vec![0u32; sources.len()];
+    for (g, (_, members)) in groups.iter().enumerate() {
+        for &m in members {
+            group_of[m] = g as u32;
+        }
+    }
+    (group_of, groups.iter().map(|g| g.0.center).collect())
 }
 
 fn rgb_at(rgba: &[u8], i: usize) -> [u8; 3] {
@@ -284,29 +496,16 @@ fn merge_close(clusters: &mut Vec<Cluster>, threshold: f32, min_count: usize) {
         }
         let (a, b) = (clusters[i], clusters[j]);
         let weight = a.weight + b.weight;
-        let center = if threshold.is_finite() {
-            a.center.scale(a.weight / weight).add(b.center.scale(b.weight / weight))
-        } else if a.weight >= b.weight {
-            a.center // forced reduction: keep a color that really is in the image
-        } else {
-            b.center
-        };
+        let center = a.center.scale(a.weight / weight).add(b.center.scale(b.weight / weight));
         clusters[i] = Cluster { center, weight, pixels: a.pixels + b.pixels, flat: a.flat + b.flat };
         clusters.swap_remove(j);
-    }
-}
-
-/// Merge the closest pairs until at most `max` clusters remain.
-fn reduce_to(clusters: &mut Vec<Cluster>, max: usize) {
-    while clusters.len() > max {
-        merge_close(clusters, f32::INFINITY, max);
     }
 }
 
 /// Drop clusters that are too small, or that are anti-aliasing blends of real colors.
 ///
 /// A cluster made mostly of edge pixels is a blend when its center lies between two heavier
-/// kept clusters. k-means can also pool blends of several color pairs into one small cluster
+/// kept clusters, and a fringe when it lies close to one (anti-aliasing near one end). k-means can also pool blends of several color pairs into one small cluster
 /// whose center lies between none: such a cluster (no flat pixel, under 1 % of the image) is
 /// dropped when most of its pixels lie between two heavier kept clusters.
 fn remove_spurious(clusters: &mut Vec<Cluster>, points: &[Cluster], min_pixels: u32) {
@@ -330,7 +529,8 @@ fn remove_spurious(clusters: &mut Vec<Cluster>, points: &[Cluster], min_pixels: 
         let between = |color: Lab| {
             heavier.iter().enumerate().any(|(i, &a)| heavier[i + 1..].iter().any(|&b| is_blend(a, b, color)))
         };
-        if between(cl.center) {
+        let fringe = heavier.iter().any(|&a| a.dist2(cl.center) < FRINGE_DISTANCE * FRINGE_DISTANCE);
+        if fringe || between(cl.center) {
             keep[c] = false;
         } else if cl.flat * 10 < cl.pixels && cl.pixels * 100 < total {
             let blended: u32 =
@@ -508,22 +708,54 @@ mod tests {
         assert_ne!(q.labels[0], black);
     }
 
-    #[test]
-    fn max_colors_limits_the_palette() {
-        let img = image(60, 20, |x, _| match x / 10 {
+    fn six_bands() -> RgbaImage {
+        image(60, 20, |x, _| match x / 10 {
             0 => [255, 0, 0],
             1 => [0, 160, 0],
             2 => [0, 0, 255],
             3 => [250, 220, 0],
             4 => [0, 0, 0],
             _ => [255, 255, 255],
-        });
-        assert_eq!(quantize(&img, &Options::default()).used_colors().len(), 6);
-        let three = Options { max_colors: 3, ..Options::default() };
-        let colors = quantize(&img, &three).used_colors();
-        assert_eq!(colors.len(), 3);
-        let source = ["#ff0000", "#00a000", "#0000ff", "#fadc00", "#000000", "#ffffff"];
-        assert!(colors.iter().all(|c| source.contains(&c.as_str())), "{colors:?}");
+        })
+    }
+
+    #[test]
+    fn max_colors_limits_the_palette() {
+        let auto = quantize(&six_bands(), &Options::default());
+        assert_eq!(auto.info.sources.len(), 6);
+        assert_eq!(auto.info.groups.len(), 6);
+        let three = quantize(&six_bands(), &Options { max_colors: 3, ..Options::default() });
+        assert_eq!(three.info.sources.len(), 6, "sources do not depend on max_colors");
+        assert_eq!(three.info.groups.len(), 3);
+        assert_eq!(three.info.key, auto.info.key);
+        let source_colors: Vec<&str> = auto.info.sources.iter().map(|s| s.color.as_str()).collect();
+        assert!(
+            three.info.groups.iter().all(|g| source_colors.contains(&g.color.as_str())),
+            "{:?}",
+            three.info
+        );
+    }
+
+    #[test]
+    fn palette_edit_regroups_and_recolors() {
+        let auto = quantize(&six_bands(), &Options::default());
+        // Put every source in group 7 except the first one, which gets a custom color.
+        let mut groups = vec![7; auto.info.sources.len()];
+        groups[0] = 3;
+        let mut colors = vec![None; 8];
+        colors[3] = Some("#123456".to_owned());
+        let edit = PaletteEdit { key: auto.info.key, groups, colors };
+        let opts = Options { palette_edit: Some(edit.clone()), ..Options::default() };
+        let q = quantize(&six_bands(), &opts);
+        assert_eq!(q.info.groups.len(), 2);
+        assert_eq!(q.info.groups[0].color, "#123456");
+        assert!(q.info.groups[0].custom && !q.info.groups[1].custom);
+        assert_eq!(q.info.sources[0].group, 0);
+        assert!(q.info.sources[1..].iter().all(|s| s.group == 1));
+        // A stale key is ignored.
+        let stale =
+            Options { palette_edit: Some(PaletteEdit { key: edit.key ^ 1, ..edit }), ..Options::default() };
+        assert_eq!(quantize(&six_bands(), &stale).info.groups.len(), 6);
     }
 
     #[test]

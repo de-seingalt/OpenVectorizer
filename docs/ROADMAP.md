@@ -21,6 +21,9 @@ Chaque étape doit l'améliorer, ou au moins ne pas le dégrader.
 - [x] Écriture SVG à partir du graphe : modes découpé (cutout) et empilé, sans jour entre couleurs ; ajustement Bézier (Schneider) + coins — `fit.rs`. ΔE 1,71 → 1,31, p95 7,5 → 5,0 ; VTracer ne sert plus qu'au préréglage Photo
 - [x] Interface : palette affichée et nombre de couleurs réglable (automatique ou 2 à 32) ; noms accessibles pour tous les curseurs
 
+- [x] Éditeur de palette (comme vectorizer.ai) : teintes d'origine regroupées en couleurs de sortie ; glisser une teinte vers une autre couleur, dans le vide (nouvelle couleur), fusionner deux couleurs, changer une couleur ; réglette du nombre maximal de couleurs
+- [ ] Palette : retirer une couleur du résultat (transparence), afficher la sélection dans l'aperçu
+
 ## M2 — Bords sous-pixel et coins
 - [ ] Bords placés au point de transition à 50 % entre couleurs voisines (anticrénelage)
 - [ ] Détection des coins : angle, courbure et comparaison des erreurs d'ajustement

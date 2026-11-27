@@ -352,7 +352,13 @@ mod tests {
 
     fn quantized(w: u32, h: u32, f: impl Fn(u32, u32) -> u16) -> Quantized {
         let labels = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| f(x, y)).collect();
-        Quantized { width: w, height: h, palette: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]], labels }
+        Quantized {
+            width: w,
+            height: h,
+            palette: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]],
+            labels,
+            info: crate::Palette::default(),
+        }
     }
 
     fn params() -> FitParams {
