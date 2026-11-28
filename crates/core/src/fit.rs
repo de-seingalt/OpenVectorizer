@@ -12,6 +12,7 @@
 use std::ops::{Add, Mul, Neg, Sub};
 
 use crate::guide::{CANDIDATE_GEOMETRY, GuideKind, Guides};
+use crate::num::math::{acos, atan2, cos, sin, sin_cos, tan};
 
 /// Arc tolerance (px) for the geometry setting g: 0 → no arcs; 0.5 → 0.5 px; 1 → 0.8 px.
 pub fn arc_tolerance(g: f64) -> f64 {
@@ -354,7 +355,7 @@ impl Prepared {
                     .filter(|f| guides.is_forced(GuideKind::Arc, f.middle))
             });
             let Some(f) = found.filter(|f| !guides.is_disabled(GuideKind::Arc, f.middle)) else { continue };
-            let turn = a.dir.dot(b.dir).clamp(-1.0, 1.0).acos();
+            let turn = acos(a.dir.dot(b.dir).clamp(-1.0, 1.0));
             let Some(apex) = intersect(a.origin, a.dir, b.origin, b.dir) else { continue };
             // Beyond MAX_FILLET_CORNER_TURN the lines are nearly parallel (the rounded end of a
             // stroke): their apex is far away, a sharp corner there would be a spike.
@@ -373,7 +374,7 @@ impl Prepared {
                 apex,
                 din: a.dir,
                 dout: b.dir,
-                gap: f.radius * (1.0 / half.sin() - 1.0),
+                gap: f.radius * (1.0 / sin(half) - 1.0),
                 turn,
                 prev: at(a.from),
                 next: at(b.to.min(m - 2)),
@@ -411,9 +412,9 @@ impl Prepared {
     pub fn radii(&self, c: usize) -> (f64, f64) {
         let c = &self.corners[c];
         let half = ((std::f64::consts::PI - c.turn) / 2.0).max(1e-3); // half interior angle
-        let r_fit = c.gap.max(0.0) / (1.0 / half.sin() - 1.0).max(1e-6);
+        let r_fit = c.gap.max(0.0) / (1.0 / sin(half) - 1.0).max(1e-6);
         let side = |i: usize| (self.pts[i] - c.apex).len();
-        let r_max = (side(c.prev).min(side(c.next)) * 0.5 * half.tan()).max(0.0);
+        let r_max = (side(c.prev).min(side(c.next)) * 0.5 * tan(half)).max(0.0);
         (r_fit.min(r_max), r_max)
     }
 
@@ -563,7 +564,7 @@ fn find_corners(pts: &[P], keep: &[usize], closed: bool) -> Vec<Corner> {
         let orient = |d: P, from: P, to: P| if d.dot(to - from) < 0.0 { -d } else { d };
         let din = orient(lin.1, at(ci - back as isize), at(ci));
         let dout = orient(lout.1, at(ci), at(ci + fwd as isize));
-        let turn = din.dot(dout).clamp(-1.0, 1.0).acos();
+        let turn = acos(din.dot(dout).clamp(-1.0, 1.0));
         if turn < CANDIDATE_TURN_DEG.to_radians() {
             continue;
         }
@@ -606,8 +607,8 @@ pub(crate) fn fit_line(pts: &[P]) -> Option<(P, P)> {
         sxy += d.x * d.y;
         syy += d.y * d.y;
     }
-    let angle = 0.5 * (2.0 * sxy).atan2(sxx - syy);
-    Some((c, P::new(angle.cos(), angle.sin())))
+    let angle = 0.5 * atan2(2.0 * sxy, sxx - syy);
+    Some((c, P::new(cos(angle), sin(angle))))
 }
 
 pub(crate) fn intersect(p: P, d: P, q: P, e: P) -> Option<P> {
@@ -939,7 +940,7 @@ struct Fillet {
 fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, rel: f64, snap: &[f64]) -> Option<Fillet> {
     let ((la, a_start), (lb, b_end)) = (a, b);
     let (d1, d2) = (la.dir, lb.dir);
-    let turn = d1.dot(d2).clamp(-1.0, 1.0).acos();
+    let turn = acos(d1.dot(d2).clamp(-1.0, 1.0));
     if !(5f64.to_radians()..=175f64.to_radians()).contains(&turn) {
         return None;
     }
@@ -950,12 +951,12 @@ fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, rel: f64, snap: &[f
         return None;
     }
     let half = (std::f64::consts::PI - turn) / 2.0; // half the interior angle
-    let r_max = room_a.min(room_b) * half.tan();
+    let r_max = room_a.min(room_b) * tan(half);
     let bisector = (d2 - d1).normalized();
     let path = |r: f64| {
-        let t = r / half.tan();
+        let t = r / tan(half);
         let (t1, t2) = (apex - d1 * t, apex + d2 * t);
-        let center = apex + bisector * (r / half.sin());
+        let center = apex + bisector * (r / sin(half));
         (t1, t2, center)
     };
     // (max, rms) distance from the points to the line–arc–line path of radius r.
@@ -1006,10 +1007,10 @@ fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, rel: f64, snap: &[f
     let phi = turn / pieces;
     let sense = cross(d1, d2).signum();
     let rot = |v: P, a: f64| {
-        let (s, c) = (a * sense).sin_cos();
+        let (s, c) = sin_cos(a * sense);
         P::new(v.x * c - v.y * s, v.x * s + v.y * c)
     };
-    let k = 4.0 / 3.0 * (phi / 4.0).tan() * r;
+    let k = 4.0 / 3.0 * tan(phi / 4.0) * r;
     let mut segs = Vec::new();
     let mut radial = (t1 - center) * (1.0 / r);
     let mut dir = d1;
@@ -1125,7 +1126,7 @@ fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64, rel: f64) -> Opti
         return None;
     }
     // Signed sweep: the way from a to b that passes through the middle point.
-    let angle = |p: P| (p - center).y.atan2((p - center).x);
+    let angle = |p: P| atan2((p - center).y, (p - center).x);
     let tau = std::f64::consts::TAU;
     let (ta, tb, tm) = (angle(a), angle(b), angle(pts[n / 2]));
     let ccw = (tb - ta).rem_euclid(tau);
@@ -1138,15 +1139,15 @@ fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64, rel: f64) -> Opti
         let u = (p - center) * (1.0 / r);
         P::new(-u.y, u.x) * sense
     };
-    let slack = ARC_TANGENT_SLACK.to_radians().cos();
+    let slack = cos(ARC_TANGENT_SLACK.to_radians());
     if t1.is_some_and(|t| t.dot(tangent(a)) < slack) || t2.is_some_and(|t| (-t).dot(tangent(b)) < slack) {
         return None;
     }
     // Cubic pieces of at most a quarter turn: handle 4/3·tan(φ/4)·r.
     let pieces = (sweep.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
     let step = sweep / pieces;
-    let k = 4.0 / 3.0 * (step.abs() / 4.0).tan() * r;
-    let at = |t: f64| center + P::new(t.cos(), t.sin()) * r;
+    let k = 4.0 / 3.0 * tan(step.abs() / 4.0) * r;
+    let at = |t: f64| center + P::new(cos(t), sin(t)) * r;
     let mut segs = Vec::new();
     for i in 0..pieces as usize {
         let (t0, t3) = (ta + step * i as f64, ta + step * (i + 1) as f64);
@@ -1168,11 +1169,11 @@ fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64, rel: f64) -> Opti
 /// Tangent points and arc (radius `r`, already clamped by the caller) of a rounded corner.
 fn arc_anchors(run: &Prepared, c: &Corner, r: f64) -> [Anchor; 2] {
     let half = ((std::f64::consts::PI - c.turn) / 2.0).max(1e-3);
-    let t = r / half.tan();
+    let t = r / tan(half);
     let tin = c.apex - c.din * t;
     let tout = c.apex + c.dout * t;
     // Cubic approximation of the arc: handle length 4/3·tan(turn/4)·r.
-    let h = 4.0 / 3.0 * (c.turn / 4.0).tan() * r;
+    let h = 4.0 / 3.0 * tan(c.turn / 4.0) * r;
     let n = run.pts.len();
     let nearest = |p: P, from: usize, to: usize| {
         let mut best = (from, f64::MAX);
@@ -1443,7 +1444,7 @@ mod tests {
                 (sh, P::new(0.0, h - r), 3.0),
             ];
             for (len, start, q) in sides {
-                let dir = P::new((q * TAU / 4.0).cos(), (q * TAU / 4.0).sin());
+                let dir = P::new(cos(q * TAU / 4.0), sin(q * TAU / 4.0));
                 if d < len {
                     return start + dir * d;
                 }
@@ -1451,7 +1452,7 @@ mod tests {
                 if d < arc {
                     let center = start + dir * len + P::new(-dir.y, dir.x) * r;
                     let a = (q - 1.0) * TAU / 4.0 + d / r;
-                    return center + P::new(a.cos(), a.sin()) * r;
+                    return center + P::new(cos(a), sin(a)) * r;
                 }
                 d -= arc;
             }
@@ -1494,7 +1495,7 @@ mod tests {
             );
         }
 
-        let circle = sample(300, |t| P::new(50.0 + 30.0 * (t * TAU).cos(), 50.0 + 30.0 * (t * TAU).sin()));
+        let circle = sample(300, |t| P::new(50.0 + 30.0 * cos(t * TAU), 50.0 + 30.0 * sin(t * TAU)));
         let c =
             fit_prepared(&circle, &free(&circle), params(), &mut Fillets::default(), &mut Guides::default());
         assert_eq!(lines(&c), 0, "{c:?}");

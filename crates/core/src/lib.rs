@@ -18,11 +18,15 @@ mod error;
 mod fit;
 pub mod guide;
 mod image;
+pub mod num;
 mod options;
 pub mod palette;
 pub mod planar;
+pub mod raster;
 mod repeat;
 mod shape;
+#[cfg(any(test, feature = "synth"))]
+pub mod synth;
 
 pub use error::Error;
 pub use image::RgbaImage;

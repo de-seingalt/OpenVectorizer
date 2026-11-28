@@ -6,6 +6,8 @@
 //! well (one parameter set less to get wrong).
 
 use crate::fit::{Curve, P, Seg};
+use crate::num::math::{acos, atan2, cbrt, cos, hypot, pow, sin_cos, tan};
+use crate::num::{cube, sq};
 
 /// Largest distance (px) from a boundary point to the shape, and largest RMS distance, for the
 /// geometry setting g: 0.6 and 0.22 at g = 0.5.
@@ -34,31 +36,31 @@ pub struct Ellipse {
 impl Ellipse {
     /// Approximate distance from `p` to the ellipse (accurate near it).
     pub fn distance(&self, p: P) -> f64 {
-        let (s, c) = self.angle.sin_cos();
+        let (s, c) = sin_cos(self.angle);
         let d = p - self.center;
         let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
         // First-order (Sampson) distance: |f| / |∇f| with f = (u/a)² + (v/b)² − 1.
-        let f = (u / self.a).powi(2) + (v / self.b).powi(2) - 1.0;
-        let grad = (2.0 * u / (self.a * self.a)).hypot(2.0 * v / (self.b * self.b));
+        let f = sq(u / self.a) + sq(v / self.b) - 1.0;
+        let grad = hypot(2.0 * u / (self.a * self.a), 2.0 * v / (self.b * self.b));
         if grad < 1e-12 { self.b } else { f.abs() / grad }
     }
 
     fn at(&self, t: f64) -> (P, P) {
-        let (s, c) = self.angle.sin_cos();
-        let (st, ct) = t.sin_cos();
+        let (s, c) = sin_cos(self.angle);
+        let (st, ct) = sin_cos(t);
         let rot = |x: f64, y: f64| P::new(x * c - y * s, x * s + y * c);
         (self.center + rot(self.a * ct, self.b * st), rot(-self.a * st, self.b * ct))
     }
 
     /// The point of the ellipse nearest to `p` (radial estimate refined by Newton steps).
     pub fn nearest(&self, p: P) -> P {
-        let (s, c) = self.angle.sin_cos();
+        let (s, c) = sin_cos(self.angle);
         let d = p - self.center;
         let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
         let mut t = self.param(p);
         for _ in 0..6 {
             // Minimize |E(t) − q|²: f(t) = (E − q)·E', f'(t) = E'·E' + (E − q)·E''.
-            let (st, ct) = t.sin_cos();
+            let (st, ct) = sin_cos(t);
             let (ex, ey) = (self.a * ct - u, self.b * st - v);
             let (dx, dy) = (-self.a * st, self.b * ct);
             let (ddx, ddy) = (-self.a * ct, -self.b * st);
@@ -74,10 +76,10 @@ impl Ellipse {
 
     /// Parameter of the point of the ellipse nearest (radially) to `p`.
     fn param(&self, p: P) -> f64 {
-        let (s, c) = self.angle.sin_cos();
+        let (s, c) = sin_cos(self.angle);
         let d = p - self.center;
         let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
-        (v / self.b).atan2(u / self.a)
+        atan2(v / self.b, u / self.a)
     }
 
     /// The part of the ellipse from `from` to `to` (points near it) whose length best matches
@@ -109,7 +111,7 @@ impl Ellipse {
         };
         let pieces = (sweep.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
         let step = sweep / pieces;
-        let k = 4.0 / 3.0 * (step / 4.0).tan();
+        let k = 4.0 / 3.0 * tan(step / 4.0);
         let count = pieces as usize;
         let segs = (0..count)
             .map(|i| {
@@ -267,11 +269,11 @@ pub fn fit_ellipse(pts: &[P]) -> Option<Ellipse> {
     let f0 = qf + f64::midpoint(qd * x0, qe * y0);
     // Eigen-decomposition of [[A, B/2], [B/2, C]].
     let (h, half_b) = (f64::midpoint(qa, qc), qb / 2.0);
-    let r = ((qa - qc) / 2.0).hypot(half_b);
+    let r = hypot((qa - qc) / 2.0, half_b);
     let (l1, l2) = (h - r, h + r);
     // Direction of the eigenvector of l1: (B/2, l1 − A), or an axis when B ≈ 0.
     let angle = if half_b.abs() > 1e-12 {
-        (l1 - qa).atan2(half_b)
+        atan2(l1 - qa, half_b)
     } else if qa <= qc {
         0.0
     } else {
@@ -420,7 +422,7 @@ impl Loop {
 }
 
 fn rotate(p: P, c: P, angle: f64) -> P {
-    let (s, co) = angle.sin_cos();
+    let (s, co) = sin_cos(angle);
     let d = p - c;
     c + P::new(d.x * co - d.y * s, d.x * s + d.y * co)
 }
@@ -592,7 +594,7 @@ pub struct Symmetrized {
 impl Ellipse {
     /// Topmost point: the guide key (concentric shapes share a center, not a top).
     pub fn top(&self) -> P {
-        let (s, c) = self.angle.sin_cos();
+        let (s, c) = sin_cos(self.angle);
         let half_height = (self.a * self.a * s * s + self.b * self.b * c * c).sqrt();
         self.center - P::new(0.0, half_height)
     }
@@ -620,7 +622,7 @@ fn solve3(m: [[f64; 3]; 3], rhs: [f64; 3]) -> Option<[f64; 3]> {
     };
     let det = det3(m);
     let scale = m.iter().flatten().fold(0.0f64, |a, v| a.max(v.abs()));
-    if det.abs() <= 1e-12 * scale.powi(3) {
+    if det.abs() <= 1e-12 * cube(scale) {
         return None;
     }
     Some(std::array::from_fn(|col| {
@@ -665,12 +667,12 @@ fn cubic_roots(a: f64, b: f64, c: f64) -> Vec<f64> {
     let q = (a * a - 3.0 * b) / 9.0;
     let r = (2.0 * a * a * a - 9.0 * a * b + 27.0 * c) / 54.0;
     if r * r < q * q * q {
-        let theta = (r / q.powf(1.5)).clamp(-1.0, 1.0).acos();
+        let theta = acos((r / pow(q, 1.5)).clamp(-1.0, 1.0));
         let sq = -2.0 * q.sqrt();
         let tau = std::f64::consts::TAU;
-        (0..3).map(|k| sq * ((theta + tau * f64::from(k)) / 3.0).cos() - a / 3.0).collect()
+        (0..3).map(|k| sq * cos((theta + tau * f64::from(k)) / 3.0) - a / 3.0).collect()
     } else {
-        let big = -r.signum() * (r.abs() + (r * r - q * q * q).sqrt()).cbrt();
+        let big = -r.signum() * cbrt(r.abs() + (r * r - q * q * q).sqrt());
         let small = if big == 0.0 { 0.0 } else { q / big };
         vec![big + small - a / 3.0]
     }
@@ -679,6 +681,7 @@ fn cubic_roots(a: f64, b: f64, c: f64) -> Vec<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::num::math::{cos, sin};
 
     fn ellipse_pts(e: &Ellipse, n: usize, noise: f64) -> Vec<P> {
         (0..n)
@@ -698,7 +701,7 @@ mod tests {
         let (fit, _) = fit_round(&ellipse_pts(&e, 300, 0.2), 0.5, 0.0).expect("ellipse");
         assert!((fit.center - e.center).len() < 0.1, "{fit:?}");
         assert!((fit.a - e.a).abs() < 0.2 && (fit.b - e.b).abs() < 0.2, "{fit:?}");
-        assert!((fit.angle - e.angle).sin().abs() < 0.01, "{fit:?}");
+        assert!(sin(fit.angle - e.angle).abs() < 0.01, "{fit:?}");
     }
 
     #[test]
@@ -727,7 +730,7 @@ mod tests {
             .map(|i| {
                 let r = if i % 2 == 0 { 40.0 } else { 16.0 };
                 let a = phase + f64::from(i) * std::f64::consts::PI / 5.0;
-                P::new(100.0 + r * a.cos(), 100.0 + r * a.sin())
+                P::new(100.0 + r * cos(a), 100.0 + r * sin(a))
             })
             .collect();
         let mut pts = Vec::new();
@@ -751,7 +754,7 @@ mod tests {
         let far: Vec<f64> = (0..5)
             .map(|k| {
                 let a = 0.3 + f64::from(k) * std::f64::consts::TAU / 5.0;
-                let dir = P::new(a.cos(), a.sin());
+                let dir = P::new(cos(a), sin(a));
                 sym.iter().map(|&p| (p - c).dot(dir)).fold(f64::MIN, f64::max)
             })
             .collect();

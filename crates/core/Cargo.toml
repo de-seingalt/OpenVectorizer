@@ -7,6 +7,10 @@ license.workspace = true
 repository.workspace = true
 rust-version.workspace = true
 
+[features]
+# Synthetic scenes with exact ground truth (tests, calibration, benchmarks).
+synth = []
+
 [dependencies]
 serde.workspace = true
 thiserror.workspace = true

@@ -4,6 +4,7 @@
 //! (6/29)³. The plain cube root has an infinite slope at zero, so near-black colors that are
 //! indistinguishable (`#000000` and `#040c03`) end up 15 ΔE apart and never merge.
 
+use crate::num::math::{cbrt, pow};
 use std::sync::OnceLock;
 
 /// A color in Oklab (L in 0..=1, a/b roughly in -0.4..=0.4).
@@ -29,22 +30,44 @@ impl Lab {
     }
 }
 
+/// sRGB decoding of a gamma-encoded value in [0, 1] (exact formula, deterministic `pow`).
+fn decode(c: f64) -> f64 {
+    if c <= 0.040_45 { c / 12.92 } else { pow((c + 0.055) / 1.055, 2.4) }
+}
+
 fn linear_lut() -> &'static [f32; 256] {
     static LUT: OnceLock<[f32; 256]> = OnceLock::new();
     LUT.get_or_init(|| {
         let mut t = [0.0; 256];
         for (i, v) in t.iter_mut().enumerate() {
-            let c = i as f32 / 255.0;
-            *v = if c <= 0.040_45 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+            *v = decode(i as f64 / 255.0) as f32;
         }
         t
     })
 }
 
+/// Linear values halfway between consecutive codes: code k is the number of thresholds ≤ v.
+/// Encoding by search gives the correctly rounded code without any `pow`.
+fn encode_thresholds() -> &'static [f32; 255] {
+    static T: OnceLock<[f32; 255]> = OnceLock::new();
+    T.get_or_init(|| {
+        let mut t = [0.0; 255];
+        for (k, v) in t.iter_mut().enumerate() {
+            *v = decode((k as f64 + 0.5) / 255.0) as f32;
+        }
+        t
+    })
+}
+
+/// 8-bit sRGB code of a linear value (clamped to [0, 1]).
+pub fn encode_u8(v: f32) -> u8 {
+    encode_thresholds().partition_point(|&t| t <= v) as u8
+}
+
 const DELTA: f32 = 6.0 / 29.0;
 
 fn toe(t: f32) -> f32 {
-    if t > DELTA * DELTA * DELTA { t.cbrt() } else { t / (3.0 * DELTA * DELTA) + 4.0 / 29.0 }
+    if t > DELTA * DELTA * DELTA { cbrt(f64::from(t)) as f32 } else { t / (3.0 * DELTA * DELTA) + 4.0 / 29.0 }
 }
 
 fn toe_inv(y: f32) -> f32 {
@@ -71,12 +94,7 @@ pub fn oklab_to_srgb(c: Lab) -> [u8; 3] {
     let r = 4.076_741_7 * l - 3.307_711_6 * m + 0.230_969_94 * s;
     let g = -1.268_438 * l + 2.609_757_4 * m - 0.341_319_4 * s;
     let b = -0.004_196_086_3 * l - 0.703_418_6 * m + 1.707_614_7 * s;
-    let enc = |v: f32| {
-        let v = v.clamp(0.0, 1.0);
-        let e = if v <= 0.003_130_8 { v * 12.92 } else { 1.055 * v.powf(1.0 / 2.4) - 0.055 };
-        (e * 255.0).round() as u8
-    };
-    [enc(r), enc(g), enc(b)]
+    [encode_u8(r), encode_u8(g), encode_u8(b)]
 }
 
 #[cfg(test)]

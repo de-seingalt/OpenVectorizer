@@ -3,7 +3,7 @@
 //! such lines meet goes to their intersection. Vertices are moved by position, so the ends shared
 //! by several runs move together and the drawing stays watertight.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::fit::{Curve, P, Seg, fit_line, intersect, snap_axis};
 use crate::guide::{GuideKind, Guides};
@@ -114,7 +114,7 @@ pub fn align_lines(curves: &mut [Curve], (tol, loose, rel): (f64, f64, f64), gui
 
     // Constraints per vertex position: the lines it must lie on.
     let key = |p: P| (p.x.to_bits(), p.y.to_bits());
-    let mut on: HashMap<(u64, u64), Vec<usize>> = HashMap::new();
+    let mut on: BTreeMap<(u64, u64), Vec<usize>> = BTreeMap::new();
     for (l, line) in lines.iter().enumerate().filter(|(_, l)| l.members.len() >= 2) {
         let ends: Vec<P> = line.members.iter().flat_map(|&m| [segments[m].a, segments[m].b]).collect();
         let worst = line
@@ -145,7 +145,7 @@ pub fn align_lines(curves: &mut [Curve], (tol, loose, rel): (f64, f64, f64), gui
         return;
     }
     // Where each constrained vertex goes: onto its line, or the intersection of two.
-    let moves: HashMap<(u64, u64), P> = on
+    let moves: BTreeMap<(u64, u64), P> = on
         .iter()
         .filter_map(|(&k, ls)| {
             let p = P::new(f64::from_bits(k.0), f64::from_bits(k.1));

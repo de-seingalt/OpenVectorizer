@@ -93,8 +93,24 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Repères globaux : segments presque alignés de toute l'image (même interrompus, extrémités à ≤ 0,5 px) placés
       exactement sur une droite commune ; sommet de deux repères = leur intersection ; deux bords côte à côte (trait
       fin) ne sont jamais fusionnés ; guide « Alignement »
-- [ ] Cercles communs (arcs dispersés d'un même cercle), parallèles, concentriques
-- [ ] Position sous le pixel au maximum du gradient (Devernay) pour les bords flous
+- Les deux points restants (cercles communs, parallèles, concentriques ; position de Devernay) sont repris par
+  l'algorithme sur mesure ci-dessous (modèle « sur repère », régularisation, bords sous-pixel).
+
+## Algorithme sur mesure (docs/ALGORITHME.md)
+Conception validée après quatre tournées de relecture (docs/ALGORITHME.md, synthèses dans docs/recherche/).
+Construction en phases, chacune fermée par des tests chiffrés (§16).
+- [x] P0 — Boîte à outils : fonctions mathématiques déterministes portées de `libm` (≤ 1 ulp, mêmes bits en natif et
+      en WASM), interdiction des fonctions de `std` et des `HashMap` dans le moteur (règles clippy), PCG32, tri total,
+      plans d'image, rastériseur de couverture exacte, générateur de scènes à vérité terrain (formes, coins arrondis,
+      traits, dégradés, flou, bruit, agrandissement), filtre de débruitage par tables, WASM avec `simd128`
+- [ ] P1 — Oklab et modèle de bruit, classification de l'entrée, gaussiennes par bandes, pyramide, chronomètres
+- [ ] P2 — Bords sous-pixel, chaînage, analyse par point, traits fins
+- [ ] P3 — Bord réel / bord de postérisation dans le pipeline actuel, mesure des coutures
+- [ ] P4 — Détecteurs (segments, coins, arrondis, cercles, ellipses, taches), graphe de repères
+- [ ] P5a / P5b — Critère unique, segmentation, modèle « sur repère », ajustement conjoint
+- [ ] P6a / P6b — Régularisation globale, répétitions ; réparation de topologie
+- [ ] P7 — Seuils locaux, réglage Qualité/temps, optimisations
+- [ ] P8 — Retrait de l'ancien code, préréglage Photo, comparaison avec vectorizer.ai
 
 ## M4 — Édition
 - [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu

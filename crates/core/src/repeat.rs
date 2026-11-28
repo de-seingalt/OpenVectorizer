@@ -2,10 +2,11 @@
 //! repeated letters) get exactly the same outline. Each group is replaced by its mean shape,
 //! moved and rotated onto every member.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use crate::fit::P;
 use crate::guide::{CANDIDATE_GEOMETRY, GuideKind, Guides};
+use crate::num::math::{atan2, ln, sin_cos};
 use crate::shape::{Loop, RELATIVE_MAX, RELATIVE_RMS};
 
 /// Samples used to compare outlines.
@@ -81,7 +82,7 @@ struct Match {
 }
 
 fn rotate(v: P, angle: f64) -> P {
-    let (s, c) = angle.sin_cos();
+    let (s, c) = sin_cos(angle);
     P::new(v.x * c - v.y * s, v.x * s + v.y * c)
 }
 
@@ -124,7 +125,7 @@ fn align(a: &Shape, b: &Shape) -> Match {
             cross += u.x * v.y - u.y * v.x;
             dot += u.dot(*v);
         }
-        let angle = cross.atan2(dot);
+        let angle = atan2(cross, dot);
         let (mut max, mut sum) = (0.0f64, 0.0);
         for (u, v) in pa.iter().zip(&pb) {
             let d = (rotate(*u, angle) - *v).len();
@@ -159,9 +160,9 @@ pub fn unify(loops: &[Vec<P>], g: f64, rel: f64, guides: &mut Guides) -> Vec<Opt
     // Groups: reference index, then (member, match). References are filed by size (area and
     // perimeter on a 5 % log scale) so that a shape is only compared with those of its size.
     let mut groups: Vec<(usize, Vec<(usize, Match)>)> = Vec::new();
-    let mut by_size: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
+    let mut by_size: BTreeMap<(i64, i64), Vec<usize>> = BTreeMap::new();
     let bucket = |s: &Shape| {
-        let q = |v: f64| (v.max(1e-9).ln() / (1.0 + SIZE_SLACK).ln()).floor() as i64;
+        let q = |v: f64| (ln(v.max(1e-9)) / ln(1.0 + SIZE_SLACK)).floor() as i64;
         (q(s.area), q(s.lp.length()))
     };
     for (i, shape) in shapes.iter().enumerate() {
@@ -276,6 +277,7 @@ fn moved_outline(reference: &Shape, shape: &Shape, m: &Match) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::num::math::{cos, sin};
 
     /// A 5-pointed star outline, rotated by `phase`, at `center`, with a small `wobble`.
     fn star(center: P, phase: f64, wobble: f64) -> Vec<P> {
@@ -283,7 +285,7 @@ mod tests {
             .map(|i| {
                 let r = if i % 2 == 0 { 20.0 } else { 8.0 };
                 let a = phase + f64::from(i) * std::f64::consts::PI / 5.0;
-                center + P::new(r * a.cos(), r * a.sin())
+                center + P::new(r * cos(a), r * sin(a))
             })
             .collect();
         let mut pts = Vec::new();

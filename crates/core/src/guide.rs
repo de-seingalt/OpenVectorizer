@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::fit::P;
+use crate::num::math::sin_cos;
 
 /// What a guide is.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
@@ -167,7 +168,7 @@ pub fn arc(a: P, b: P, r: f64, sweep: bool) -> String {
 
 /// Path data of a full ellipse (a circle when `a == b`), `angle` in radians.
 pub fn ellipse(center: P, a: f64, b: f64, angle: f64) -> String {
-    let (s, c) = angle.sin_cos();
+    let (s, c) = sin_cos(angle);
     let p0 = center + P::new(a * c, a * s);
     let p1 = center - P::new(a * c, a * s);
     let mut d = String::from("M");

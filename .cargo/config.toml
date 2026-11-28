@@ -1,3 +1,9 @@
 [env]
 # `cargo test -p openvectorizer-core` regenerates the TypeScript types used by the UI.
 TS_RS_EXPORT_DIR = { value = "app/src/lib/engine/generated", relative = true }
+
+# docs/ALGORITHME.md §18.1 (R10). simd128 lets LLVM vectorise the element-wise loops without
+# changing a bit (Rust never reassociates nor fuses float operations). The others are supported
+# by every current browser and remove slow fallbacks (bulk copies, saturating casts).
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128,+bulk-memory,+nontrapping-fptoint,+sign-ext"]

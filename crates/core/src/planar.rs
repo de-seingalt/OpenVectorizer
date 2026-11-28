@@ -12,7 +12,7 @@
 //!   its holes (they are covered by the regions drawn later), so anti-aliasing seams between
 //!   neighbors are hidden. Holes that contain transparency are kept.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 use std::fmt::Write as _;
 
 use serde::{Deserialize, Serialize};
@@ -24,6 +24,7 @@ use crate::fit::{
     CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, arc_tolerance, fit_prepared, prepare,
 };
 use crate::guide::{CANDIDATE_GEOMETRY, Guide, GuideKind, GuideStatus, Guides};
+use crate::num::sq;
 use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
 use crate::{CornerEdit, CornerMode, Options, Stacking};
@@ -136,7 +137,7 @@ struct Cycle {
 type Isolated = (usize, Vec<(i64, i64)>, Vec<P>);
 
 struct Runs {
-    index: HashMap<u64, usize>,
+    index: BTreeMap<u64, usize>,
     prepared: Vec<Prepared>,
     /// Geometry setting (circles, ellipses, symmetries of isolated shapes; 0 = off).
     geometry: f64,
@@ -221,7 +222,7 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>
             }
             // Corners of one group (the tips of a star) get one decision: the majority's.
             for (r, groups) in groups.iter().enumerate() {
-                let mut votes: HashMap<u32, (u32, u32)> = HashMap::new();
+                let mut votes: BTreeMap<u32, (u32, u32)> = BTreeMap::new();
                 for (c, g) in groups.iter().enumerate() {
                     if let Some(g) = g {
                         let v = votes.entry(*g).or_default();
@@ -297,7 +298,7 @@ fn match_edits<'a>(runs: &[Prepared], edits: &'a [CornerEdit]) -> Vec<(usize, us
     }
     let reach = f64::from(CORNER_EDIT_REACH);
     let cell = |x: f64, y: f64| ((x / reach).floor() as i64, (y / reach).floor() as i64);
-    let mut index: HashMap<(i64, i64), Vec<(usize, usize)>> = HashMap::new();
+    let mut index: BTreeMap<(i64, i64), Vec<(usize, usize)>> = BTreeMap::new();
     for (r, run) in runs.iter().enumerate() {
         for (c, k) in run.corners.iter().enumerate() {
             index.entry(cell(k.apex.x, k.apex.y)).or_default().push((r, c));
@@ -369,7 +370,7 @@ pub fn to_svg(
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
     let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h, edges: image.map(|i| EdgeMap::new(i, q)) };
     let mut runs = Runs {
-        index: HashMap::new(),
+        index: BTreeMap::new(),
         prepared: Vec::new(),
         geometry: f64::from(options.geometry),
         relative: params.relative,
@@ -738,8 +739,7 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
         if let Some((ellipse, _)) =
             strict.or_else(|| crate::shape::fit_round(&pts, CANDIDATE_GEOMETRY, runs.relative))
         {
-            let rms =
-                (pts.iter().map(|&p| ellipse.distance(p).powi(2)).sum::<f64>() / pts.len() as f64).sqrt();
+            let rms = (pts.iter().map(|&p| sq(ellipse.distance(p))).sum::<f64>() / pts.len() as f64).sqrt();
             fits.push((rms, ellipse, within, cycle.runs.iter().map(|&(i, _)| i).collect::<Vec<_>>()));
         }
     }
@@ -767,7 +767,7 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
     // junction places it), and every run that ends there follows: the outline is exact all
     // the way round, and neighbours stay watertight.
     let key = |p: P| (p.x.to_bits(), p.y.to_bits());
-    let mut moves: HashMap<(u64, u64), P> = HashMap::new();
+    let mut moves: BTreeMap<(u64, u64), P> = BTreeMap::new();
     for (ellipse, mine) in &claims {
         for &idx in mine {
             let p = runs.prepared[idx].pts();
@@ -1024,7 +1024,7 @@ impl EdgePoint<'_> {
                 let fit = |c: [f64; 3]| {
                     let t = (0..3).map(|k| ab[k] * (c[k] - ca[k])).sum::<f64>() / len2;
                     let t = t.clamp(0.0, 1.0);
-                    let d2: f64 = (0..3).map(|k| (c[k] - ca[k] - ab[k] * t).powi(2)).sum();
+                    let d2: f64 = (0..3).map(|k| sq(c[k] - ca[k] - ab[k] * t)).sum();
                     (t, d2 / len2)
                 };
                 let ((tl, dl), (tr, dr)) = (fit(cl), fit(cr));
@@ -1137,6 +1137,7 @@ fn hole_has_transparency(grid: &Grid, c: u32, seed: (i64, i64), stamp: &mut [u32
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::num::math::hypot;
 
     fn quantized(w: u32, h: u32, f: impl Fn(u32, u32) -> u16) -> Quantized {
         let labels = (0..h).flat_map(|y| (0..w).map(move |x| (x, y))).map(|(x, y)| f(x, y)).collect();
@@ -1216,7 +1217,7 @@ mod tests {
         // Red disc (r = 20) over a white/blue boundary: its outline has two runs.
         let q = quantized(80, 60, |x, y| {
             let (dx, dy) = (f64::from(x) + 0.5 - 40.0, f64::from(y) + 0.5 - 30.0);
-            if dx.hypot(dy) <= 20.0 { 1 } else { u16::from(x >= 40) * 2 }
+            if hypot(dx, dy) <= 20.0 { 1 } else { u16::from(x >= 40) * 2 }
         });
         // Hard pixel staircases (no anti-aliasing): the strongest geometry setting.
         let options = Options { geometry: 1.0, ..Options::default() };
@@ -1236,7 +1237,7 @@ mod tests {
                 (v.len() >= 2).then(|| (v[v.len() - 2], v[v.len() - 1]))
             })
             .collect();
-        let radii: Vec<f64> = ends.iter().map(|&(x, y)| (x - 40.0).hypot(y - 30.0)).collect();
+        let radii: Vec<f64> = ends.iter().map(|&(x, y)| hypot(x - 40.0, y - 30.0)).collect();
         let (lo, hi) = radii.iter().fold((f64::MAX, f64::MIN), |(l, h), &r| (l.min(r), h.max(r)));
         assert!(hi - lo < 0.05, "{radii:?}");
     }

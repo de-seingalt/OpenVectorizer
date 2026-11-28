@@ -21,6 +21,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::color::{Lab, oklab_to_srgb, srgb_to_oklab};
+use crate::num::sq;
 use crate::{Error, Options, RgbaImage};
 
 /// Pixel label for transparent pixels.
@@ -564,7 +565,7 @@ fn is_blend(a: Lab, b: Lab, c: Lab) -> bool {
     if !(0.1..=0.9).contains(&t) {
         return false;
     }
-    let off2: f32 = ab.iter().zip(&ac).map(|(x, y)| (y - t * x).powi(2)).sum();
+    let off2: f32 = ab.iter().zip(&ac).map(|(x, y)| sq(y - t * x)).sum();
     let tolerance = 12f32.max(0.06 * len2.sqrt());
     off2 < tolerance * tolerance
 }
@@ -700,7 +701,7 @@ mod tests {
         });
         let q = quantize(&img, &Options::default());
         assert_eq!(q.palette.len(), 2, "palette: {:?}", q.palette);
-        let distinct: std::collections::HashSet<_> = q.labels[..32].iter().collect();
+        let distinct: std::collections::BTreeSet<_> = q.labels[..32].iter().collect();
         assert_eq!(distinct.len(), 1);
     }
 
