@@ -45,6 +45,7 @@
     circle: '#ea580c',
     ellipse: '#ea580c',
     symmetry: '#7c3aed',
+    repeat: '#16a34a',
   };
 
   const isSelected = (k: CornerInfo) => selectedCorner !== null && k.x === selectedCorner.x && k.y === selectedCorner.y;

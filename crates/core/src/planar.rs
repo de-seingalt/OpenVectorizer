@@ -129,6 +129,9 @@ struct Cycle {
     outside_pixel: (i64, i64),
 }
 
+/// An isolated shape waiting to be finished: run index, grid vertices, boundary points.
+type Isolated = (usize, Vec<(i64, i64)>, Vec<P>);
+
 struct Runs {
     index: HashMap<u64, usize>,
     prepared: Vec<Prepared>,
@@ -136,6 +139,8 @@ struct Runs {
     geometry: f64,
     /// Guides of whole shapes (circles, ellipses, symmetries) and the ones turned off.
     guides: Guides,
+    /// Isolated shapes (closed runs away from the image frame), finished once all are known.
+    isolated: Vec<Isolated>,
 }
 
 /// Corner candidates of the whole image and how many are sharp.
@@ -171,8 +176,8 @@ pub struct CornerInfo {
 /// In automatic mode, a corner is sharp when the boundary passes this close to its apex...
 const AUTO_SHARP_GAP: f64 = 0.75;
 /// ... or when the radius that would round it is this small (acute tips: anti-aliasing cuts
-/// their point, so their gap is large even when they are sharp).
-const AUTO_SHARP_RADIUS: f64 = 0.5;
+/// their point, so their gap is large even when they are sharp; small stars need 1 px).
+const AUTO_SHARP_RADIUS: f64 = 1.0;
 /// Corners of one outline whose turns differ by less than this (radians) form a group.
 const GROUP_TURN: f64 = 0.2;
 
@@ -354,6 +359,7 @@ pub fn to_svg(
         prepared: Vec::new(),
         geometry: f64::from(options.geometry),
         guides: Guides::new(&options.disabled_guides, &options.forced_guides),
+        isolated: Vec::new(),
     };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
@@ -378,6 +384,7 @@ pub fn to_svg(
         }
     }
 
+    finish_isolated(&mut runs);
     // Circles and ellipses on whole region outlines made of several runs.
     let region_shapes = region_shapes(&cycles, &mut runs);
     let (styles, mut corner_stats) = decide_corners(&runs.prepared, options);
@@ -466,6 +473,36 @@ fn fit_runs(
         }
     }
     (curves, run_guides.into_iter().flatten().collect())
+}
+
+/// Finish the isolated shapes: copies of one shape get the same outline, then each shape that
+/// is nearly symmetric is made exactly symmetric, and circles and ellipses become exact.
+fn finish_isolated(runs: &mut Runs) {
+    let isolated = std::mem::take(&mut runs.isolated);
+    let loops: Vec<Vec<P>> = isolated.iter().map(|(_, _, mids)| mids.clone()).collect();
+    let repeated = crate::repeat::unify(&loops, runs.geometry, &mut runs.guides);
+    for ((idx, vertices, mids), new) in isolated.into_iter().zip(repeated) {
+        let mids = new.unwrap_or(mids);
+        let strict = crate::shape::symmetrize(&mids, runs.geometry);
+        let within = strict.is_some();
+        let found = strict.or_else(|| crate::shape::symmetrize(&mids, CANDIDATE_GEOMETRY));
+        let symmetry_guide = found.as_ref().map(|_| runs.guides.found.len());
+        let (mids, symmetry) = match found {
+            Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), within) => {
+                (sym.pts, Some(sym.kind))
+            }
+            _ => (mids, None),
+        };
+        let mut prepared = prepare(&vertices, &mids, (P::default(), P::default()), true, symmetry);
+        prepared.detect_shape(runs.geometry, &mut runs.guides);
+        // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
+        if prepared.has_shape()
+            && let Some(i) = symmetry_guide
+        {
+            runs.guides.found.remove(i);
+        }
+        runs.prepared[idx] = prepared;
+    }
 }
 
 /// Circles and ellipses that whole region outlines (cycles of two runs or more) follow. Each run
@@ -614,31 +651,13 @@ fn lookup_run(
     let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
     let idx = runs.prepared.len();
-    // An isolated shape that is nearly symmetric is made exactly symmetric.
-    // Boundaries along the image frame keep their straight frame edges as they are.
+    // Boundaries along the image frame keep their straight frame edges as they are; isolated
+    // shapes are finished once all of them are known (see `finish_isolated`).
     let on_border = vertices.iter().any(|&(x, y)| x == 0 || y == 0 || x == grid.w || y == grid.h);
-    let (strict, found) = if closed && !on_border {
-        let strict = crate::shape::symmetrize(&mids, runs.geometry);
-        let within = strict.is_some();
-        (within, strict.or_else(|| crate::shape::symmetrize(&mids, CANDIDATE_GEOMETRY)))
-    } else {
-        (false, None)
-    };
-    let symmetry_guide = found.as_ref().map(|_| runs.guides.found.len());
-    let (mids, symmetry) = match found {
-        Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), strict) => {
-            (sym.pts, Some(sym.kind))
-        }
-        _ => (mids, None),
-    };
-    let mut prepared = prepare(&vertices, &mids, ends, closed, symmetry);
-    prepared.detect_shape(runs.geometry, &mut runs.guides);
-    // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
-    if prepared.has_shape()
-        && let Some(i) = symmetry_guide
-    {
-        runs.guides.found.remove(i);
+    if closed && !on_border {
+        runs.isolated.push((idx, vertices.clone(), mids.clone()));
     }
+    let mut prepared = prepare(&vertices, &mids, ends, closed, None);
     // Corners on the image frame are not shape corners: always sharp, never counted.
     let (w, h) = (grid.w as f64, grid.h as f64);
     let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;

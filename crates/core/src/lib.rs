@@ -18,6 +18,7 @@ mod image;
 mod options;
 pub mod palette;
 pub mod planar;
+mod repeat;
 mod shape;
 
 pub use error::Error;

@@ -25,6 +25,8 @@ pub enum GuideKind {
     Ellipse,
     /// Mirror axes and/or rotation of a shape (key: its topmost point).
     Symmetry,
+    /// A shape made identical to another one it repeats (key: its topmost point).
+    Repeat,
 }
 
 /// A guide turned off by the user.
@@ -129,6 +131,17 @@ pub fn segment(a: P, b: P) -> String {
     pt(&mut d, a);
     d.push('L');
     pt(&mut d, b);
+    d
+}
+
+/// Path data of a closed polygon.
+pub fn polygon(pts: &[P]) -> String {
+    let mut d = String::new();
+    for (i, &p) in pts.iter().enumerate() {
+        d.push(if i == 0 { 'M' } else { 'L' });
+        pt(&mut d, p);
+    }
+    d.push('Z');
     d
 }
 

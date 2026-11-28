@@ -3,4 +3,4 @@
 /**
  * What a guide is.
  */
-export type GuideKind = "line" | "arc" | "circle" | "ellipse" | "symmetry";
+export type GuideKind = "line" | "arc" | "circle" | "ellipse" | "symmetry" | "repeat";

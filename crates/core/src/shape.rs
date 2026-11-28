@@ -269,14 +269,14 @@ impl Symmetry {
 }
 
 /// A closed boundary as a function of arc length.
-struct Loop {
+pub struct Loop {
     pts: Vec<P>,
     /// Cumulative length at each point (cum[0] = 0), total length last.
     cum: Vec<f64>,
 }
 
 impl Loop {
-    fn new(pts: &[P]) -> Self {
+    pub fn new(pts: &[P]) -> Self {
         let n = pts.len();
         let mut cum = vec![0.0; n + 1];
         for i in 0..n {
@@ -284,11 +284,11 @@ impl Loop {
         }
         Loop { pts: pts.to_vec(), cum }
     }
-    fn length(&self) -> f64 {
+    pub fn length(&self) -> f64 {
         self.cum[self.pts.len()]
     }
     /// Point at arc length `s` (any real; wraps around).
-    fn at(&self, s: f64) -> P {
+    pub fn at(&self, s: f64) -> P {
         let n = self.pts.len();
         let s = s.rem_euclid(self.length());
         let i = self.cum.partition_point(|&c| c <= s).clamp(1, n) - 1;

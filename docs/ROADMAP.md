@@ -60,8 +60,10 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Choix « tracé ou forme » forme par forme : guides désactivables / forçables
 - [x] Symétries des formes isolées : axe miroir par le centroïde et rotation d'ordre 2..12, contour remplacé par la
       moyenne de ses images (écart ≤ 0,7 px) ; coins candidats reportés sur leurs images, décision « auto » commune
-      à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 0,5 px
-- [ ] Formes répétées partageant un contour ; symétries des formes non isolées
+      à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 1 px
+- [x] Formes répétées : formes isolées de même aire et périmètre (5 %), superposables par rotation (Procrustes,
+      écart ≤ 0,8 px) remplacées par leur forme moyenne replacée sur chacune ; guide « Répétition » par copie
+- [ ] Symétries et répétitions des formes non isolées
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
 
 ## M4 — Édition
