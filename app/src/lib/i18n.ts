@@ -17,6 +17,9 @@ const fr = {
   presetPhoto: 'Photo',
   detail: 'Détail',
   detailHint: 'Plus de détail = plus de couleurs et de formes',
+  denoise: 'Nettoyage',
+  denoiseHint:
+    'Lisse les artefacts de compression (JPEG) et le bruit, sans adoucir les bords. Trop fort : des teintes proches se confondent.',
   smoothness: 'Angle minimal des coins (auto)',
   smoothnessHint: 'Faible = même les coins ouverts restent vifs, élevé = seuls les coins aigus',
   corners: 'Coins',
@@ -122,6 +125,8 @@ const en: Messages = {
   presetPhoto: 'Photo',
   detail: 'Detail',
   detailHint: 'More detail = more colors and shapes',
+  denoise: 'Clean-up',
+  denoiseHint: 'Smooths compression artifacts (JPEG) and noise without softening edges. Too strong: close tints merge.',
   smoothness: 'Minimum corner angle (auto)',
   smoothnessHint: 'Low = even open corners stay sharp, high = only acute corners',
   corners: 'Corners',

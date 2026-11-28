@@ -77,7 +77,8 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Rendu net à tout zoom : le résultat est tracé dans la page (plus d'`<img>` agrandie)
 - [x] Liserés entre formes voisines : trait de la couleur de la forme du dessous sous chaque jointure (« Combler les
       jointures », actif par défaut)
-- [ ] Nettoyage des artefacts de compression (JPEG), réglable
+- [x] Nettoyage des artefacts de compression (JPEG) : filtre bilatéral en Oklab avant l'analyse des couleurs, curseur
+      « Nettoyage » (30 % par défaut : p95 −0,04, −28 % de nœuds ; les images bruitées et JPEG en profitent)
 - [ ] Dégradés : zones à variation de couleur régulière fusionnées en une forme à dégradé linéaire ou radial (opacité
       comprise)
 

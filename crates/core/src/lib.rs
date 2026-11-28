@@ -11,6 +11,7 @@
 
 pub mod baseline;
 mod color;
+mod denoise;
 mod error;
 mod fit;
 pub mod guide;
@@ -72,6 +73,10 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         // Photos keep VTracer's own gradient layering for now.
         Preset::Photo => (baseline::trace(image, &options)?, None, planar::CornerStats::default()),
         Preset::Logo | Preset::Illustration => {
+            // Compression artifacts are cleaned first: the colours and the sub-pixel edges are
+            // measured on the cleaned image.
+            let cleaned = denoise::denoise(image, options.denoise);
+            let image = cleaned.as_ref().unwrap_or(image);
             let quantized = palette::quantize(image, &options);
             let (svg, corners) = planar::to_svg(&quantized, Some(image), &options, &fit_params(&options));
             (svg, Some(quantized.info), corners)

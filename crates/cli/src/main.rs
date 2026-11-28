@@ -92,6 +92,9 @@ struct OptArgs {
     /// Do not hide the seams between neighbouring shapes
     #[arg(long)]
     no_gap_fill: bool,
+    /// Clean-up of compression artifacts 0..1 (0 = off)
+    #[arg(long)]
+    denoise: Option<f32>,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -148,6 +151,9 @@ impl OptArgs {
             o.geometry = g;
         }
         o.fill_gaps = !self.no_gap_fill;
+        if let Some(v) = self.denoise {
+            o.denoise = v;
+        }
         o
     }
 }

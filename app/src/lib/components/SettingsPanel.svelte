@@ -110,6 +110,17 @@
     <p class="text-xs text-muted-foreground">{t.detailHint}</p>
   </section>
 
+  {#if options.preset !== 'photo'}
+    <section class="flex flex-col gap-3">
+      <div class="flex items-baseline justify-between">
+        <Label for="denoise">{t.denoise}</Label>
+        <span class="text-xs text-muted-foreground tabular-nums">{pct(options.denoise)}</span>
+      </div>
+      <Slider id="denoise" label={t.denoise} type="single" min={0} max={1} step={0.05} bind:value={options.denoise} />
+      <p class="text-xs text-muted-foreground">{t.denoiseHint}</p>
+    </section>
+  {/if}
+
   <section class="flex flex-col gap-3" aria-labelledby="colors-label">
     <div class="flex items-center justify-between">
       <span id="colors-label" class="text-sm leading-none font-medium">

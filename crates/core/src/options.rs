@@ -116,6 +116,9 @@ pub struct Options {
     /// Hide the seams between neighbouring shapes (thin lines where anti-aliasing lets the
     /// background show through) with a stroke under the later shape.
     pub fill_gaps: bool,
+    /// Clean-up of compression artifacts and noise before the colours are analysed (0 = off,
+    /// 1 = strongest), edges are kept.
+    pub denoise: f32,
 }
 
 impl Default for Options {
@@ -133,6 +136,7 @@ impl Default for Options {
             disabled_guides: Vec::new(),
             forced_guides: Vec::new(),
             fill_gaps: true,
+            denoise: 0.3,
         }
     }
 }
@@ -151,6 +155,7 @@ impl Options {
         unit("detail", self.detail)?;
         unit("smoothness", self.smoothness)?;
         unit("geometry", self.geometry)?;
+        unit("denoise", self.denoise)?;
         if self.min_area_px > 128 {
             return Err(Error::InvalidOption(format!("minAreaPx must be <= 128, got {}", self.min_area_px)));
         }

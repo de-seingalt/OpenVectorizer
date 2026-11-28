@@ -49,4 +49,9 @@ forcedGuides: Array<GuideKey>,
  * Hide the seams between neighbouring shapes (thin lines where anti-aliasing lets the
  * background show through) with a stroke under the later shape.
  */
-fillGaps: boolean, };
+fillGaps: boolean, 
+/**
+ * Clean-up of compression artifacts and noise before the colours are analysed (0 = off,
+ * 1 = strongest), edges are kept.
+ */
+denoise: number, };

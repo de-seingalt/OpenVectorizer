@@ -32,6 +32,7 @@ export const DEFAULT_OPTIONS: Options = {
   disabledGuides: [],
   forcedGuides: [],
   fillGaps: true,
+  denoise: 0.3,
 };
 
 export type Result = { output: Output; ms: number };
