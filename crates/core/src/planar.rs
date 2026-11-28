@@ -143,6 +143,8 @@ struct Runs {
     guides: Guides,
     /// Isolated shapes (closed runs away from the image frame), finished once all are known.
     isolated: Vec<Isolated>,
+    /// Whether each run touches the image frame.
+    border: Vec<bool>,
 }
 
 /// Corner candidates of the whole image and how many are sharp.
@@ -370,6 +372,7 @@ pub fn to_svg(
         geometry: f64::from(options.geometry),
         guides: Guides::new(&options.disabled_guides, &options.forced_guides),
         isolated: Vec::new(),
+        border: Vec::new(),
     };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
@@ -395,6 +398,7 @@ pub fn to_svg(
     }
 
     finish_isolated(&mut runs);
+    regularize_regions(&cycles, &mut runs, (grid.w as f64, grid.h as f64));
     // Circles and ellipses on whole region outlines made of several runs.
     let region_shapes = region_shapes(&cycles, &mut runs);
     let (styles, mut corner_stats) = decide_corners(&runs.prepared, options);
@@ -485,6 +489,113 @@ fn fit_runs(
     (curves, run_guides.into_iter().flatten().collect())
 }
 
+/// Corners on the image frame are not shape corners: always sharp, never counted. A rounding
+/// of the drawing whose apex falls on the frame stays a corner of the drawing, unless the
+/// boundary really passes by the apex (a frame corner seen as a tiny rounding).
+fn split_frame_corners(prepared: &mut Prepared, (w, h): (f64, f64)) {
+    let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;
+    let passes_by = |apex: P| prepared.pts().iter().any(|&p| (p - apex).len() <= 1.0);
+    let (frame, corners): (Vec<_>, Vec<_>) =
+        prepared.corners.iter().partition(|c| on_frame(c.apex) && (!c.is_fillet() || passes_by(c.apex)));
+    (prepared.frame, prepared.corners) = (frame, corners);
+}
+
+/// Region outlines with fewer points (hatching strokes, specks) are not regularized.
+const MIN_REGULARIZED_POINTS: usize = 32;
+
+/// The symmetry of a closed outline, if any, and whether it is within the geometry setting's
+/// tolerance (otherwise it is a candidate). The loose search goes first: it fails for most
+/// outlines, and then nothing else is needed.
+fn find_symmetry(pts: &[P], geometry: f64) -> (Option<crate::shape::Symmetrized>, bool) {
+    let Some(loose) = crate::shape::symmetrize(pts, CANDIDATE_GEOMETRY) else { return (None, false) };
+    match crate::shape::symmetrize(pts, geometry) {
+        Some(strict) => (Some(strict), true),
+        None => (Some(loose), false),
+    }
+}
+
+/// Points blended from the original toward the regularized outline next to a junction (the
+/// junction itself does not move: other runs end there).
+const JUNCTION_BLEND: f64 = 4.0;
+
+/// Symmetries and repeats of region outlines made of several runs (shapes that touch other
+/// colours). The outline is regularized as a whole (repeats first, then symmetry); each run
+/// takes its part of the result, its end junctions staying in place, and is prepared again. A
+/// run shared by two regularized outlines follows the first one.
+fn regularize_regions(cycles: &[Vec<Cycle>], runs: &mut Runs, size: (f64, f64)) {
+    // Outlines of two runs or more, none along the image frame.
+    let outlines: Vec<&Cycle> = cycles
+        .iter()
+        .flatten()
+        .filter(|c| c.runs.len() >= 2 && c.runs.iter().all(|&(i, _)| !runs.border[i]))
+        .filter(|c| {
+            c.runs.iter().map(|&(i, _)| runs.prepared[i].pts().len()).sum::<usize>() >= MIN_REGULARIZED_POINTS
+        })
+        .collect();
+    let loops: Vec<Vec<P>> = outlines
+        .iter()
+        .map(|cycle| {
+            let mut pts = Vec::new();
+            for &(idx, reversed) in &cycle.runs {
+                let mut p = runs.prepared[idx].pts().to_vec();
+                if reversed {
+                    p.reverse();
+                }
+                p.pop(); // the next run starts there (the first one, for the last run)
+                pts.extend(p);
+            }
+            pts
+        })
+        .collect();
+    let repeated = crate::repeat::unify(&loops, runs.geometry, &mut runs.guides);
+    let mut claimed = vec![false; runs.prepared.len()];
+    for ((cycle, outline), new) in outlines.iter().zip(&loops).zip(repeated) {
+        let outline = new.unwrap_or_else(|| outline.clone());
+        let (found, within) = find_symmetry(&outline, runs.geometry);
+        let target = match found {
+            Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), within) => {
+                crate::shape::aligned(&outline, &sym)
+            }
+            _ => outline,
+        };
+        // Hand each run its part (unchanged runs get back their own points).
+        let total = target.len();
+        let mut base = 0;
+        for &(idx, reversed) in &cycle.runs {
+            let mut orig = runs.prepared[idx].pts().to_vec();
+            if reversed {
+                orig.reverse();
+            }
+            let m = orig.len() - 1;
+            if !claimed[idx] && total > 0 {
+                let mut pts: Vec<P> = (0..=m)
+                    .map(|j| {
+                        let w = (j.min(m - j) as f64 / JUNCTION_BLEND).min(1.0);
+                        orig[j] + (target[(base + j) % total] - orig[j]) * w
+                    })
+                    .collect();
+                if pts.iter().zip(&orig).any(|(a, b)| (*a - *b).len() > 1e-6) {
+                    if reversed {
+                        pts.reverse();
+                    }
+                    let mut prepared = prepare(
+                        &vec![(0, 0); pts.len() - 1],
+                        &pts[1..pts.len() - 1],
+                        (pts[0], pts[pts.len() - 1]),
+                        false,
+                        None,
+                    );
+                    prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
+                    split_frame_corners(&mut prepared, size);
+                    runs.prepared[idx] = prepared;
+                }
+                claimed[idx] = true;
+            }
+            base += m;
+        }
+    }
+}
+
 /// Finish the isolated shapes: copies of one shape get the same outline, then each shape that
 /// is nearly symmetric is made exactly symmetric, and circles and ellipses become exact.
 fn finish_isolated(runs: &mut Runs) {
@@ -493,9 +604,7 @@ fn finish_isolated(runs: &mut Runs) {
     let repeated = crate::repeat::unify(&loops, runs.geometry, &mut runs.guides);
     for ((idx, vertices, mids), new) in isolated.into_iter().zip(repeated) {
         let mids = new.unwrap_or(mids);
-        let strict = crate::shape::symmetrize(&mids, runs.geometry);
-        let within = strict.is_some();
-        let found = strict.or_else(|| crate::shape::symmetrize(&mids, CANDIDATE_GEOMETRY));
+        let (found, within) = find_symmetry(&mids, runs.geometry);
         let symmetry_guide = found.as_ref().map(|_| runs.guides.found.len());
         let (mids, symmetry) = match found {
             Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), within) => {
@@ -670,16 +779,9 @@ fn lookup_run(
     }
     let mut prepared = prepare(&vertices, &mids, ends, closed, None);
     prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
-    // Corners on the image frame are not shape corners: always sharp, never counted.
-    let (w, h) = (grid.w as f64, grid.h as f64);
-    let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;
-    // A rounding of the drawing whose apex falls on the frame stays a corner of the drawing,
-    // unless the boundary really passes by the apex (a frame corner seen as a tiny rounding).
-    let passes_by = |apex: P| prepared.pts().iter().any(|&p| (p - apex).len() <= 1.0);
-    let (frame, corners): (Vec<_>, Vec<_>) =
-        prepared.corners.iter().partition(|c| on_frame(c.apex) && (!c.is_fillet() || passes_by(c.apex)));
-    (prepared.frame, prepared.corners) = (frame, corners);
+    split_frame_corners(&mut prepared, (grid.w as f64, grid.h as f64));
     runs.prepared.push(prepared);
+    runs.border.push(on_border);
     runs.index.insert(key, idx);
     (idx, reversed)
 }
@@ -949,6 +1051,21 @@ mod tests {
         let red = svg.lines().find(|l| l.contains("#c80000")).expect("red path");
         assert!(!red.contains('L'), "{red}");
         assert_eq!(info.total, 0);
+    }
+
+    #[test]
+    fn symmetric_shape_across_two_backgrounds_is_made_symmetric() {
+        // A plus sign (arms 8 px wide, 40 px across) over a white/blue boundary, with one
+        // stray pixel on its right arm: its outline has several runs.
+        let q = quantized(80, 60, |x, y| {
+            let (dx, dy) = (i64::from(x) - 40, i64::from(y) - 30);
+            let plus = (dx.abs() < 4 && dy.abs() < 20) || (dy.abs() < 4 && dx.abs() < 20);
+            if plus || (x, y) == (58, 34) { 1 } else { u16::from(y >= 30) * 2 }
+        });
+        let options = Options { geometry: 1.0, ..Options::default() };
+        let (_, info) = to_svg(&q, None, &options, &params());
+        let sym = info.guides.iter().find(|g| g.kind == GuideKind::Symmetry).expect("symmetry guide");
+        assert_eq!(sym.status, crate::guide::GuideStatus::Followed, "{:?}", info.guides);
     }
 
     #[test]

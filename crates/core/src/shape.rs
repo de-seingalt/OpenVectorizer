@@ -243,6 +243,12 @@ fn symmetry_tolerance(g: f64) -> (f64, f64) {
 }
 /// Highest rotational order tried.
 const MAX_ORDER: u32 = 12;
+/// Largest tolerances relative to the perimeter (symmetries and repeats of small shapes).
+pub const RELATIVE_MAX: f64 = 0.015;
+pub const RELATIVE_RMS: f64 = 0.006;
+
+/// Samples of the radial profile used to rule symmetries out cheaply.
+const PRUNE_SAMPLES: usize = 256;
 /// Samples used to search and test symmetries.
 const SYM_SAMPLES: usize = 128;
 
@@ -265,6 +271,66 @@ impl Symmetry {
             let rot = |p: usize| (p + j * step) % n;
             std::iter::once(rot(i)).chain(mirrored.map(rot))
         })
+    }
+}
+
+/// Distance to the center along the outline. A symmetry about the center keeps that distance,
+/// so the profile must match itself (shifted for a rotation, reversed for a mirror) at least
+/// as well as the outline does: a cheap test that rules most outlines out.
+struct RadialProfile {
+    r: Vec<f64>,
+    /// Arc length between samples, and the allowance it requires.
+    step: f64,
+    slack: f64,
+}
+
+impl RadialProfile {
+    fn new(lp: &Loop, c: P) -> Self {
+        let len = lp.length();
+        // About two samples per boundary point, at most PRUNE_SAMPLES.
+        let count = (lp.pts.len() * 2).clamp(32, PRUNE_SAMPLES);
+        let r = (0..count).map(|i| (lp.at(len * i as f64 / count as f64) - c).len()).collect();
+        RadialProfile { r, step: len / count as f64, slack: len / count as f64 + 0.05 }
+    }
+
+    fn at(&self, u: f64) -> f64 {
+        let n = self.r.len();
+        let u = u.rem_euclid(n as f64);
+        let (i, t) = (u.floor() as usize % n, u.fract());
+        self.r[i] * (1.0 - t) + self.r[(i + 1) % n] * t
+    }
+
+    /// Whether the (max, rms) radial differences of the pairs `(i, pair(i))` stay within the
+    /// tolerances (plus the sampling allowance).
+    fn within(&self, pairs: impl Iterator<Item = (f64, f64)>, max: f64, rms: f64) -> bool {
+        let (mut sum, mut count) = (0.0, 0.0);
+        for (a, b) in pairs {
+            let d = (a - b).abs();
+            if d > max + self.slack {
+                return false;
+            }
+            sum += d * d;
+            count += 1.0;
+        }
+        count == 0.0 || (sum / count).sqrt() <= rms + self.slack
+    }
+
+    fn rotation_possible(&self, k: u32, max: f64, rms: f64) -> bool {
+        let n = self.r.len();
+        let shift = n as f64 / f64::from(k);
+        self.within((0..n).map(|i| (self.r[i], self.at(i as f64 + shift))), max, rms)
+    }
+
+    /// Arc lengths (in the loop's units, from its start) of the points where a mirror axis may
+    /// cross the outline (half the outline: the axis crosses it twice).
+    fn mirror_axes(&self, max: f64, rms: f64) -> Vec<f64> {
+        let n = self.r.len();
+        (0..n / 2)
+            .filter(|&j| {
+                self.within((0..n / 2).map(|t| (self.r[(j + t) % n], self.r[(j + n - t) % n])), max, rms)
+            })
+            .map(|j| j as f64 * self.step)
+            .collect()
     }
 }
 
@@ -336,6 +402,9 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
     }
     let lp = Loop::new(pts);
     let len = lp.length();
+    // Small shapes get a tolerance in proportion to their size (1.4 px on a 10 px speck would
+    // make anything symmetric).
+    let (sym_max, sym_rms) = (sym_max.min(RELATIVE_MAX * len), sym_rms.min(RELATIVE_RMS * len));
     // Area centroid; the sign of the area gives the turning sense of increasing s.
     let (mut a2, mut cx, mut cy) = (0.0, 0.0, 0.0);
     for i in 0..n {
@@ -352,13 +421,23 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
     let sense = a2.signum();
     let good = |(max, rms): (f64, f64)| max <= sym_max && rms <= sym_rms;
 
+    // Cheap necessary test first (see `RadialProfile`).
+    let profile = RadialProfile::new(&lp, c);
+    let axes = profile.mirror_axes(sym_max, sym_rms);
+
     // Rotation: the highest order whose rotated copy matches.
     let rot_err = |k: u32| {
         let shift = len / f64::from(k);
         let angle = -sense * std::f64::consts::TAU / f64::from(k);
         compare(len, SYM_SAMPLES, |s| lp.at(s), |s| rotate(lp.at(s + shift), c, angle))
     };
-    let order = (2..=MAX_ORDER).rev().find(|&k| good(rot_err(k))).unwrap_or(1);
+    let order = (2..=MAX_ORDER)
+        .rev()
+        .find(|&k| profile.rotation_possible(k, sym_max, sym_rms) && good(rot_err(k)))
+        .unwrap_or(1);
+    if order == 1 && axes.is_empty() {
+        return None;
+    }
 
     // Mirror: the axis through the centroid and the boundary point at s0 maps s0 + t to s0 − t.
     let mir_err = |s0: f64| {
@@ -370,13 +449,11 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
         let u = d * (1.0 / l);
         compare(len, SYM_SAMPLES, |t| lp.at(s0 + t), |t| mirror(lp.at(s0 - t), c, u))
     };
-    // Coarse search over the boundary (half of it suffices: the axis crosses it twice), then a
-    // golden-section refinement around the best sample.
-    let step = len / SYM_SAMPLES as f64;
-    let coarse = (0..=SYM_SAMPLES / 2)
-        .map(|i| i as f64 * step)
-        .min_by(|&a, &b| mir_err(a).1.total_cmp(&mir_err(b).1))
-        .unwrap_or(0.0);
+    // Coarse search among the axes the profile allows, then a golden-section refinement
+    // around the best one.
+    let step = len / profile.r.len() as f64;
+    let coarse =
+        axes.iter().map(|&j| (j, mir_err(j).1)).min_by(|a, b| a.1.total_cmp(&b.1)).map_or(0.0, |c| c.0);
     let (mut lo, mut hi) = (coarse - step, coarse + step);
     let phi = (5f64.sqrt() - 1.0) / 2.0;
     for _ in 0..24 {
@@ -388,7 +465,7 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
         }
     }
     let s0 = f64::midpoint(lo, hi);
-    let mirror_ok = good(mir_err(s0));
+    let mirror_ok = !axes.is_empty() && good(mir_err(s0));
     if order == 1 && !mirror_ok {
         return None;
     }
@@ -430,11 +507,23 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
         crate::guide::ellipse(c, 2.0, 2.0, 0.0)
     };
     let top = out.iter().copied().min_by(|p, q| p.y.total_cmp(&q.y)).unwrap_or(c);
-    Some(Symmetrized { pts: out, kind: Symmetry { order, mirror: mirror_ok }, top, guide })
+    Some(Symmetrized { pts: out, kind: Symmetry { order, mirror: mirror_ok }, top, guide, start: s0 })
+}
+
+/// The symmetric outline evaluated at each point of the input outline `orig` (same arc-length
+/// position), so that it lines up with it point for point.
+pub fn aligned(orig: &[P], sym: &Symmetrized) -> Vec<P> {
+    let input = Loop::new(orig);
+    let output = Loop::new(&sym.pts);
+    let (len, out_len) = (input.length(), output.length());
+    (0..orig.len()).map(|j| output.at(((input.cum[j] - sym.start).rem_euclid(len)) / len * out_len)).collect()
 }
 
 /// Result of [`symmetrize`].
 pub struct Symmetrized {
+    /// Arc length, on the input outline, of the first output point (the outputs are evenly
+    /// spaced from there).
+    pub start: f64,
     pub pts: Vec<P>,
     pub kind: Symmetry,
     /// Topmost point of the shape (guide key) and path data drawing the symmetries.

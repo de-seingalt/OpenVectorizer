@@ -39,7 +39,7 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       par défaut. Les groupes de formes géométriques et de symétries viendront avec M3
 - [x] Bords sous-pixel mesurés avec les teintes sources du groupe (une teinte fusionnée ne fausse plus la position)
 
-## M3 — Géométrie
+## M3 — Géométrie ✅
 - [x] Droites : parties droites détectées (écart ≤ 0,45 px, pas de courbure systématique, ≥ 6 px, pas un morceau
       d'arc), tracées en segments, les courbes voisines leur sont tangentes ; coins du cadre toujours vifs
 - [x] Raccords : entre deux droites, arc de cercle tangent aux deux (rayon ajusté aux points, écart ≤ 0,5 px),
@@ -67,7 +67,9 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       droites) ; vif = droites prolongées, rayon = arc tangent aux droites, inclus dans « tous vifs » et le compte
 - [x] Coins dessinés par leurs deux côtés près du sommet (vert vif, orange arrondi, bleu retouché) ; poignée sur l'arc
       du coin sélectionné, à faire glisser pour régler le rayon (jusqu'au sommet : vif)
-- [ ] Symétries et répétitions des formes non isolées
+- [x] Symétries et répétitions des formes non isolées : contour complet d'une région (plusieurs morceaux) régularisé
+      en entier, chaque morceau reprend sa part, jonctions fixes (fondu sur 4 points) ; tolérance plafonnée à 1,5 % du
+      périmètre (petites taches) ; pré-test sur le profil radial (sans effet sur le résultat, temps inchangé)
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
 
 ## M4 — Édition

@@ -2,9 +2,11 @@
 //! repeated letters) get exactly the same outline. Each group is replaced by its mean shape,
 //! moved and rotated onto every member.
 
+use std::collections::HashMap;
+
 use crate::fit::P;
 use crate::guide::{CANDIDATE_GEOMETRY, GuideKind, Guides};
-use crate::shape::Loop;
+use crate::shape::{Loop, RELATIVE_MAX, RELATIVE_RMS};
 
 /// Samples used to compare outlines.
 const SAMPLES: usize = 64;
@@ -25,6 +27,9 @@ struct Shape {
     area: f64,
     center: P,
     n: usize,
+    /// Distance to the center at `SAMPLES` evenly spaced points, and the same sorted.
+    radial: Vec<f64>,
+    sorted: Vec<f64>,
 }
 
 impl Shape {
@@ -47,7 +52,13 @@ impl Shape {
         let center = P::new(cx / (3.0 * a2), cy / (3.0 * a2));
         let flipped = a2 < 0.0;
         let oriented: Vec<P> = if flipped { pts.iter().rev().copied().collect() } else { pts.to_vec() };
-        Some(Shape { lp: Loop::new(&oriented), flipped, area: a2.abs() / 2.0, center, n })
+        let lp = Loop::new(&oriented);
+        let radial =
+            (0..SAMPLES).map(|i| (lp.at(lp.length() * i as f64 / SAMPLES as f64) - center).len()).collect();
+        let radial: Vec<f64> = radial;
+        let mut sorted = radial.clone();
+        sorted.sort_by(f64::total_cmp);
+        Some(Shape { lp, flipped, area: a2.abs() / 2.0, center, n, radial, sorted })
     }
 
     fn sample(&self, offset: f64, i: usize, count: usize) -> P {
@@ -74,6 +85,34 @@ fn rotate(v: P, angle: f64) -> P {
     P::new(v.x * c - v.y * s, v.x * s + v.y * c)
 }
 
+/// Largest difference between the sorted radial profiles: a lower bound of the radial
+/// difference under any correspondence, so a very cheap first test.
+fn sorted_gap(a: &Shape, b: &Shape) -> f64 {
+    a.sorted.iter().zip(&b.sorted).map(|(x, y)| (x - y).abs()).fold(0.0, f64::max)
+}
+
+/// Radial profile comparison at every sample shift: the shift that matches best, and whether
+/// some shift keeps the largest and the RMS radial differences within `tol` (plus `slack`). A
+/// rotation keeps distances to the center, so those differences are (up to the sampling step)
+/// lower bounds of the outline distances: a cheap way to rule pairs out.
+fn radial_match(a: &Shape, b: &Shape, tol: (f64, f64), slack: f64) -> (usize, bool) {
+    let mut best = (0, f64::MAX);
+    let mut possible = false;
+    for k in 0..SAMPLES {
+        let (mut sum, mut max) = (0.0f64, 0.0f64);
+        for i in 0..SAMPLES {
+            let d = (a.radial[i] - b.radial[(i + k) % SAMPLES]).abs();
+            sum += d * d;
+            max = max.max(d);
+        }
+        if sum < best.1 {
+            best = (k, sum);
+        }
+        possible |= max <= tol.0 + slack && (sum / SAMPLES as f64).sqrt() <= tol.1 + slack;
+    }
+    (best.0, possible)
+}
+
 /// Best rigid match (rotation about the centers, then translation) of `a` onto `b`.
 fn align(a: &Shape, b: &Shape) -> Match {
     let pa: Vec<P> = (0..SAMPLES).map(|i| a.sample(0.0, i, SAMPLES) - a.center).collect();
@@ -95,15 +134,8 @@ fn align(a: &Shape, b: &Shape) -> Match {
         Match { offset, angle, max, rms: (sum / SAMPLES as f64).sqrt() }
     };
     // Coarse: radial signatures at every sample shift; then refine the offset continuously.
-    let ra: Vec<f64> = pa.iter().map(|p| p.len()).collect();
     let step = b.lp.length() / SAMPLES as f64;
-    let rb: Vec<f64> = (0..SAMPLES).map(|i| (b.sample(0.0, i, SAMPLES) - b.center).len()).collect();
-    let shift = (0..SAMPLES)
-        .min_by(|&x, &y| {
-            let cost = |k: usize| (0..SAMPLES).map(|i| (ra[i] - rb[(i + k) % SAMPLES]).powi(2)).sum::<f64>();
-            cost(x).total_cmp(&cost(y))
-        })
-        .unwrap_or(0);
+    let shift = radial_match(a, b, (f64::MAX, f64::MAX), 0.0).0;
     let (mut lo, mut hi) = ((shift as f64 - 1.0) * step, (shift as f64 + 1.0) * step);
     let phi = (5f64.sqrt() - 1.0) / 2.0;
     for _ in 0..20 {
@@ -117,20 +149,45 @@ fn align(a: &Shape, b: &Shape) -> Match {
     fit(f64::midpoint(lo, hi))
 }
 
-/// New outlines for the isolated shapes `loops` that repeat another one (`None`: unchanged).
+/// New outlines for the closed outlines `loops` that repeat another one (`None`: unchanged),
+/// point for point (same number of points, each moved onto the shared outline).
 /// Every member of a group but its first (the reference) is a guide that can be turned off
 /// or, when it matches only loosely, forced.
 pub fn unify(loops: &[Vec<P>], g: f64, guides: &mut Guides) -> Vec<Option<Vec<P>>> {
     let shapes: Vec<Option<Shape>> = loops.iter().map(|l| Shape::new(l)).collect();
     let (strict, loose) = (tolerance(g), tolerance(CANDIDATE_GEOMETRY));
-    // Groups: reference index, then (member, match).
+    // Groups: reference index, then (member, match). References are filed by size (area and
+    // perimeter on a 5 % log scale) so that a shape is only compared with those of its size.
     let mut groups: Vec<(usize, Vec<(usize, Match)>)> = Vec::new();
+    let mut by_size: HashMap<(i64, i64), Vec<usize>> = HashMap::new();
+    let bucket = |s: &Shape| {
+        let q = |v: f64| (v.max(1e-9).ln() / (1.0 + SIZE_SLACK).ln()).floor() as i64;
+        (q(s.area), q(s.lp.length()))
+    };
     for (i, shape) in shapes.iter().enumerate() {
         let Some(shape) = shape else { continue };
+        let (ba, bp) = bucket(shape);
+        let mut candidates: Vec<usize> = (ba - 1..=ba + 1)
+            .flat_map(|a| (bp - 1..=bp + 1).map(move |p| (a, p)))
+            .filter_map(|key| by_size.get(&key))
+            .flatten()
+            .copied()
+            .collect();
+        candidates.sort_unstable();
+        let slack = shape.lp.length() / SAMPLES as f64;
+        // Small shapes get a tolerance in proportion to their size.
+        let cap = |(max, rms): (f64, f64)| {
+            (max.min(RELATIVE_MAX * shape.lp.length()), rms.min(RELATIVE_RMS * shape.lp.length()))
+        };
+        let (strict, loose) = (cap(strict), cap(loose));
         let mut placed = false;
-        for (lead, members) in &mut groups {
+        for g_idx in candidates {
+            let (lead, members) = &mut groups[g_idx];
             let Some(reference) = &shapes[*lead] else { continue };
-            if !reference.close_in_size(shape) {
+            if !reference.close_in_size(shape)
+                || sorted_gap(reference, shape) > loose.0 + slack
+                || !radial_match(reference, shape, loose, slack).1
+            {
                 continue;
             }
             let m = align(reference, shape);
@@ -147,6 +204,7 @@ pub fn unify(loops: &[Vec<P>], g: f64, guides: &mut Guides) -> Vec<Option<Vec<P>
             break;
         }
         if !placed {
+            by_size.entry((ba, bp)).or_default().push(groups.len());
             groups.push((i, Vec::new()));
         }
     }
@@ -171,18 +229,31 @@ pub fn unify(loops: &[Vec<P>], g: f64, guides: &mut Guides) -> Vec<Option<Vec<P>
         for p in &mut mean {
             *p = *p * weight;
         }
-        let place = |s: &Shape, angle: f64| {
-            let mut pts: Vec<P> =
-                mean.iter().map(|&p| s.center + rotate(p - reference.center, angle)).collect();
-            if s.flipped {
-                pts.reverse();
+        // The mean outline moved onto a shape, evaluated at each of its original points (so the
+        // result lines up with the input, point for point).
+        let place = |i: usize, s: &Shape, offset: f64, angle: f64| {
+            let orig = &loops[i];
+            let n = orig.len();
+            let mut cum = vec![0.0; n];
+            for j in 1..n {
+                cum[j] = cum[j - 1] + (orig[j] - orig[j - 1]).len();
             }
-            pts
+            let len = s.lp.length();
+            (0..n)
+                .map(|j| {
+                    // Arc length of point j along the outline as oriented for the comparison.
+                    let along = if s.flipped { cum[n - 1] - cum[j] } else { cum[j] };
+                    let u = (along - offset).rem_euclid(len) / len * count as f64;
+                    let (k, t) = (u.floor() as usize % count, u.fract());
+                    let p = mean[k] * (1.0 - t) + mean[(k + 1) % count] * t;
+                    s.center + rotate(p - reference.center, angle)
+                })
+                .collect::<Vec<P>>()
         };
-        out[*lead] = Some(place(reference, 0.0));
+        out[*lead] = Some(place(*lead, reference, 0.0, 0.0));
         for (i, m) in members {
             if let Some(s) = &shapes[*i] {
-                out[*i] = Some(place(s, m.angle));
+                out[*i] = Some(place(*i, s, m.offset, m.angle));
             }
         }
     }
@@ -236,12 +307,19 @@ mod tests {
         let out = unify(&loops, 0.5, &mut guides);
         assert!(out[2].is_none());
         let (a, b) = (out[0].as_ref().expect("reference"), out[1].as_ref().expect("copy"));
-        assert_eq!(a.len(), b.len());
-        // Same outline up to the move: equal distances from the center, point by point.
-        let ca = P::new(30.0, 30.0);
-        let cb = P::new(100.0, 40.0);
-        for (p, q) in a.iter().zip(b) {
-            assert!(((*p - ca).len() - (*q - cb).len()).abs() < 0.2);
+        // Point for point with the inputs...
+        assert_eq!((a.len(), b.len()), (loops[0].len(), loops[1].len()));
+        // ...and the copy is the reference turned by 0.4 rad and moved: every point of the copy
+        // lies on the moved reference outline.
+        let (ca, cb) = (P::new(30.0, 30.0), P::new(100.0, 40.0));
+        let moved: Vec<P> = a.iter().map(|&p| cb + rotate(p - ca, 0.4)).collect();
+        let dist = |q: P| {
+            (0..moved.len())
+                .map(|i| crate::fit::dist_to_segment(q, moved[i], moved[(i + 1) % moved.len()]))
+                .fold(f64::MAX, f64::min)
+        };
+        for &q in b {
+            assert!(dist(q) < 0.25, "{q:?} is {} px off", dist(q));
         }
         assert_eq!(guides.found.len(), 1);
     }

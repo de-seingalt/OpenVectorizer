@@ -1114,7 +1114,7 @@ fn rdp(pts: &[P], a: usize, b: usize, keep: &mut Vec<usize>) {
     }
 }
 
-fn dist_to_segment(p: P, a: P, b: P) -> f64 {
+pub fn dist_to_segment(p: P, a: P, b: P) -> f64 {
     let ab = b - a;
     let l2 = ab.dot(ab);
     if l2 < 1e-12 {
