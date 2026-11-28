@@ -449,7 +449,7 @@ La postérisation fragmente parfois un trait fin, perd un petit point, fusionne 
 | Chaîne de bord significative qui traverse une zone | couper la zone le long de la chaîne |
 | Tache sans zone | insérer une zone circulaire |
 | Zone fragmentée le long d'une même crête | fusionner les fragments |
-| Zone de mélange : bande fine (largeur < 2σ_b + 1 px) le long d'un bord réel, de couleur intermédiaire entre ses deux voisines | la fusionner avec ses voisines (échos JPEG, anti-crénelage pris pour une couleur), quel que soit le réglage Échelle |
+| Zone de mélange : bande fine (largeur < 2σ_b + 1 px) le long d'un bord réel, de couleur intermédiaire entre ses deux voisines | la fusionner avec ses voisines (échos JPEG, anti-crénelage pris pour une couleur), quel que soit le réglage Échelle, sauf si elle porte un repère Trait ou si elle est bordée de deux bords significatifs parallèles (vrai filet fin, par exemple un séparateur gris de 1 px entre du blanc et du noir) |
 
 Une opération est acceptée si elle réduit l'écart de couleur entre la carte d'étiquettes et la source (ΔE moyen sur la bande concernée) d'au moins ΔE_min. Ce critère ne dépend d'aucun curseur de G–J, ce qui permet de garder F′ dans le cache (§14.6).
 
@@ -521,6 +521,7 @@ Les marches d'escalier d'une droite discrète ne sont jamais des candidats : le 
 
 **Coûts des modèles sur une portée**, tous au même format J ≈ Σ w_i f_i² / (Σ w_i |∇f_i|² / Σ w_i) (somme pondérée des distances carrées, pas une moyenne) :
 - droite : λmin de la matrice de dispersion pondérée ;
+- les « paramètres des moindres carrés » d'un cercle ou d'une ellipse sont ceux des ajustements algébriques de Pratt et de Taubin : c'est légèrement pessimiste sur les arcs courts, mais appliqué de la même façon à tous les modèles ;
 - cercle : résidu algébrique sous la normalisation de Pratt (B² + C² − 4AD = 1), égal au résidu géométrique au premier ordre ;
 - ellipse : résidu de Taubin, **seulement** sur les portées qui tournent d'au moins 120° ou qui portent un repère ellipse ;
 - Bézier : dans la programmation dynamique, un seul ajustement linéaire aux tangentes imposées (système 2×2 de Schneider, sans itération de Newton). Les tangentes aux nœuds viennent du repère adjacent s'il y en a un, sinon de l'estimateur λ-MST calculé une fois par nœud. Schneider complet et SDM ne tournent que sur les portées retenues.
@@ -533,13 +534,13 @@ Un test compare le coût par préfixes au coût direct sur une portée éloigné
 
 **Zone morte** (§3.5) : elle doit peser sur **toutes** les décisions de modèle, pas seulement sur les portées en échec. Elle n'a pas de forme en O(1). On procède en deux temps :
 1. **Tri rapide** en O(1) de tous les modèles de chaque portée, avec un coût approché où la variance est gonflée, v_i + (τ_perc/3)². Ce coût sert uniquement à classer.
-2. **Coût exact** à zone morte pour les **deux meilleurs modèles** de chaque portée selon ce tri. Il est évalué aux paramètres des moindres carrés ordinaires, en une passe sur les points de la portée (O(n_span)). On l'évalue aussi pour tout modèle dont l'écart maximal reste sous τ_perc + τ_max, même s'il est mal classé.
+2. **Coût exact** à zone morte pour les **deux meilleurs modèles** de chaque portée selon ce tri. Il est évalué aux paramètres des moindres carrés ordinaires, en une passe sur les points de la portée (O(n_span)). On l'évalue aussi pour tout modèle de droite, de cercle ou « sur repère » dont l'écart maximal reste sous τ_max, même s'il est mal classé. Le modèle « sur repère » passe toujours par ce coût exact : sa perte à zone morte n'est pas linéaire, donc ses sommes préfixes ne servent qu'au tri rapide.
 
 Le minimum de la programmation dynamique se calcule sur ces coûts exacts. Coût : 10⁴ nœuds × 8 portées × 2 modèles × ~64 points × ~10 opérations ≈ 0,1 G (§14.2).
 
 **Pontage** (§3.5, point 2) : sur les portées où le meilleur modèle simple échoue de peu (écart maximal au-dessus de τ_max sur au plus deux séries courtes), un réajustement par moindres carrés repondérés avec la perte tronquée, en 3 itérations au plus et avec le terme η du §3.5, fournit le coût définitif.
 
-**Élagage (PELT)** : on retire i des candidats si F[i] + coût(i, j) ≥ F[j], où coût(i, j) **exclut** les pénalités (λc, λπ, λ_b). Cette règle n'est valable que si coût(i, k) ≥ coût(i, j) + coût(j, k), ce qui suppose κ_c constant sur la frontière. Ce n'est pas le cas avec les portées infaisables ni avec le pontage ; dans ces cas, l'élagage est désactivé et les bornes ci-dessus suffisent.
+**Élagage (PELT)** : on retire i des candidats si F[i] + coût(i, j) ≥ F[j], où coût(i, j) **exclut** les pénalités (λc, λπ, λ_b). Cette règle n'est valable que si coût(i, k) ≥ coût(i, j) + coût(j, k), ce qui suppose κ_c constant sur la frontière. Ce n'est pas le cas avec les portées infaisables, le pontage ni le coût à zone morte évalué à paramètres fixés. L'élagage est donc désactivé dès que τ_perc > 0 ou qu'un pontage est possible, et les bornes ci-dessus suffisent.
 
 **Budget en unités de travail** : chaque frontière dispose d'un budget compté en évaluations de coût, proportionnel à sa longueur. S'il est épuisé, la frontière est tracée en Béziers seuls, et le cas est compté dans les statistiques. Le budget n'est pas mesuré en temps : le résultat ne doit pas dépendre de la vitesse de la machine.
 
@@ -547,7 +548,7 @@ Le minimum de la programmation dynamique se calcule sur ces coûts exacts. Coût
 
 C'est la correction du défaut « repères d'ellipse non suivis ». Chaque repère attaché à une frontière (cercle, ellipse, droite, arc) propose sur sa portée un modèle dont **les paramètres sont ceux du repère**.
 
-**Paramètres hors portée.** Pour chaque morceau de frontière situé dans la portée du repère, les paramètres sont réajustés **sans les points de ce morceau** (une fois par morceau, pas par portée de la programmation dynamique). Si les points hors du morceau représentent moins de la moitié du support du repère, le repère n'est pas proposé sur ce morceau : le modèle libre s'en charge, avec son plein coût. Un repère soutenu ailleurs est une vraie prédiction.
+**Paramètres hors portée.** Pour chaque morceau de frontière situé dans la portée du repère, les paramètres sont réajustés **sans les points de ce morceau** (une fois par morceau, pas par portée de la programmation dynamique). Si les points hors du morceau représentent moins de la moitié du support du repère, le repère n'est pas proposé sur ce morceau : le modèle libre s'en charge, avec son plein coût. Ce seuil de moitié est une convention qui économise du calcul ; c'est le terme d'Occam ci-dessous qui pénalise, en principe, un soutien faible. Un repère soutenu ailleurs est une vraie prédiction.
 
 **Coût.** L'incertitude du repère est une erreur **commune** à tous les points de la portée. Le coût combine les écarts et un terme d'Occam :
 
@@ -750,10 +751,10 @@ Un générateur par défaut signalé lors des tests, avec un critère réussi/é
 | Coutures | formes sombres adjacentes ; bleu/gris avec liseré | excès d'écart de couleur sur les frontières partagées, par rapport à l'intérieur des zones (définition du §8.3), < ΔE_min, rendu à 1× et 4× |
 | Artefacts JPEG | pétales colorés en JPEG q50, à Échelle = 0 et 0,3 | aucune zone parasite (échos supprimés par le plancher perceptif, le débruitage et la fusion des zones de mélange) ; ΔE moyen ≤ 1,1 × celui obtenu sur le PNG |
 | Petit détail qui casse la symétrie | forme symétrique **nette**, encoche de profondeur 0,5 τ_perc puis 2 τ_perc | symétrie retrouvée à 0,5 τ_perc ; encoche conservée à 2 τ_perc |
-| Formes fines | trait de 300 × 3 px ; texte de 8 px | largeur du trait à ± 0,2 px ; lettres lisibles, aucun œil bouché |
+| Formes fines | trait de 300 × 3 px ; texte de 8 px ; filet gris de 1 px entre blanc et noir | largeur du trait à ± 0,2 px ; lettres lisibles, aucun œil bouché ; filet conservé |
 | Pixel art | sprite à grille native de 4 px ; logo crénelé sans grille | sprite détecté et averti ; logo **non** classé pixel art |
 | Petit élément voisin d'une grande forme | point d'un « i » à 2 px d'un grand cercle | le point est conservé à toute valeur d'Échelle |
-| Simplification progressive | logo testé à Échelle = 0 ; 0,25 ; 0,5 ; 0,75 ; 1 | nombre de nœuds décroissant |
+| Simplification progressive | logo testé à Échelle = 0 ; 0,25 ; 0,5 ; 0,75 ; 1 | nombre de nœuds en baisse (corrélation de rang ≤ −0,9, §3.5) |
 | Icônes sur fond transparent | icônes anti-crénelées sur alpha | aucun liseré ; bord au croisement à 50 % d'alpha, à 0,1 px |
 | Adaptation locale | moitié texture, moitié logo | repères suivis par unité d'aire côté texture ≤ 50 % de ceux côté logo ; côté logo, résultat identique à celui du logo seul |
 
