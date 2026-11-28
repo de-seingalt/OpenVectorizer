@@ -705,7 +705,7 @@ En cas d'échec, la frontière est retracée **une seule fois** avec λ divisé 
 | Équilibré (défaut) | 4 MP | surface partielle / erf / Devernay (§5.5) | + LM géométrique | toutes, sauf symétries entre zones |
 | Précis | 8 MP | idem | + hyper-renormalisation | toutes |
 
-Au-delà de la résolution d'analyse, **tout le pipeline** tourne sur l'image réduite (flou gaussien puis rééchantillonnage par surfaces), et le SVG est remis à l'échelle. Ce choix borne le temps comme la mémoire. Il va plus loin que la demande initiale, qui ne parlait de réduire que pour les détections ; il est donc soumis à décision (§17). La classification d'entrée et le bruit sont estimés sur l'image d'origine (§4.1). Les éditions de l'utilisateur sont stockées en coordonnées de l'image d'origine et converties. En mode Précis, une relocalisation par bandes à pleine résolution, autour des seules chaînes trouvées, est une option ultérieure.
+Au-delà de la résolution d'analyse, **tout le pipeline** tourne sur l'image réduite (flou gaussien puis rééchantillonnage par surfaces), et le SVG est remis à l'échelle. Ce choix borne le temps comme la mémoire ; il a été **validé par le propriétaire du projet**. Les plafonds sont propres à chaque plateforme : ceux du tableau valent pour la version web, et l'application de bureau, qui dispose en principe de plus de puissance de calcul et de mémoire, peut les relever. La classification d'entrée et le bruit sont estimés sur l'image d'origine (§4.1). Les éditions de l'utilisateur sont stockées en coordonnées de l'image d'origine et converties. En mode Précis, une relocalisation par bandes à pleine résolution, autour des seules chaînes trouvées, est une option ultérieure.
 
 Mémoire de pointe visée : Rapide ≤ 100 Mo, Équilibré ≤ 300 Mo (4 MP), Précis ≤ 500 Mo (8 MP), avec un avertissement dans l'interface pour ce dernier.
 
@@ -781,7 +781,7 @@ Ce benchmark est surtout fait de rendus synthétiques. Il ne suffit pas pour les
 ### 13.5 Performance, mémoire, robustesse
 
 - **Chronomètres par étape** dans `eval` (natif, release) et dans le worker WASM (`performance.now()`), plus une sonde mémoire (`memory.buffer.byteLength`), dès la phase P1.
-- **Réduction au-delà du plafond** (décision §17) : sur cinq images de 16 MP, comparaison de la réduction de tout le pipeline et de la réduction des seules détections (localisation et postérisation à pleine résolution) : ΔE, nombre de nœuds, temps, mémoire. Ces chiffres servent à trancher.
+- **Réduction au-delà du plafond** (§12.5) : sur cinq images de 16 MP, ΔE, nombre de nœuds, temps et mémoire selon le plafond, pour fixer les valeurs par défaut du web et du bureau.
 - **Tests d'endurance** : une photo de 2 MP, une frontière de 4000 px, une image de 16 MP (chemin de plafonnement). En intégration continue, les assertions portent sur les **unités de travail** comptées, qui sont déterministes ; les temps sont mesurés et publiés, mais ne font échouer que les mesures locales en mode release.
 - **Cas limites** : 1×1, 1×N, image entièrement transparente ou constante ; propagation de NaN.
 - **Sorties de débogage** : un SVG des points de bord, chaînes, repères (avec ellipses de covariance) et ruptures de la programmation dynamique, pour le développement.
@@ -961,7 +961,7 @@ Les phases P3 et suivantes améliorent le pipeline existant pièce par pièce, a
 7. **Réparation de topologie** (§8.2) : la plus nouvelle des étapes, sans référence directe dans la littérature. Le critère d'acceptation par ΔE est simple ; ses effets de bord sur les frontières voisines sont à surveiller.
 8. **Coutures** : la stratégie actuelle (traits de comblement) reste nécessaire. Sa mesure (§13.2) dira si le mode empilé doit devenir le défaut.
 9. **Dégradés** : le statut « bord de postérisation » empêche les fausses géométries ; le rendu des dégradés en SVG reste une étape distincte.
-10. **Réduction au-delà du plafond** (§12.5) : faire tourner tout le pipeline sur l'image réduite borne le temps et la mémoire, mais va au-delà de la demande initiale (réduire pour les seules détections). **Décision à prendre par le propriétaire du projet.**
+10. **Réduction au-delà du plafond** (§12.5) : décision prise, tout le pipeline tourne sur l'image réduite. Reste à fixer les plafonds par plateforme (web et bureau) à l'aide du test du §13.5.
 11. **Coin vif flou** (§6.3) : le modèle du lieu observé d'un coin flou est tabulé par simulation ; sa validité sur des flous non gaussiens (JPEG, mise à l'échelle) reste à mesurer.
 12. **Zone morte** (§3.5) : elle rend gratuits les écarts sous τ_perc. Le budget de couleur par forme et la protection des repères significatifs limitent les abus ; leur réglage par défaut se calibre sur le corpus.
 
