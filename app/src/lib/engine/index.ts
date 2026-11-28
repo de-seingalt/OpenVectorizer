@@ -24,7 +24,7 @@ export const DEFAULT_OPTIONS: Options = {
   maxColors: 0,
   paletteEdit: null,
   corners: { mode: 'automatic', sharpCount: null, radius: 0, edits: [] },
-  shapes: true,
+  geometry: 0.5,
 };
 
 export type Result = { output: Output; ms: number };

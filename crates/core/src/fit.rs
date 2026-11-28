@@ -107,7 +107,43 @@ impl Curve {
 pub struct FitParams {
     /// Max distance (px) between the fitted curve and the edge midpoints.
     pub tolerance: f64,
+    /// Max distance (px) between a tangent arc (fillet between two straight parts) and the
+    /// points it replaces; 0 = no fillets.
+    pub arc_tol: f64,
 }
+
+/// Fillet radii shared across the whole image: `found` collects every fitted radius, `snap`
+/// lists the radii to prefer (means of close radii), so similar fillets get the same radius.
+#[derive(Debug, Clone, Default)]
+pub struct Fillets {
+    pub snap: Vec<f64>,
+    pub found: Vec<f64>,
+}
+
+impl Fillets {
+    /// Mean radius of each cluster of close radii (within 4 % or 0.3 px) that has several members.
+    pub fn clusters(radii: &[f64]) -> Vec<f64> {
+        let mut r = radii.to_vec();
+        r.sort_by(f64::total_cmp);
+        let mut out = Vec::new();
+        let mut i = 0;
+        while i < r.len() {
+            let mut j = i + 1;
+            while j < r.len() && r[j] - r[i] <= SNAP_RADIUS.max(r[i] * SNAP_RELATIVE) {
+                j += 1;
+            }
+            if j - i >= 2 {
+                out.push(r[i..j].iter().sum::<f64>() / (j - i) as f64);
+            }
+            i = j;
+        }
+        out
+    }
+}
+
+/// Radii closer than this (px), or than this fraction, are made equal.
+const SNAP_RADIUS: f64 = 0.3;
+const SNAP_RELATIVE: f64 = 0.04;
 
 /// How one corner is drawn.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -166,9 +202,9 @@ pub struct Prepared {
 impl Prepared {
     /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
     /// has no corners).
-    pub fn detect_shape(&mut self) {
+    pub fn detect_shape(&mut self, geometry: f64) {
         if self.closed
-            && let Some((ellipse, reverse)) = crate::shape::fit_round(&self.pts)
+            && let Some((ellipse, reverse)) = crate::shape::fit_round(&self.pts, geometry)
         {
             self.shape = Some(ellipse.curve(reverse));
             self.corners.clear();
@@ -401,7 +437,12 @@ struct Anchor {
 }
 
 /// Fit a prepared run; `styles[i]` says how corner `i` is drawn.
-pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -> Curve {
+pub fn fit_prepared(
+    run: &Prepared,
+    styles: &[CornerStyle],
+    params: FitParams,
+    fillets: &mut Fillets,
+) -> Curve {
     if let Some(shape) = &run.shape {
         return shape.clone();
     }
@@ -433,17 +474,16 @@ pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -
     if anchors.is_empty() {
         // Smooth closed loop: one span starting at point 0 with a central tangent.
         smooth(&mut pts, true);
-        // Start the loop at the beginning of a straight part, if it has one: the closing
-        // curve then ends tangent to it.
+        // Start the loop in the middle of its longest straight part, if it has one: every
+        // fillet between straight parts is then inside the span.
         let lines = find_lines(&pts);
-        let inner = lines.iter().filter(|l| l.from > 0 && l.to < n - 1);
-        let start = inner.max_by_key(|l| l.to - l.from).or(lines.first()).map_or(0, |l| l.from);
+        let start = lines.iter().max_by_key(|l| l.to - l.from).map_or(0, |l| usize::midpoint(l.from, l.to));
         pts.rotate_left(start);
         let mut loop_pts = pts.clone();
         loop_pts.push(pts[0]);
         let t = (pts[1 % n] - pts[n - 1]).normalized();
         let mut segs = Vec::new();
-        fit_span(&loop_pts, Some(t), Some(-t), params.tolerance, &mut segs);
+        fit_span(&loop_pts, Some(t), Some(-t), params, fillets, &mut segs);
         return Curve { start: pts[0], segs };
     }
     let mut segs = Vec::new();
@@ -483,7 +523,7 @@ pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -
         if span.len() < 3 && (span[0] - span[span.len() - 1]).len() < 1e-9 {
             continue;
         }
-        fit_span(&span, a.t_out, b.t_in.map(|t| -t), params.tolerance, &mut segs);
+        fit_span(&span, a.t_out, b.t_in.map(|t| -t), params, fillets, &mut segs);
     }
     Curve { start: anchors[0].p, segs }
 }
@@ -596,26 +636,160 @@ fn on_arc(pts: &[P], a: usize, b: usize) -> bool {
     ext.iter().all(|&p| ((p - center).len() - r).abs() <= ARC_TOL)
 }
 
-/// Fit a span: its straight parts become lines, the rest cubics tangent to them. `t1` is the
+/// Fit a span: its straight parts become lines, the turns between two of them circular arcs
+/// tangent to both when they fit (fillets), the rest cubics tangent to the lines. `t1` is the
 /// start tangent (direction of travel) and `t2` the end tangent pointing backward, when fixed.
 /// The span's end points are kept exactly.
-fn fit_span(span: &[P], t1: Option<P>, t2: Option<P>, tol: f64, segs: &mut Vec<Seg>) {
+fn fit_span(
+    span: &[P],
+    t1: Option<P>,
+    t2: Option<P>,
+    params: FitParams,
+    fillets: &mut Fillets,
+    segs: &mut Vec<Seg>,
+) {
     let n = span.len();
+    let tol = params.tolerance;
     let lines = find_lines(span);
-    // Break points: (index, position, tangent of travel there, is the start of a line).
-    let mut cursor = (0usize, span[0], t1);
-    for line in &lines {
-        let start = if line.from == 0 { span[0] } else { line.project(span[line.from]) };
-        let end = if line.to == n - 1 { span[n - 1] } else { line.project(span[line.to]) };
-        if line.from > 0 {
-            curve_piece(span, cursor, (line.from, start, Some(-line.dir)), tol, segs);
+    let mut starts: Vec<P> =
+        lines.iter().map(|l| if l.from == 0 { span[0] } else { l.project(span[l.from]) }).collect();
+    let mut ends: Vec<P> =
+        lines.iter().map(|l| if l.to == n - 1 { span[n - 1] } else { l.project(span[l.to]) }).collect();
+    // Arc after line i (to line i + 1).
+    let mut arcs: Vec<Option<Vec<Seg>>> = vec![None; lines.len()];
+    if params.arc_tol > 0.0 {
+        for i in 0..lines.len().saturating_sub(1) {
+            let (a, b) = (&lines[i], &lines[i + 1]);
+            if let Some(f) =
+                fillet(&span[a.to..=b.from], (a, starts[i]), (b, ends[i + 1]), params.arc_tol, &fillets.snap)
+            {
+                ends[i] = f.from;
+                starts[i + 1] = f.to;
+                arcs[i] = Some(f.segs);
+                fillets.found.push(f.radius);
+            }
         }
-        segs.push(Seg::Line(end));
-        cursor = (line.to, end, Some(line.dir));
+    }
+    let mut cursor = (0usize, span[0], t1);
+    for (i, line) in lines.iter().enumerate() {
+        let after_arc = i > 0 && arcs[i - 1].is_some();
+        if line.from > 0 && !after_arc {
+            curve_piece(span, cursor, (line.from, starts[i], Some(-line.dir)), tol, segs);
+        }
+        segs.push(Seg::Line(ends[i]));
+        cursor = (line.to, ends[i], Some(line.dir));
+        if let Some(arc) = &arcs[i] {
+            segs.extend(arc.iter().copied());
+        }
     }
     if cursor.0 < n - 1 {
         curve_piece(span, cursor, (n - 1, span[n - 1], t2), tol, segs);
     }
+}
+
+/// A circular arc tangent to two straight parts.
+struct Fillet {
+    /// Tangent points on the first and the second line.
+    from: P,
+    to: P,
+    radius: f64,
+    segs: Vec<Seg>,
+}
+
+/// Fit the arc tangent to `a` and `b` (each with its start / end point) that best follows
+/// `pts` (the points from the end of `a` to the start of `b`), if every point stays within
+/// `tol` of the line–arc–line path. A radius of `snap` is preferred when it fits as well.
+fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, snap: &[f64]) -> Option<Fillet> {
+    let ((la, a_start), (lb, b_end)) = (a, b);
+    let (d1, d2) = (la.dir, lb.dir);
+    let turn = d1.dot(d2).clamp(-1.0, 1.0).acos();
+    if !(5f64.to_radians()..=175f64.to_radians()).contains(&turn) {
+        return None;
+    }
+    let apex = intersect(la.origin, d1, lb.origin, d2)?;
+    // Room for the tangent points: back along a to its start, forward along b to its end.
+    let (room_a, room_b) = ((apex - a_start).dot(d1), (b_end - apex).dot(d2));
+    if room_a <= 0.0 || room_b <= 0.0 {
+        return None;
+    }
+    let half = (std::f64::consts::PI - turn) / 2.0; // half the interior angle
+    let r_max = room_a.min(room_b) * half.tan();
+    let bisector = (d2 - d1).normalized();
+    let path = |r: f64| {
+        let t = r / half.tan();
+        let (t1, t2) = (apex - d1 * t, apex + d2 * t);
+        let center = apex + bisector * (r / half.sin());
+        (t1, t2, center)
+    };
+    // (max, rms) distance from the points to the line–arc–line path of radius r.
+    let error = |r: f64| {
+        let (t1, t2, center) = path(r);
+        let (mut max, mut sum) = (0.0f64, 0.0);
+        for &p in pts {
+            let d = if (p - t1).dot(d1) <= 0.0 {
+                cross(d1, p - t1).abs()
+            } else if (p - t2).dot(d2) >= 0.0 {
+                cross(d2, p - t2).abs()
+            } else {
+                ((p - center).len() - r).abs()
+            };
+            max = max.max(d);
+            sum += d * d;
+        }
+        (max, (sum / pts.len() as f64).sqrt())
+    };
+    // Golden-section search of the radius on the RMS error.
+    let (mut lo, mut hi) = (0.0, r_max);
+    let phi = (5f64.sqrt() - 1.0) / 2.0;
+    for _ in 0..40 {
+        let (m1, m2) = (hi - phi * (hi - lo), lo + phi * (hi - lo));
+        if error(m1).1 < error(m2).1 {
+            hi = m2;
+        } else {
+            lo = m1;
+        }
+    }
+    let mut r = f64::midpoint(lo, hi);
+    if r < MIN_FILLET || error(r).0 > tol {
+        return None;
+    }
+    if let Some(&s) = snap
+        .iter()
+        .filter(|&&s| s <= r_max && (s - r).abs() <= SNAP_RADIUS.max(r * SNAP_RELATIVE))
+        .min_by(|x, y| (*x - r).abs().total_cmp(&(*y - r).abs()))
+        && error(s).0 <= tol
+    {
+        r = s;
+    }
+    let (t1, t2, center) = path(r);
+    // Cubic quarter-or-less pieces: handle length 4/3·tan(φ/4)·r.
+    let pieces = (turn / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
+    let phi = turn / pieces;
+    let sense = cross(d1, d2).signum();
+    let rot = |v: P, a: f64| {
+        let (s, c) = (a * sense).sin_cos();
+        P::new(v.x * c - v.y * s, v.x * s + v.y * c)
+    };
+    let k = 4.0 / 3.0 * (phi / 4.0).tan() * r;
+    let mut segs = Vec::new();
+    let mut radial = (t1 - center) * (1.0 / r);
+    let mut dir = d1;
+    for i in 0..pieces as usize {
+        let next_radial = rot(radial, phi);
+        let next_dir = rot(dir, phi);
+        let p0 = center + radial * r;
+        let p3 = if i + 1 == pieces as usize { t2 } else { center + next_radial * r };
+        segs.push(Seg::Cubic(p0 + dir * k, p3 - next_dir * k, p3));
+        (radial, dir) = (next_radial, next_dir);
+    }
+    Some(Fillet { from: t1, to: t2, radius: r, segs })
+}
+
+/// Smallest fillet radius (px): below, the turn is a corner, not an arc.
+const MIN_FILLET: f64 = 0.75;
+
+fn cross(a: P, b: P) -> f64 {
+    a.x * b.y - a.y * b.x
 }
 
 /// Cubics from break point `a` to `b` (index, position, tangent): `a`'s tangent points forward,
@@ -851,7 +1025,7 @@ mod tests {
     use super::*;
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7 }
+        FitParams { tolerance: 0.7, arc_tol: 0.5 }
     }
 
     /// Midpoints of the crack edges of a run (no sub-pixel information).
@@ -869,7 +1043,7 @@ mod tests {
     /// Fit with every corner sharp.
     fn fit_sharp(v: &[(i64, i64)], closed: bool, ends: (P, P)) -> Curve {
         let run = prepare(v, &grid_mids(v, closed), ends, closed, None);
-        fit_prepared(&run, &vec![CornerStyle::Sharp; run.corners.len()], params())
+        fit_prepared(&run, &vec![CornerStyle::Sharp; run.corners.len()], params(), &mut Fillets::default())
     }
 
     fn square(n: i64) -> Vec<(i64, i64)> {
@@ -923,11 +1097,15 @@ mod tests {
         });
         // Candidates on the arcs stay rounded (free).
         let free = |p: &Prepared| vec![CornerStyle::Free; p.corners.len()];
-        let c = fit_prepared(&rect, &free(&rect), params());
-        assert_eq!(lines(&c), 4, "{c:?}");
+        let mut fillets = Fillets::default();
+        let c = fit_prepared(&rect, &free(&rect), params(), &mut fillets);
+        // 4 sides (the loop starts in the middle of one: 5 lines) and 4 tangent arcs of radius 15.
+        assert_eq!(lines(&c), 5, "{c:?}");
+        assert_eq!(fillets.found.len(), 4, "{c:?}");
+        assert!(fillets.found.iter().all(|r| (r - 15.0).abs() < 0.3), "{:?}", fillets.found);
 
         let circle = sample(300, |t| P::new(50.0 + 30.0 * (t * TAU).cos(), 50.0 + 30.0 * (t * TAU).sin()));
-        let c = fit_prepared(&circle, &free(&circle), params());
+        let c = fit_prepared(&circle, &free(&circle), params(), &mut Fillets::default());
         assert_eq!(lines(&c), 0, "{c:?}");
     }
 

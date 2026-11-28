@@ -104,9 +104,10 @@ pub struct Options {
     /// source colors (its key no longer matches).
     pub palette_edit: Option<PaletteEdit>,
     pub corners: Corners,
-    /// Isolated shapes that follow a circle, an ellipse or a symmetry (mirror axis, rotation)
-    /// are made exact.
-    pub shapes: bool,
+    /// How strongly geometric patterns are enforced: 0 = plain tracing; higher values accept
+    /// larger deviations for tangent arcs between straight parts (fillets, equal radii),
+    /// circles, ellipses and symmetries of isolated shapes.
+    pub geometry: f32,
 }
 
 impl Default for Options {
@@ -120,7 +121,7 @@ impl Default for Options {
             max_colors: 0,
             palette_edit: None,
             corners: Corners::default(),
-            shapes: true,
+            geometry: 0.5,
         }
     }
 }
@@ -138,6 +139,7 @@ impl Options {
         };
         unit("detail", self.detail)?;
         unit("smoothness", self.smoothness)?;
+        unit("geometry", self.geometry)?;
         if self.min_area_px > 128 {
             return Err(Error::InvalidOption(format!("minAreaPx must be <= 128, got {}", self.min_area_px)));
         }

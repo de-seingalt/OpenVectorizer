@@ -304,12 +304,24 @@
   </section>
 
   {#if options.preset !== 'photo'}
-    <section class="flex items-start justify-between gap-3">
-      <div class="flex flex-col gap-1">
-        <Label for="shapes">{t.exactShapes}</Label>
-        <p class="text-xs text-muted-foreground">{t.exactShapesHint}</p>
+    <section class="flex flex-col gap-3">
+      <div class="flex items-baseline justify-between">
+        <Label for="geometry">{t.geometry}</Label>
+        <span class="text-xs text-muted-foreground tabular-nums">{pct(options.geometry)}</span>
       </div>
-      <Switch id="shapes" bind:checked={options.shapes} />
+      <Slider
+        id="geometry"
+        label={t.geometry}
+        type="single"
+        min={0}
+        max={1}
+        step={0.05}
+        bind:value={options.geometry}
+      />
+      <div class="flex justify-between text-xs text-muted-foreground">
+        <span>{t.geometryOff}</span><span>{t.geometryStrong}</span>
+      </div>
+      <p class="text-xs text-muted-foreground">{t.geometryHint}</p>
     </section>
   {/if}
 

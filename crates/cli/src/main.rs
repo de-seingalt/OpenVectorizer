@@ -85,9 +85,10 @@ struct OptArgs {
     /// Rounded corner radius: -1 sharp, 0 best fit, 1 largest
     #[arg(long, allow_hyphen_values = true)]
     radius: Option<f32>,
-    /// Keep traced outlines instead of exact circles, ellipses and symmetries
+    /// Geometry 0..1: 0 = plain tracing, higher = stronger fillets, equal radii, circles,
+    /// ellipses and symmetries
     #[arg(long)]
-    no_shapes: bool,
+    geometry: Option<f32>,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -140,7 +141,9 @@ impl OptArgs {
         if self.cutout {
             o.stacking = Stacking::Cutout;
         }
-        o.shapes = !self.no_shapes;
+        if let Some(g) = self.geometry {
+            o.geometry = g;
+        }
         o
     }
 }

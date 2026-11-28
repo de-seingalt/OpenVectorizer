@@ -31,7 +31,8 @@ maxColors: number,
  */
 paletteEdit: PaletteEdit | null, corners: Corners, 
 /**
- * Isolated shapes that follow a circle, an ellipse or a symmetry (mirror axis, rotation)
- * are made exact.
+ * How strongly geometric patterns are enforced: 0 = plain tracing; higher values accept
+ * larger deviations for tangent arcs between straight parts (fillets, equal radii),
+ * circles, ellipses and symmetries of isolated shapes.
  */
-shapes: boolean, };
+geometry: number, };

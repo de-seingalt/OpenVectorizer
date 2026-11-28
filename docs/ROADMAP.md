@@ -42,7 +42,11 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 ## M3 — Géométrie
 - [x] Droites : parties droites détectées (écart ≤ 0,45 px, pas de courbure systématique, ≥ 6 px, pas un morceau
       d'arc), tracées en segments, les courbes voisines leur sont tangentes ; coins du cadre toujours vifs
-- [ ] Arcs de cercle et d'ellipse par segment, choix par erreur + complexité
+- [x] Raccords : entre deux droites, arc de cercle tangent aux deux (rayon ajusté aux points, écart ≤ 0,5 px),
+      les droites s'arrêtent aux points de contact
+- [x] Rayons égaux : rayons de raccord proches (4 % ou 0,3 px) égalisés sur toute l'image (deuxième passe)
+- [x] Curseur **Géométrie** (0 = tracé brut … 100 %) : dose raccords, cercles, ellipses et symétries
+- [ ] Arcs de cercle et d'ellipse libres (hors raccords), choix par erreur + complexité
 - [x] Formes entières (contours isolés) : cercle (Kåsa) et ellipse (Fitzgibbon / Halíř-Flusser) exacts si l'écart
       reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».
       Rectangles, polygones et étoiles : coins vifs + droites
@@ -52,7 +56,6 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 0,5 px
 - [ ] Formes répétées partageant un contour ; symétries des formes non isolées
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
-- [ ] Rayons égaux
 
 ## M4 — Édition
 - [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu

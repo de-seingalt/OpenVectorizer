@@ -7,10 +7,11 @@
 
 use crate::fit::{Curve, P, Seg};
 
-/// Largest distance (px) from a boundary point to the shape...
-const MAX_ERR: f64 = 0.6;
-/// ...and largest RMS distance.
-const RMS_ERR: f64 = 0.22;
+/// Largest distance (px) from a boundary point to the shape, and largest RMS distance, for the
+/// geometry setting g: 0.6 and 0.22 at g = 0.5.
+fn round_tolerance(g: f64) -> (f64, f64) {
+    (0.3 + 0.6 * g, 0.1 + 0.24 * g)
+}
 /// Smallest semi-axis (px) and most elongated ratio considered.
 const MIN_AXIS: f64 = 2.0;
 const MAX_RATIO: f64 = 12.0;
@@ -66,8 +67,9 @@ impl Ellipse {
 
 /// The circle or ellipse that `pts` (a closed boundary) follows, if any, and whether the
 /// boundary runs against its parametrization.
-pub fn fit_round(pts: &[P]) -> Option<(Ellipse, bool)> {
-    if pts.len() < 12 {
+pub fn fit_round(pts: &[P], g: f64) -> Option<(Ellipse, bool)> {
+    let (max_err, rms_err) = round_tolerance(g);
+    if g <= 0.0 || pts.len() < 12 {
         return None;
     }
     let score = |e: &Ellipse| {
@@ -77,7 +79,7 @@ pub fn fit_round(pts: &[P]) -> Option<(Ellipse, bool)> {
         (max, rms)
     };
     let ok = |e: &Ellipse, (max, rms): (f64, f64)| {
-        e.b >= MIN_AXIS && e.a / e.b <= MAX_RATIO && max <= MAX_ERR && rms <= RMS_ERR
+        e.b >= MIN_AXIS && e.a / e.b <= MAX_RATIO && max <= max_err && rms <= rms_err
     };
     let circle = fit_circle(pts).map(|(center, r)| Ellipse { center, a: r, b: r, angle: 0.0 });
     let ellipse = fit_ellipse(pts);
@@ -199,10 +201,11 @@ pub fn fit_ellipse(pts: &[P]) -> Option<Ellipse> {
     })
 }
 
-/// Largest distance (px) between a boundary and its symmetric image...
-const SYM_MAX_ERR: f64 = 0.7;
-/// ...and largest RMS distance.
-const SYM_RMS_ERR: f64 = 0.25;
+/// Largest distance (px) between a boundary and its symmetric image, and largest RMS distance,
+/// for the geometry setting g: 0.7 and 0.25 at g = 0.5.
+fn symmetry_tolerance(g: f64) -> (f64, f64) {
+    (0.35 + 0.7 * g, 0.1 + 0.3 * g)
+}
 /// Highest rotational order tried.
 const MAX_ORDER: u32 = 12;
 /// Samples used to search and test symmetries.
@@ -290,9 +293,10 @@ fn compare(len: f64, samples: usize, f: impl Fn(f64) -> P, g: impl Fn(f64) -> P)
 /// order k about it). Returns the new boundary: evenly spaced points, a multiple of k of them,
 /// point 0 on the mirror axis, so that symmetries map point indices onto point indices (see
 /// [`Symmetry::images`]).
-pub fn symmetrize(pts: &[P]) -> Option<(Vec<P>, Symmetry)> {
+pub fn symmetrize(pts: &[P], g: f64) -> Option<(Vec<P>, Symmetry)> {
     let n = pts.len();
-    if n < 16 {
+    let (sym_max, sym_rms) = symmetry_tolerance(g);
+    if g <= 0.0 || n < 16 {
         return None;
     }
     let lp = Loop::new(pts);
@@ -311,7 +315,7 @@ pub fn symmetrize(pts: &[P]) -> Option<(Vec<P>, Symmetry)> {
     }
     let c = P::new(cx / (3.0 * a2), cy / (3.0 * a2));
     let sense = a2.signum();
-    let good = |(max, rms): (f64, f64)| max <= SYM_MAX_ERR && rms <= SYM_RMS_ERR;
+    let good = |(max, rms): (f64, f64)| max <= sym_max && rms <= sym_rms;
 
     // Rotation: the highest order whose rotated copy matches.
     let rot_err = |k: u32| {
@@ -460,7 +464,7 @@ mod tests {
     #[test]
     fn recovers_a_rotated_ellipse() {
         let e = Ellipse { center: P::new(210.0, 100.0), a: 50.0, b: 22.0, angle: -0.26 };
-        let (fit, _) = fit_round(&ellipse_pts(&e, 300, 0.2)).expect("ellipse");
+        let (fit, _) = fit_round(&ellipse_pts(&e, 300, 0.2), 0.5).expect("ellipse");
         assert!((fit.center - e.center).len() < 0.1, "{fit:?}");
         assert!((fit.a - e.a).abs() < 0.2 && (fit.b - e.b).abs() < 0.2, "{fit:?}");
         assert!((fit.angle - e.angle).sin().abs() < 0.01, "{fit:?}");
@@ -469,7 +473,7 @@ mod tests {
     #[test]
     fn prefers_the_circle_and_rejects_squares() {
         let c = Ellipse { center: P::new(100.0, 100.0), a: 28.0, b: 28.0, angle: 0.0 };
-        let (fit, _) = fit_round(&ellipse_pts(&c, 200, 0.15)).expect("circle");
+        let (fit, _) = fit_round(&ellipse_pts(&c, 200, 0.15), 0.5).expect("circle");
         assert!((fit.a - fit.b).abs() < 1e-12 && (fit.a - 28.0).abs() < 0.1, "{fit:?}");
 
         let square: Vec<P> = (0..160)
@@ -483,7 +487,7 @@ mod tests {
                 }
             })
             .collect();
-        assert!(fit_round(&square).is_none());
+        assert!(fit_round(&square, 0.5).is_none());
     }
 
     /// A 5-pointed star (outer radius 40, inner 16) with alternating noise, rotated by `phase`.
@@ -508,7 +512,7 @@ mod tests {
 
     #[test]
     fn star_becomes_exactly_symmetric() {
-        let (sym, kind) = symmetrize(&star(0.1, 0.3)).expect("symmetric");
+        let (sym, kind) = symmetrize(&star(0.1, 0.3), 0.5).expect("symmetric");
         assert_eq!(kind, Symmetry { order: 5, mirror: true });
         // Every tip at the same distance from the center, within 0.05 px.
         let c = P::new(100.0, 100.0);
@@ -534,16 +538,16 @@ mod tests {
                 pts.push(a + (b - a) * (f64::from(k) / 40.0));
             }
         }
-        assert!(symmetrize(&pts).is_none());
+        assert!(symmetrize(&pts, 0.5).is_none());
     }
 
     #[test]
     fn curve_follows_the_boundary_direction() {
         let c = Ellipse { center: P::new(0.0, 0.0), a: 10.0, b: 5.0, angle: 0.3 };
         let pts = ellipse_pts(&c, 100, 0.0);
-        let (_, reverse) = fit_round(&pts).expect("fit");
+        let (_, reverse) = fit_round(&pts, 0.5).expect("fit");
         assert!(!reverse);
         let rev: Vec<P> = pts.iter().rev().copied().collect();
-        assert!(fit_round(&rev).expect("fit").1);
+        assert!(fit_round(&rev, 0.5).expect("fit").1);
     }
 }
