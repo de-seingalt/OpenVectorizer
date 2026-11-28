@@ -225,6 +225,13 @@ pub struct Prepared {
 impl Prepared {
     /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
     /// has no corners).
+    /// Move the end junctions of an open run (a junction placed onto a shape).
+    pub fn set_ends(&mut self, start: P, end: P) {
+        let n = self.pts.len();
+        self.pts[0] = start;
+        self.pts[n - 1] = end;
+    }
+
     /// The boundary points (with the end junctions of an open run).
     pub fn pts(&self) -> &[P] {
         &self.pts

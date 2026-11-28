@@ -48,6 +48,28 @@ impl Ellipse {
         (self.center + rot(self.a * ct, self.b * st), rot(-self.a * st, self.b * ct))
     }
 
+    /// The point of the ellipse nearest to `p` (radial estimate refined by Newton steps).
+    pub fn nearest(&self, p: P) -> P {
+        let (s, c) = self.angle.sin_cos();
+        let d = p - self.center;
+        let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
+        let mut t = self.param(p);
+        for _ in 0..6 {
+            // Minimize |E(t) − q|²: f(t) = (E − q)·E', f'(t) = E'·E' + (E − q)·E''.
+            let (st, ct) = t.sin_cos();
+            let (ex, ey) = (self.a * ct - u, self.b * st - v);
+            let (dx, dy) = (-self.a * st, self.b * ct);
+            let (ddx, ddy) = (-self.a * ct, -self.b * st);
+            let f = ex * dx + ey * dy;
+            let df = dx * dx + dy * dy + ex * ddx + ey * ddy;
+            if df.abs() < 1e-12 {
+                break;
+            }
+            t -= f / df;
+        }
+        self.at(t).0
+    }
+
     /// Parameter of the point of the ellipse nearest (radially) to `p`.
     fn param(&self, p: P) -> f64 {
         let (s, c) = self.angle.sin_cos();

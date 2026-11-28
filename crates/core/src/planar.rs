@@ -695,6 +695,8 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
     }
     fits.sort_by(|a, b| a.0.total_cmp(&b.0));
     let mut out: Vec<Option<Curve>> = vec![None; runs.prepared.len()];
+    // Which shape each run follows (the best fitting one that claims it).
+    let mut claims: Vec<(crate::shape::Ellipse, Vec<usize>)> = Vec::new();
     for (_, ellipse, within, members) in fits {
         // Both sides of an outline find the same shape: one guide.
         let top = ellipse.top();
@@ -705,13 +707,41 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
         if seen || !runs.guides.add(ellipse.kind(), top, ellipse.guide(), within) {
             continue;
         }
-        for idx in members {
-            if out[idx].is_none() {
-                let run = &mut runs.prepared[idx];
-                let p = run.pts();
-                out[idx] = Some(ellipse.arc(p[0], p[p.len() - 1], p[p.len() / 2]));
-                run.corners.clear();
+        let mine: Vec<usize> = members.into_iter().filter(|&i| out[i].is_none()).collect();
+        for &idx in &mine {
+            out[idx] = Some(Curve { start: P::default(), segs: Vec::new() }); // claimed
+        }
+        claims.push((ellipse, mine));
+    }
+    // The junctions of a shape's runs move onto the shape (the first shape that reaches a
+    // junction places it), and every run that ends there follows: the outline is exact all
+    // the way round, and neighbours stay watertight.
+    let key = |p: P| (p.x.to_bits(), p.y.to_bits());
+    let mut moves: HashMap<(u64, u64), P> = HashMap::new();
+    for (ellipse, mine) in &claims {
+        for &idx in mine {
+            let p = runs.prepared[idx].pts();
+            for end in [p[0], p[p.len() - 1]] {
+                moves.entry(key(end)).or_insert_with(|| ellipse.nearest(end));
             }
+        }
+    }
+    if !moves.is_empty() {
+        for run in runs.prepared.iter_mut().filter(|r| !r.closed) {
+            let p = run.pts();
+            let (a, b) = (p[0], p[p.len() - 1]);
+            let (na, nb) = (moves.get(&key(a)).copied(), moves.get(&key(b)).copied());
+            if na.is_some() || nb.is_some() {
+                run.set_ends(na.unwrap_or(a), nb.unwrap_or(b));
+            }
+        }
+    }
+    for (ellipse, mine) in &claims {
+        for &idx in mine {
+            let run = &mut runs.prepared[idx];
+            let p = run.pts();
+            out[idx] = Some(ellipse.arc(p[0], p[p.len() - 1], p[p.len() / 2]));
+            run.corners.clear();
         }
     }
     out
@@ -1118,6 +1148,18 @@ mod tests {
         let red = svg.lines().find(|l| l.contains("#c80000")).expect("red path");
         assert!(!red.contains('L'), "{red}");
         assert_eq!(info.total, 0);
+        // Its junctions with the boundary between the backgrounds were moved onto the circle:
+        // every end point of the red path is on it (center 40,30, radius ≈ 20).
+        let ends: Vec<(f64, f64)> = red
+            .split(['M', 'C'])
+            .filter_map(|seg| {
+                let v: Vec<f64> = seg.split([' ', '"', 'Z']).filter_map(|t| t.parse().ok()).collect();
+                (v.len() >= 2).then(|| (v[v.len() - 2], v[v.len() - 1]))
+            })
+            .collect();
+        let radii: Vec<f64> = ends.iter().map(|&(x, y)| (x - 40.0).hypot(y - 30.0)).collect();
+        let (lo, hi) = radii.iter().fold((f64::MAX, f64::MIN), |(l, h), &r| (l.min(r), h.max(r)));
+        assert!(hi - lo < 0.05, "{radii:?}");
     }
 
     #[test]
