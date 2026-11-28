@@ -1,6 +1,6 @@
 # Algorithme de vectorisation sur mesure — document de conception
 
-**Version 4** : intègre trois tournées de relecture indépendante (rigueur mathématique, faisabilité Rust/WASM, couverture des objectifs et robustesse). Les synthèses de recherche qui alimentent ce document sont dans [`docs/recherche/`](recherche/) (en anglais) ; un renvoi `[R1 §2.3]` désigne la synthèse 01, section 2.3. Un glossaire (annexe A) et un exemple complet (annexe B) aident à la lecture. Les pistes d'amélioration proposées après la dernière relecture (mathématiques et optimisation Rust) sont dans [`docs/recherche/06-pistes-amelioration.md`](recherche/06-pistes-amelioration.md) ; elles seront évaluées phase par phase.
+**Version 4.1** : intègre quatre tournées de relecture indépendante (rigueur mathématique, faisabilité Rust/WASM, couverture des objectifs et robustesse), puis les pistes de la relecture finale (§18). Les synthèses de recherche qui alimentent ce document sont dans [`docs/recherche/`](recherche/) (en anglais) ; un renvoi `[R1 §2.3]` désigne la synthèse 01, section 2.3. Un glossaire (annexe A) et un exemple complet (annexe B) aident à la lecture. Les pistes d'amélioration proposées après la dernière relecture (mathématiques et optimisation Rust) sont détaillées dans [`docs/recherche/06-pistes-amelioration.md`](recherche/06-pistes-amelioration.md), notées M1–M11 et R1–R11 ; le §18 dit lesquelles sont adoptées et lesquelles restent à trancher par la mesure.
 
 ---
 
@@ -858,7 +858,7 @@ Chaque étape par paires ou par programmation dynamique a un plafond. Au-delà, 
 ### 14.4 Déterminisme
 
 - **Fonctions transcendantes** (exp, ln, ln1p, atan2, sin, cos, cbrt, pow, hypot, ln Γ) : `num/` fournit ses propres versions en pur Rust. Elles sont portées des sources de la caisse `libm` (MIT, dérivée de musl et FreeBSD) et citées dans `THIRD_PARTY.md`. Les versions de `std` et `mul_add` sont interdites dans `core` par la règle clippy `disallowed-methods`, active dès la phase P0. Sinon, une différence d'un bit entre la bibliothèque mathématique native et celle du WASM ferait basculer des décisions discrètes : seuils, NFA, minimum de la programmation dynamique, ordre glouton.
-- **SIMD** : une voie par pixel, coefficients appliqués dans le même ordre que le code scalaire. Les deux chemins sont testés pour l'égalité au bit près. Pas de relaxed-SIMD.
+- **SIMD** : les filtres sont écrits en boucles élément par élément (« axpy décalés », §18.1, R3). Rust ne réassocie pas les flottants et ne les contracte jamais en FMA, donc le compilateur peut vectoriser ces boucles sans changer un seul bit : il n'y a qu'un chemin de code, et l'activation de `simd128` ne change pas le résultat. Les intrinsèques explicites ne sont utilisées qu'en dernier recours, avec un test d'égalité au bit près contre la boucle simple. Pas de relaxed-SIMD.
 - **Ordre** : chaque étape gloutonne ou triée utilise `total_cmp` + un indice pour départager. Les NaN sont exclus avant tout tri (assertion de débogage). Pas de `HashMap` de `std` dans `core` : tableaux triés, `BTreeMap` ou hachage fixe.
 - **Bandes et tuiles** : sans effet sur le résultat. Le chaînage et l'hystérésis se font sur la liste globale.
 - **Aléa** (k-means, RANSAC éventuel) : PCG32 à graine dérivée de l'image et des réglages.
@@ -926,7 +926,7 @@ On lit donc toujours les en-têtes de fichier. Aucun brevet actif n'est connu su
 
 ## 16. Plan de construction
 
-Chaque phase se termine par :
+Les pistes du §18 sont rattachées à leur phase. Chaque phase se termine par :
 - ses tests synthétiques (§13.1) et la batterie de défauts (§13.2), même partielle ;
 - le benchmark de non-régression ;
 - les chronomètres et la sonde mémoire ;
@@ -936,7 +936,7 @@ Les phases P3 et suivantes améliorent le pipeline existant pièce par pièce, a
 
 | Phase | Contenu | Critère de sortie |
 |---|---|---|
-| P0 | `Plane`, conversions, fonctions transcendantes + règle clippy, PCG32, tri total, générateur de scènes ; nouvelle référence `baseline.json` enregistrée après le passage aux fonctions transcendantes propres (les derniers bits changent) | tests unitaires ; règle clippy active |
+| P0 | `Plane`, conversions, fonctions transcendantes + règle clippy, PCG32, tri total, générateur de scènes, réglages de compilation et règles de largeur (R10), filtre bilatéral par tables (R8) ; nouvelle référence `baseline.json` enregistrée après le passage aux fonctions transcendantes propres (les derniers bits changent) | tests unitaires ; règle clippy active |
 | P1 | Oklab et jacobien, modèle de bruit, classification d'entrée, gaussiennes par bandes, pyramide, chronomètres | σ_n à 10 % ; filtres conformes à la référence analytique ; temps mesurés |
 | P2 | Bords sous-pixel, chaînage, analyse par point, variance, Steger ; calibration de σ_sys ; sorties de débogage | cibles C ; mémoire mesurée |
 | P3 | Association et statut bord réel / bord de postérisation, **branchés dans le pipeline actuel** à la place de `edges.rs` (SOFT_EDGE) ; rastériseur de couverture et mesure des coutures | cas « dégradés » de la batterie : aucune géométrie de l'ancien ajusteur sur les bandes ; aucune régression ΔE |
@@ -964,6 +964,48 @@ Les phases P3 et suivantes améliorent le pipeline existant pièce par pièce, a
 10. **Réduction au-delà du plafond** (§12.5) : décision prise, tout le pipeline tourne sur l'image réduite. Reste à fixer les plafonds par plateforme (web et bureau) à l'aide du test du §13.5.
 11. **Coin vif flou** (§6.3) : le modèle du lieu observé d'un coin flou est tabulé par simulation ; sa validité sur des flous non gaussiens (JPEG, mise à l'échelle) reste à mesurer.
 12. **Zone morte** (§3.5) : elle rend gratuits les écarts sous τ_perc. Le budget de couleur par forme et la protection des repères significatifs limitent les abus ; leur réglage par défaut se calibre sur le corpus.
+
+---
+
+## 18. Pistes de la relecture finale
+
+La relecture finale (agent Fable) a proposé 22 pistes, détaillées dans [`docs/recherche/06-pistes-amelioration.md`](recherche/06-pistes-amelioration.md). Elles se répartissent en deux groupes.
+
+### 18.1 Optimisations adoptées
+
+Elles ne changent pas la méthode. Certaines changent les derniers bits d'un calcul (ordre des opérations, table au lieu d'une fonction) : elles sont alors adoptées **comme définition** du calcul, et le résultat reste identique entre natif et WASM.
+
+| Piste | Contenu | Remplace ou précise | Phase |
+|---|---|---|---|
+| R1 | NMS sans angle ni seconde racine : axe dominant ⇔ g11 ≥ g22 ; comparaison sur λ+ ; rejet précoce si g11 + g22 < L ; normale calculée aux seuls maxima | §5.3 | P2 |
+| R2 | Carte d'activité par tuiles 8×8 (min et max par canal sur les octets source) : une tuile dont la borne λ+ ≤ 2 Σ_c (étendue_c · ‖k′‖₁ · ‖k‖₁)² est sous L est sautée ; le saut est exact | §5.1 | P2 |
+| R3 | Filtres séparables en boucles élément par élément (« axpy décalés »), tampon circulaire de 2r + 1 lignes ; forme symétrique k_j·(x₋ⱼ + x₊ⱼ) | §5.1, §14.4, §14.5 (la bande de 10 Mo devient quelques lignes) | P1 |
+| R4 | Pyramide : flou et moyenne 2×2 en une seule passe au pas de 2 | §2, §5.1 | P1 |
+| R6 | Moments par bloc entre deux nœuds, centrés sur leur barycentre, accumulés par translation : plus aucune différence de grandes sommes | §10.1 (remplace les sommes préfixes par blocs) | P5a |
+| R7 | Mémo des coûts de portée par frontière, conservé entre deux relances de G–J ; les résidus ne dépendent ni de Géométrie ni de Lissage ; invalidation par frontière « sale » | §14.6 | P5a |
+| R8 | Filtre bilatéral existant : poids par table, intérieur sans test de bornes, tuiles plates sautées, encodage sRGB par table de seuils sans `powf` | §14.2 | P0 |
+| R9 | Tableaux plats (CSR) au lieu de `Vec<Vec<_>>`, points de bord permutés dans l'ordre des chaînes, tampons `Scratch` réutilisés, comptage avant allocation, solveurs à taille fixe, index de lignes pour le chaînage | §14.1 | au fil des phases |
+| R10 | Compilation WASM `+simd128`, `+bulk-memory`, `+nontrapping-fptoint`, `+sign-ext` ; `u32`/`u64` explicites partout où la largeur de `usize` compte ; jamais de tri sur une clé non unique ; cibles natives x86-64 et AArch64 seulement | §14.4 | P0 |
+| R11 | Cercle de Pratt/Taubin par Newton sur le polynôme caractéristique (Chernov) ; seuils χ² et quantiles normaux mis en table une fois | §10.1, §5.4 | P5a, P2 |
+
+### 18.2 Alternatives de méthode, à trancher par la mesure
+
+Chacune est comparée à la méthode du document, dans la phase indiquée, sur la vérité terrain du §13.1 et la batterie du §13.2. Elle est adoptée si elle atteint au moins les mêmes cibles pour un coût moindre, ou de meilleures cibles pour un coût comparable ; sinon la méthode du document reste en place. Le résultat de chaque comparaison est noté ici.
+
+| Piste | Alternative | Méthode actuelle | Test de décision | Phase |
+|---|---|---|---|---|
+| M1 | Détection dans un espace à variance stabilisée : S_c(v) = Σ_{u<v} 1/σ_c(u), table de 256 valeurs par canal ; bruit estimé en entiers. Le tenseur blanchi se réduit au premier ordre à ∇Iᵀ D⁻¹ ∇I, sans Oklab ni jacobien | Oklab + jacobien + blanchiment par pixel (§4.3, §5.2) | cibles C et fausses détections ; temps et mémoire | P1–P2 |
+| M2 | Facteur d'échelle des seuils mesuré sur la statistique seuillée trace(G), par niveau de pyramide, à partir de deux quantiles bas, avec contrôle de concordance | seuils déduits du bruit blanc (§5.4) | fausses détections par MP sur JPEG, agrandissements, bruit corrélé | P1–P2 |
+| M3 | Loi fermée de la plus grande valeur propre, P(λ+/σ_g² > x) = x e^{−x/2} + e^{−x} pour C = 3 (formule dérivée par l'agent) | table simulée (§5.4) | test de Monte-Carlo de la formule ; à refaire pour C = 2 et 4 | P2 |
+| M4 | Devernay sur ln λ+, exact pour une marche gaussienne, qui donne aussi le flou par point à une seule échelle | parabole sur λ+ et table de biais ; flou à deux échelles (§5.3, §5.5) | erreur de position et de σ_b ; repli à faible SNR | P2 |
+| R5 | Profils lus le long de l'axe dominant, sans interpolation | profils interpolés le long de la normale (§5.1) | erreur sur les petits cercles ; coût par point | P2 |
+| M5 | κ_c(n) exact sur une portée finie, 1 + 2 Σ (1 − k/n) ρ_k | valeur asymptotique (§3.2) | cas « formes fines » et « petit détail » | P5a |
+| M6 | Bornes de Jensen W·max(0, √(J/W) − τ)² ≤ J_zone morte ≤ J_mco, pour une programmation dynamique exacte | tri à variance gonflée + deux meilleurs modèles (§10.1) ; bornes dérivées par l'agent | nombre d'évaluations exactes et résultat, à Échelle faible et forte | P5a |
+| M7 | Terme d'Occam unique (évidence de Laplace) pour modèles libres et « sur repère » | λ·c(m) et min(λc, ln det …) (§3.3, §10.2) | batterie complète ; recalibration de Géométrie | P5b |
+| M9 | Distance de Sampson partout, Eberly en vérification et pour les ellipses très aplaties | Eberly dans le raffinement (§6.4) | précision sur ellipses ; coût | P5b |
+| M8 | A priori de type tirés de la fréquence des primitives dans le corpus d'aller-retour | valeurs de goût (§3.3) | représentativité du corpus pour les logos | P6a–P8 |
+| M10 | Coûts N_c et n_type calculés localement, avant toute loi de complexité locale | λ_local = λ(1 + log(1 + κ_loc)) (§12.2) | cas « adaptation locale » | P7 |
+| M11 | Force du débruitage indexée sur le bruit mesuré, automatique en JPEG | constantes du filtre bilatéral actuel | cas « artefacts JPEG » ; table de conversion du réglage | P7 |
 
 ---
 
