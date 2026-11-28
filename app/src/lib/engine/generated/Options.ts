@@ -40,4 +40,8 @@ geometry: number,
 /**
  * Guides the user turned off (found again by kind and position).
  */
-disabledGuides: Array<GuideKey>, };
+disabledGuides: Array<GuideKey>, 
+/**
+ * Candidate guides the user asked the tracing to follow anyway.
+ */
+forcedGuides: Array<GuideKey>, };

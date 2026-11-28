@@ -9,6 +9,7 @@ export type { CornerMode } from './generated/CornerMode';
 export type { Guide } from './generated/Guide';
 export type { GuideKey } from './generated/GuideKey';
 export type { GuideKind } from './generated/GuideKind';
+export type { GuideStatus } from './generated/GuideStatus';
 export type { Options } from './generated/Options';
 export type { Palette } from './generated/Palette';
 export type { PaletteEdit } from './generated/PaletteEdit';
@@ -29,6 +30,7 @@ export const DEFAULT_OPTIONS: Options = {
   corners: { mode: 'automatic', sharpCount: null, radius: 0, edits: [] },
   geometry: 0.5,
   disabledGuides: [],
+  forcedGuides: [],
 };
 
 export type Result = { output: Output; ms: number };

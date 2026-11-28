@@ -19,11 +19,11 @@ pub enum GuideKind {
     Line,
     /// An arc tangent to two straight parts (key: its middle).
     Arc,
-    /// A whole circle (key: its center).
+    /// A whole circle (key: its topmost point).
     Circle,
-    /// A whole ellipse (key: its center).
+    /// A whole ellipse (key: its topmost point).
     Ellipse,
-    /// Mirror axes and/or rotation of a shape (key: its center).
+    /// Mirror axes and/or rotation of a shape (key: its topmost point).
     Symmetry,
 }
 
@@ -40,6 +40,24 @@ pub struct GuideKey {
 /// How far (px) a disabled key looks for its guide.
 pub const GUIDE_REACH: f64 = 2.0;
 
+/// Whether the tracing follows a guide.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub enum GuideStatus {
+    /// Within the tolerance of the Geometry setting: followed.
+    Followed,
+    /// Beyond the tolerance, but the user asked for it: followed.
+    Forced,
+    /// Turned off by the user: ignored.
+    Off,
+    /// Found with a looser tolerance than the setting allows: shown, not followed.
+    Candidate,
+}
+
+/// Geometry setting used to look for candidate guides (looser than the slider's maximum).
+pub const CANDIDATE_GEOMETRY: f64 = 1.5;
+
 /// A guide of the result, for the editor.
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase")]
@@ -49,36 +67,47 @@ pub struct Guide {
     /// Key point (see [`GuideKind`]).
     pub x: f32,
     pub y: f32,
-    /// The tracing follows it (false: turned off by the user).
-    pub enabled: bool,
+    pub status: GuideStatus,
     /// SVG path data drawing the guide (image px).
     pub d: String,
 }
 
-/// Guides turned off, and guides found while tracing.
+/// Guides turned off or forced by the user, and guides found while tracing.
 #[derive(Debug, Clone, Default)]
 pub struct Guides {
     pub disabled: Vec<GuideKey>,
+    pub forced: Vec<GuideKey>,
     pub found: Vec<Guide>,
 }
 
+fn listed(keys: &[GuideKey], kind: GuideKind, key: P) -> bool {
+    keys.iter().any(|k| k.kind == kind && (P::new(f64::from(k.x), f64::from(k.y)) - key).len() <= GUIDE_REACH)
+}
+
 impl Guides {
-    pub fn new(disabled: &[GuideKey]) -> Self {
-        Guides { disabled: disabled.to_vec(), found: Vec::new() }
+    pub fn new(disabled: &[GuideKey], forced: &[GuideKey]) -> Self {
+        Guides { disabled: disabled.to_vec(), forced: forced.to_vec(), found: Vec::new() }
     }
 
     /// Whether the guide of `kind` at `key` is turned off.
     pub fn is_disabled(&self, kind: GuideKind, key: P) -> bool {
-        self.disabled
-            .iter()
-            .any(|k| k.kind == kind && (P::new(f64::from(k.x), f64::from(k.y)) - key).len() <= GUIDE_REACH)
+        listed(&self.disabled, kind, key)
     }
 
-    /// Record a guide; returns whether it is enabled (the tracing may follow it).
-    pub fn add(&mut self, kind: GuideKind, key: P, d: String) -> bool {
-        let enabled = !self.is_disabled(kind, key);
-        self.found.push(Guide { kind, x: key.x as f32, y: key.y as f32, enabled, d });
-        enabled
+    /// Record a guide found within the setting's tolerance (`within`) or only as a candidate;
+    /// returns whether the tracing follows it.
+    pub fn add(&mut self, kind: GuideKind, key: P, d: String, within: bool) -> bool {
+        let status = if self.is_disabled(kind, key) {
+            GuideStatus::Off
+        } else if within {
+            GuideStatus::Followed
+        } else if listed(&self.forced, kind, key) {
+            GuideStatus::Forced
+        } else {
+            GuideStatus::Candidate
+        };
+        self.found.push(Guide { kind, x: key.x as f32, y: key.y as f32, status, d });
+        matches!(status, GuideStatus::Followed | GuideStatus::Forced)
     }
 }
 
@@ -143,17 +172,28 @@ mod tests {
     #[test]
     fn disabled_guides_are_found_again_by_kind_and_position() {
         let off = [GuideKey { kind: GuideKind::Circle, x: 10.0, y: 10.0 }];
-        let mut guides = Guides::new(&off);
+        let forced = [GuideKey { kind: GuideKind::Arc, x: 0.0, y: 0.0 }];
+        let mut guides = Guides::new(&off, &forced);
         // Slightly moved (the tracing changed a little): still off.
-        assert!(!guides.add(
-            GuideKind::Circle,
-            P::new(11.0, 10.5),
-            ellipse(P::new(11.0, 10.5), 5.0, 5.0, 0.0)
-        ));
+        let circle = ellipse(P::new(11.0, 10.5), 5.0, 5.0, 0.0);
+        assert!(!guides.add(GuideKind::Circle, P::new(11.0, 10.5), circle, true));
         // Other kind or too far: on.
-        assert!(guides.add(GuideKind::Ellipse, P::new(10.0, 10.0), String::new()));
-        assert!(guides.add(GuideKind::Circle, P::new(14.0, 10.0), String::new()));
-        assert_eq!(guides.found.iter().filter(|g| g.enabled).count(), 2);
+        assert!(guides.add(GuideKind::Ellipse, P::new(10.0, 10.0), String::new(), true));
+        assert!(guides.add(GuideKind::Circle, P::new(14.0, 10.0), String::new(), true));
+        // A candidate is followed only when forced.
+        assert!(!guides.add(GuideKind::Arc, P::new(30.0, 0.0), String::new(), false));
+        assert!(guides.add(GuideKind::Arc, P::new(0.5, 0.5), String::new(), false));
+        let status: Vec<GuideStatus> = guides.found.iter().map(|g| g.status).collect();
+        assert_eq!(
+            status,
+            [
+                GuideStatus::Off,
+                GuideStatus::Followed,
+                GuideStatus::Followed,
+                GuideStatus::Candidate,
+                GuideStatus::Forced
+            ]
+        );
         assert!(guides.found[0].d.starts_with("M16 10.5A5 5 0 0 1 6 10.5"), "{}", guides.found[0].d);
     }
 }

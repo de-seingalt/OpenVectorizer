@@ -41,7 +41,9 @@
     guides?: Guide[];
     showGuides?: boolean;
   } = $props();
-  const guidesOff = $derived(guides.filter((g) => !g.enabled).length);
+  const guidesFollowed = $derived(guides.filter((g) => g.status === 'followed' || g.status === 'forced').length);
+  const guidesCandidates = $derived(guides.filter((g) => g.status === 'candidate').length);
+  const guideChoices = $derived(options.disabledGuides.length + options.forcedGuides.length);
 
   // --- selected corner ------------------------------------------------------------------
   const groupSize = $derived(
@@ -333,17 +335,25 @@
           <Label for="show-guides">
             {t.showGuides}
             <span id="guides-count" class="ml-1 text-xs font-normal text-muted-foreground tabular-nums">
-              {guides.length}{#if guidesOff > 0}&nbsp;· {guidesOff} {t.guidesOff}{/if}
+              {guidesFollowed}
+              {t.guidesFollowed}{#if guidesCandidates > 0}&nbsp;· {guidesCandidates} {t.guidesCandidates}{/if}
             </span>
           </Label>
           <p class="text-xs text-muted-foreground">{t.showGuidesHint}</p>
         </div>
         <Switch id="show-guides" bind:checked={showGuides} />
       </div>
-      {#if options.disabledGuides.length > 0}
-        <Button variant="outline" size="sm" onclick={() => (options.disabledGuides = [])}>
+      {#if guideChoices > 0}
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => {
+            options.disabledGuides = [];
+            options.forcedGuides = [];
+          }}
+        >
           <RotateCcw />
-          {t.resetGuides} ({options.disabledGuides.length})
+          {t.resetGuides} ({guideChoices})
         </Button>
       {/if}
     </section>

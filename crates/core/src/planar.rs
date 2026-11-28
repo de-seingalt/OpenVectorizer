@@ -20,7 +20,7 @@ use ts_rs::TS;
 
 use crate::RgbaImage;
 use crate::fit::{CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, fit_prepared, prepare};
-use crate::guide::{Guide, GuideKind, Guides};
+use crate::guide::{CANDIDATE_GEOMETRY, Guide, GuideKind, Guides};
 use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
 use crate::{CornerEdit, CornerMode, Options, Stacking};
@@ -353,7 +353,7 @@ pub fn to_svg(
         index: HashMap::new(),
         prepared: Vec::new(),
         geometry: f64::from(options.geometry),
-        guides: Guides::new(&options.disabled_guides),
+        guides: Guides::new(&options.disabled_guides, &options.forced_guides),
     };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
@@ -385,7 +385,7 @@ pub fn to_svg(
     let mut with_fillets = Vec::new();
     let mut curves: Vec<Curve> = Vec::with_capacity(runs.prepared.len());
     let mut run_guides: Vec<Vec<Guide>> = Vec::with_capacity(runs.prepared.len());
-    let mut guides = Guides::new(&options.disabled_guides);
+    let mut guides = Guides::new(&options.disabled_guides, &options.forced_guides);
     for (i, (run, styles)) in runs.prepared.iter().zip(&styles).enumerate() {
         let before = fillets.found.len();
         curves.push(fit_prepared(run, styles, *params, &mut fillets, &mut guides));
@@ -549,15 +549,21 @@ fn lookup_run(
     // An isolated shape that is nearly symmetric is made exactly symmetric.
     // Boundaries along the image frame keep their straight frame edges as they are.
     let on_border = vertices.iter().any(|&(x, y)| x == 0 || y == 0 || x == grid.w || y == grid.h);
-    let found = if closed && !on_border { crate::shape::symmetrize(&mids, runs.geometry) } else { None };
+    let (strict, found) = if closed && !on_border {
+        let strict = crate::shape::symmetrize(&mids, runs.geometry);
+        let within = strict.is_some();
+        (within, strict.or_else(|| crate::shape::symmetrize(&mids, CANDIDATE_GEOMETRY)))
+    } else {
+        (false, None)
+    };
+    let symmetry_guide = found.as_ref().map(|_| runs.guides.found.len());
     let (mids, symmetry) = match found {
-        Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.center, sym.guide.clone()) => {
+        Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), strict) => {
             (sym.pts, Some(sym.kind))
         }
         _ => (mids, None),
     };
     let mut prepared = prepare(&vertices, &mids, ends, closed, symmetry);
-    let symmetry_guide = symmetry.map(|_| runs.guides.found.len() - 1);
     prepared.detect_shape(runs.geometry, &mut runs.guides);
     // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
     if prepared.has_shape()

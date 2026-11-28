@@ -11,7 +11,10 @@
 
 use std::ops::{Add, Mul, Neg, Sub};
 
-use crate::guide::{GuideKind, Guides};
+use crate::guide::{CANDIDATE_GEOMETRY, GuideKind, Guides};
+
+/// Arc tolerance (px) used to look for candidate fillets.
+const CANDIDATE_ARC_TOL: f64 = 1.1;
 
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct P {
@@ -210,13 +213,14 @@ impl Prepared {
     }
 
     pub fn detect_shape(&mut self, geometry: f64, guides: &mut Guides) {
-        if self.closed
-            && let Some((ellipse, reverse)) = crate::shape::fit_round(&self.pts, geometry)
-            && guides.add(
-                if (ellipse.a - ellipse.b).abs() < 1e-9 { GuideKind::Circle } else { GuideKind::Ellipse },
-                ellipse.center,
-                ellipse.guide(),
-            )
+        if !self.closed {
+            return;
+        }
+        let strict = crate::shape::fit_round(&self.pts, geometry);
+        let within = strict.is_some();
+        let found = strict.or_else(|| crate::shape::fit_round(&self.pts, CANDIDATE_GEOMETRY));
+        if let Some((ellipse, reverse)) = found
+            && guides.add(ellipse.kind(), ellipse.top(), ellipse.guide(), within)
         {
             self.shape = Some(ellipse.curve(reverse));
             self.corners.clear();
@@ -671,18 +675,19 @@ fn fit_span(
         lines.iter().map(|l| if l.to == n - 1 { span[n - 1] } else { l.project(span[l.to]) }).collect();
     // Arc after line i (to line i + 1).
     let mut arcs: Vec<Option<Vec<Seg>>> = vec![None; lines.len()];
-    if params.arc_tol > 0.0 {
-        for i in 0..lines.len().saturating_sub(1) {
-            let (a, b) = (&lines[i], &lines[i + 1]);
-            if let Some(f) =
-                fillet(&span[a.to..=b.from], (a, starts[i]), (b, ends[i + 1]), params.arc_tol, &fillets.snap)
-                && guides.add(GuideKind::Arc, f.middle, f.guide.clone())
-            {
-                ends[i] = f.from;
-                starts[i + 1] = f.to;
-                arcs[i] = Some(f.segs);
-                fillets.found.push(f.radius);
-            }
+    for i in 0..lines.len().saturating_sub(1) {
+        let (a, b) = (&lines[i], &lines[i + 1]);
+        let pts = &span[a.to..=b.from];
+        let strict = fillet(pts, (a, starts[i]), (b, ends[i + 1]), params.arc_tol, &fillets.snap);
+        let within = strict.is_some();
+        let found = strict.or_else(|| fillet(pts, (a, starts[i]), (b, ends[i + 1]), CANDIDATE_ARC_TOL, &[]));
+        if let Some(f) = found
+            && guides.add(GuideKind::Arc, f.middle, f.guide.clone(), within)
+        {
+            ends[i] = f.from;
+            starts[i + 1] = f.to;
+            arcs[i] = Some(f.segs);
+            fillets.found.push(f.radius);
         }
     }
     let mut cursor = (0usize, span[0], t1);
@@ -711,7 +716,7 @@ fn enabled_lines(pts: &[P], guides: &mut Guides, record: bool) -> Vec<Line> {
             let (a, b) = (l.project(pts[l.from]), l.project(pts[l.to]));
             let key = (a + b) * 0.5;
             if record {
-                guides.add(GuideKind::Line, key, crate::guide::segment(a, b))
+                guides.add(GuideKind::Line, key, crate::guide::segment(a, b), true)
             } else {
                 !guides.is_disabled(GuideKind::Line, key)
             }

@@ -168,8 +168,9 @@
             class="pointer-events-auto cursor-pointer outline-none"
             role="button"
             tabindex={guides.length <= 300 ? 0 : -1}
-            aria-label={`${t.guideKinds[g.kind]} (${Math.round(g.x)}, ${Math.round(g.y)})`}
-            aria-pressed={g.enabled}
+            aria-label={`${t.guideKinds[g.kind]} ${t.guideStatus[g.status]} (${Math.round(g.x)}, ${Math.round(g.y)})`}
+            aria-pressed={g.status === 'followed' || g.status === 'forced'}
+            data-status={g.status}
             data-guide={i}
             onpointerdown={(e) => e.stopPropagation()}
             onclick={() => onToggleGuide?.(g)}
@@ -185,9 +186,14 @@
             <path
               d={g.d}
               fill="none"
-              stroke={g.enabled ? guideColor[g.kind] : '#9ca3af'}
-              stroke-width={g.enabled ? 1.5 : 1.25}
-              stroke-dasharray={g.enabled && g.kind !== 'symmetry' ? 'none' : `${4 / scale} ${3 / scale}`}
+              stroke={g.status === 'off' ? '#9ca3af' : guideColor[g.kind]}
+              stroke-width={g.status === 'forced' ? 2.5 : g.status === 'followed' ? 1.5 : 1.25}
+              stroke-opacity={g.status === 'candidate' ? 0.6 : 1}
+              stroke-dasharray={g.status === 'followed' || g.status === 'forced'
+                ? g.kind === 'symmetry'
+                  ? `${6 / scale} ${3 / scale}`
+                  : 'none'
+                : `${2 / scale} ${3 / scale}`}
               vector-effect="non-scaling-stroke"
             />
           </g>

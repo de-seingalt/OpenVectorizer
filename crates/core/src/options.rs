@@ -111,6 +111,8 @@ pub struct Options {
     pub geometry: f32,
     /// Guides the user turned off (found again by kind and position).
     pub disabled_guides: Vec<GuideKey>,
+    /// Candidate guides the user asked the tracing to follow anyway.
+    pub forced_guides: Vec<GuideKey>,
 }
 
 impl Default for Options {
@@ -126,6 +128,7 @@ impl Default for Options {
             corners: Corners::default(),
             geometry: 0.5,
             disabled_guides: Vec::new(),
+            forced_guides: Vec::new(),
         }
     }
 }

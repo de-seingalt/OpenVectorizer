@@ -380,29 +380,50 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
         .collect();
     // Guide: the mirror axes, or a small circle at the center of a rotation.
     let extent = pts.iter().map(|&p| (p - c).len()).fold(0.0, f64::max);
+    // Beyond 6 axes (near-circles), one axis and the center are clearer than a sunburst.
+    let drawn = if order > 6 { 1 } else { order };
+    let center_mark = if order > 6 { crate::guide::ellipse(c, 2.0, 2.0, 0.0) } else { String::new() };
     let guide = if mirror_ok {
-        (0..order)
-            .map(|k| {
-                let v = rotate(u, P::default(), std::f64::consts::PI * f64::from(k) / f64::from(order));
-                crate::guide::segment(c - v * extent, c + v * extent)
-            })
-            .collect::<String>()
+        center_mark
+            + &(0..drawn)
+                .map(|k| {
+                    let v = rotate(u, P::default(), std::f64::consts::PI * f64::from(k) / f64::from(order));
+                    crate::guide::segment(c - v * extent, c + v * extent)
+                })
+                .collect::<String>()
     } else {
         crate::guide::ellipse(c, 2.0, 2.0, 0.0)
     };
-    Some(Symmetrized { pts: out, kind: Symmetry { order, mirror: mirror_ok }, center: c, guide })
+    let top = out.iter().copied().min_by(|p, q| p.y.total_cmp(&q.y)).unwrap_or(c);
+    Some(Symmetrized { pts: out, kind: Symmetry { order, mirror: mirror_ok }, top, guide })
 }
 
 /// Result of [`symmetrize`].
 pub struct Symmetrized {
     pub pts: Vec<P>,
     pub kind: Symmetry,
-    /// Center of the symmetries (area centroid) and path data drawing them.
-    pub center: P,
+    /// Topmost point of the shape (guide key) and path data drawing the symmetries.
+    pub top: P,
     pub guide: String,
 }
 
 impl Ellipse {
+    /// Topmost point: the guide key (concentric shapes share a center, not a top).
+    pub fn top(&self) -> P {
+        let (s, c) = self.angle.sin_cos();
+        let half_height = (self.a * self.a * s * s + self.b * self.b * c * c).sqrt();
+        self.center - P::new(0.0, half_height)
+    }
+
+    /// Circle or ellipse guide.
+    pub fn kind(&self) -> crate::guide::GuideKind {
+        if (self.a - self.b).abs() < 1e-9 {
+            crate::guide::GuideKind::Circle
+        } else {
+            crate::guide::GuideKind::Ellipse
+        }
+    }
+
     /// Path data drawing the ellipse.
     pub fn guide(&self) -> String {
         crate::guide::ellipse(self.center, self.a, self.b, self.angle)

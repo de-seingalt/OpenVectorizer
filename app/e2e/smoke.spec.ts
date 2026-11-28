@@ -68,17 +68,26 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(autoCorners).toBeChecked();
   await page.screenshot({ path: 'test-results/screens/02c-corners.png' });
 
-  // Guides: show them, turn one line off (the tracing ignores it), then turn all back on.
+  // Guides: show them, turn one line off (the tracing ignores it), then undo the choice.
   await page.getByRole('switch', { name: /Afficher les guides/ }).click();
   const guidesCount = page.locator('#guides-count');
-  await expect(guidesCount).toHaveText(/^\s*[1-9]\d*\s*$/);
+  await expect(guidesCount).toContainText(/[1-9]\d*\s+suivis/);
   // (A horizontal line has an empty bounding box: dispatch the click instead of aiming at it.)
-  await page.locator('[data-guide][aria-label^="Droite"]').first().dispatchEvent('click');
-  await expect(guidesCount).toContainText('1 désactivés');
-  await expect(page.locator('[data-guide][aria-pressed="false"]')).toHaveCount(1);
+  await page.locator('[data-guide][data-status="followed"][aria-label^="Droite"]').first().dispatchEvent('click');
+  await expect(page.locator('[data-guide][data-status="off"]')).toHaveCount(1);
   await page.screenshot({ path: 'test-results/screens/02e-guides.png' });
-  await page.getByRole('button', { name: /Réactiver tous les guides/ }).click();
-  await expect(guidesCount).not.toContainText('désactivés');
+  await page.getByRole('button', { name: /Annuler les choix de guides/ }).click();
+  await expect(page.locator('[data-guide][data-status="off"]')).toHaveCount(0);
+  // Geometry 0: shapes are only candidates; a click forces one, which the tracing then follows.
+  const geometry = page.getByRole('slider', { name: 'Géométrie' });
+  await geometry.focus();
+  await geometry.press('Home');
+  await expect(guidesCount).toContainText(/[1-9]\d*\s+candidats/);
+  await page.locator('[data-guide][data-status="candidate"]').first().dispatchEvent('click');
+  await expect(page.locator('[data-guide][data-status="forced"]')).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/screens/02f-forced-guide.png' });
+  await page.getByRole('button', { name: /Annuler les choix de guides/ }).click();
+  await geometry.press('End');
 
   // Changing an option triggers a new vectorization.
   await page.getByRole('radio', { name: 'Photo' }).click();
