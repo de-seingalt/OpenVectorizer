@@ -188,8 +188,8 @@ pub struct Corner {
     /// Intersection of the two neighboring sides (where a sharp corner would be).
     pub apex: P,
     /// Unit directions of travel along the incoming and outgoing sides.
-    din: P,
-    dout: P,
+    pub din: P,
+    pub dout: P,
     /// Distance from the apex to the traced boundary: ~0.35 px for a pixel-sharp corner,
     /// r(1/sin(α/2) − 1) for a corner rounded with radius r.
     pub gap: f64,

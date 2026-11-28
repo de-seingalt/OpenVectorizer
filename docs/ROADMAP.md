@@ -63,6 +63,10 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 1 px
 - [x] Formes répétées : formes isolées de même aire et périmètre (5 %), superposables par rotation (Procrustes,
       écart ≤ 0,8 px) remplacées par leur forme moyenne replacée sur chacune ; guide « Répétition » par copie
+- [x] Coins et géométrie unifiés : un arrondi tangent entre deux droites est un coin (sommet = intersection des
+      droites) ; vif = droites prolongées, rayon = arc tangent aux droites, inclus dans « tous vifs » et le compte
+- [x] Coins dessinés par leurs deux côtés près du sommet (vert vif, orange arrondi, bleu retouché) ; poignée sur l'arc
+      du coin sélectionné, à faire glisser pour régler le rayon (jusqu'au sommet : vif)
 - [ ] Symétries et répétitions des formes non isolées
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
 

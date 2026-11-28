@@ -19,6 +19,7 @@
     showCorners = false,
     selectedCorner = $bindable(null),
     onToggleCorner,
+    onSetCornerRadius,
     guides = [],
     showGuides = false,
     onToggleGuide,
@@ -33,6 +34,8 @@
     selectedCorner?: CornerInfo | null;
     /** Double-click on a marker. */
     onToggleCorner?: (corner: CornerInfo) => void;
+    /** Radius set by dragging the selected corner's arc (0 = sharp). */
+    onSetCornerRadius?: (corner: CornerInfo, radius: number) => void;
     /** Guides drawn over the preview when `showGuides` is on; a click turns one off or on. */
     guides?: Guide[];
     showGuides?: boolean;
@@ -47,6 +50,60 @@
     symmetry: '#7c3aed',
     repeat: '#16a34a',
   };
+
+  /** Path of a corner drawn as its two sides near the apex, joined by its arc when rounded. */
+  function cornerShape(k: CornerInfo, r: number) {
+    const [ix, iy] = k.din;
+    const [ox, oy] = k.dout;
+    const turn = Math.acos(Math.max(-1, Math.min(1, ix * ox + iy * oy)));
+    const half = Math.max(1e-3, (Math.PI - turn) / 2);
+    const round = r > 0.05;
+    const t = round ? r / Math.tan(half) : 0;
+    const t1 = { x: k.x - ix * t, y: k.y - iy * t };
+    const t2 = { x: k.x + ox * t, y: k.y + oy * t };
+    const leg = 14 / scale;
+    const sweep = ix * oy - iy * ox > 0 ? 1 : 0;
+    const f = (v: number) => Math.round(v * 100) / 100;
+    const d =
+      `M${f(t1.x - ix * leg)} ${f(t1.y - iy * leg)}L${f(t1.x)} ${f(t1.y)}` +
+      (round ? `A${f(r)} ${f(r)} 0 0 ${sweep} ${f(t2.x)} ${f(t2.y)}` : '') +
+      `L${f(t2.x + ox * leg)} ${f(t2.y + oy * leg)}`;
+    // Middle of the arc, on the bisector, at r·(1/sin(half) − 1) from the apex.
+    const bx = ox - ix;
+    const by = oy - iy;
+    const bl = Math.hypot(bx, by) || 1;
+    const m = r * (1 / Math.sin(half) - 1);
+    return {
+      d,
+      round,
+      r,
+      half,
+      bis: { x: bx / bl, y: by / bl },
+      handle: { x: k.x + (bx / bl) * m, y: k.y + (by / bl) * m },
+    };
+  }
+
+  // Radius drag on the selected corner: previewed while dragging, applied on release.
+  let dragging = $state<{ k: CornerInfo; r: number } | null>(null);
+  function radiusAt(e: PointerEvent, k: CornerInfo) {
+    const rect = box!.getBoundingClientRect();
+    const p = { x: (e.clientX - rect.left - tx) / scale, y: (e.clientY - rect.top - ty) / scale };
+    const g = cornerShape(k, 0);
+    const m = Math.max(0, (p.x - k.x) * g.bis.x + (p.y - k.y) * g.bis.y);
+    return Math.min(k.maxRadius, m / Math.max(1e-6, 1 / Math.sin(g.half) - 1));
+  }
+  function startRadiusDrag(e: PointerEvent, k: CornerInfo) {
+    if (e.button !== 0) return;
+    e.stopPropagation();
+    dragging = { k, r: k.sharp ? 0 : k.radius };
+  }
+  function moveRadiusDrag(e: PointerEvent) {
+    if (dragging) dragging = { ...dragging, r: radiusAt(e, dragging.k) };
+  }
+  function endRadiusDrag() {
+    if (dragging) onSetCornerRadius?.(dragging.k, dragging.r);
+    dragging = null;
+  }
 
   const isSelected = (k: CornerInfo) => selectedCorner !== null && k.x === selectedCorner.x && k.y === selectedCorner.y;
   const inGroup = (k: CornerInfo) => selectedCorner?.group != null && k.group === selectedCorner.group;
@@ -115,9 +172,10 @@
 
   const endDrag = () => (drag = null);
   const pixelated = $derived(scale >= 2);
-  // Markers keep a constant size on screen.
-  const mark = $derived(6 / scale);
 </script>
+
+<!-- Corner radius drag: followed anywhere on the page until the button is released. -->
+<svelte:window onpointermove={moveRadiusDrag} onpointerup={endRadiusDrag} onpointercancel={() => (dragging = null)} />
 
 <div
   bind:this={box}
@@ -210,7 +268,8 @@
       >
         {#each corners as k, i (i)}
           {@const sel = isSelected(k)}
-          {@const r = sel ? mark * 1.4 : mark}
+          {@const g = cornerShape(k, dragging && isSelected(dragging.k) && sel ? dragging.r : k.sharp ? 0 : k.radius)}
+          {@const color = k.edited ? '#2563eb' : g.round ? '#d97706' : '#16a34a'}
           <g
             class="pointer-events-auto cursor-pointer outline-none"
             role="button"
@@ -229,30 +288,37 @@
               }
             }}
           >
-            <!-- Larger invisible hit area. -->
-            <circle cx={k.x} cy={k.y} r={mark * 1.8} fill="transparent" />
-            {#if k.sharp}
-              <rect
-                x={k.x - r * 0.75}
-                y={k.y - r * 0.75}
-                width={r * 1.5}
-                height={r * 1.5}
-                transform="rotate(45 {k.x} {k.y})"
-                class={sel ? 'fill-primary' : k.edited ? 'fill-amber-400' : 'fill-white'}
-                stroke={inGroup(k) ? 'var(--primary)' : '#111'}
-                stroke-width={(inGroup(k) ? 2.5 : 1.25) / scale}
-              />
-            {:else}
-              <circle
-                cx={k.x}
-                cy={k.y}
-                r={r * 0.7}
-                class={sel ? 'fill-primary' : k.edited ? 'fill-amber-400/80' : 'fill-white/40'}
-                stroke={inGroup(k) ? 'var(--primary)' : '#111'}
-                stroke-width={(inGroup(k) ? 2.5 : 1.25) / scale}
-              />
-            {/if}
+            <!-- Wide invisible stroke: easier to click. -->
+            <path d={g.d} fill="none" stroke="transparent" stroke-width="12" vector-effect="non-scaling-stroke" />
+            <path
+              d={g.d}
+              fill="none"
+              stroke={color}
+              stroke-width={sel ? 3 : inGroup(k) ? 2.25 : 1.75}
+              stroke-linejoin="round"
+              vector-effect="non-scaling-stroke"
+            />
           </g>
+          {#if sel}
+            <!-- Drag along the bisector to set the radius (to the apex: sharp). -->
+            <circle
+              class="pointer-events-auto cursor-move"
+              role="slider"
+              tabindex="-1"
+              aria-label={t.cornerRadius}
+              aria-valuemin={0}
+              aria-valuemax={Math.round(k.maxRadius * 10) / 10}
+              aria-valuenow={Math.round(g.r * 10) / 10}
+              data-corner-handle
+              cx={g.handle.x}
+              cy={g.handle.y}
+              r={5 / scale}
+              fill="white"
+              stroke={color}
+              stroke-width={2 / scale}
+              onpointerdown={(e) => startRadiusDrag(e, k)}
+            />
+          {/if}
         {/each}
       </svg>
     {/if}

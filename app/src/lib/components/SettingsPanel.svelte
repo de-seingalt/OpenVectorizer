@@ -55,6 +55,10 @@
     editCorners(options, selection, { sharp, radius: null });
   }
   function setRadius(radius: number) {
+    // The slider also reports its own value when it appears or redraws: ignore that echo,
+    // or merely selecting a corner would freeze its radius (and undo a drag in progress).
+    const k = selectedCorner;
+    if (!k || Math.abs(radius - Math.min(k.radius, k.maxRadius)) < 0.05) return;
     editCorners(options, selection, { sharp: false, radius });
   }
 

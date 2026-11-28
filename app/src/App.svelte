@@ -119,6 +119,11 @@
     editCorners(options, targets(corners, k, cornerGroup), { sharp: !k.sharp, radius: null });
   }
 
+  function setCornerRadius(k: CornerInfo, radius: number) {
+    const change = radius < 0.05 ? { sharp: true, radius: null } : { sharp: false, radius };
+    editCorners(options, targets(corners, k, cornerGroup), change);
+  }
+
   async function exportSvg() {
     if (!svg || !image) return;
     if (await saveText(svg, `${baseName(image.name)}.svg`, 'image/svg+xml')) toast.success(t.saved);
@@ -222,6 +227,7 @@
           {showCorners}
           bind:selectedCorner
           onToggleCorner={toggleCorner}
+          onSetCornerRadius={setCornerRadius}
           {guides}
           {showGuides}
           onToggleGuide={(g) => toggleGuide(options, g)}

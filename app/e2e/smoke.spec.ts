@@ -48,16 +48,29 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   // Per-corner editing: double-click a marker rounds that corner (and its group).
   await page.getByRole('switch', { name: 'Afficher les coins' }).click();
   const marker = page.locator('[data-corner]').first();
-  await marker.dblclick();
+  // (A corner is drawn as an L: its bounding box center is off the stroke, so dispatch.)
+  await marker.dispatchEvent('dblclick');
   await expect(cornerCount).not.toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);
   const resetCorners = page.getByRole('button', { name: /Annuler les retouches de coins/ });
   await expect(resetCorners).toBeVisible();
   // A click selects it: the panel shows it rounded, with its radius.
-  await page.locator('[data-corner][aria-label^="Arrondi"]').first().click();
-  const panel = page.getByRole('group', { name: 'Coin sélectionné' });
+  await page.locator('[data-corner][aria-label^="Arrondi"]').first().dispatchEvent('click');
+  const panel = page.locator('[aria-labelledby="corner-title"]');
   await expect(panel.getByRole('radio', { name: 'Arrondi' })).toBeChecked();
   await expect(panel.getByRole('slider', { name: 'Rayon' })).toBeVisible();
   await page.screenshot({ path: 'test-results/screens/02d-corner-edit.png' });
+  // Dragging the arc handle toward the apex makes the corner sharp.
+  const handle = page.locator('[data-corner-handle]');
+  const hb = await handle.boundingBox();
+  if (!hb) throw new Error('no radius handle');
+  await page.mouse.move(hb.x + hb.width / 2, hb.y + hb.height / 2);
+  await page.mouse.down();
+  for (let k = 1; k <= 5; k++) {
+    // Toward and past the apex (bottom right).
+    await page.mouse.move(hb.x + hb.width / 2 + 12 * k, hb.y + hb.height / 2 + 12 * k);
+  }
+  await page.mouse.up();
+  await expect(panel.getByRole('radio', { name: 'Vif' })).toBeChecked();
   await panel.getByRole('radio', { name: 'Vif' }).click();
   await resetCorners.click();
   await expect(cornerCount).toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);

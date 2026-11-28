@@ -54,7 +54,8 @@ const fr = {
   geometryHint:
     'Droites, arcs, rayons égaux, cercles et ellipses (même sur des formes qui en touchent d’autres), symétries et formes répétées.',
   showCorners: 'Afficher les coins',
-  showCornersHint: 'Dans l’aperçu : clic pour sélectionner un coin, double-clic pour le rendre vif ou arrondi.',
+  showCornersHint:
+    'Vert : vif, orange : arrondi, bleu : retouché. Clic pour sélectionner, double-clic pour basculer vif/arrondi, faites glisser la poignée de l’arc pour régler le rayon.',
   cornerMarkers: 'Coins du résultat',
   selectedCorner: 'Coin sélectionné',
   cornerSharp: 'Vif',
@@ -156,7 +157,8 @@ const en: Messages = {
   geometryHint:
     'Lines, arcs, equal radii, circles and ellipses (even on shapes touching others), symmetries and repeated shapes.',
   showCorners: 'Show corners',
-  showCornersHint: 'In the preview: click to select a corner, double-click to make it sharp or rounded.',
+  showCornersHint:
+    'Green: sharp, orange: rounded, blue: edited. Click to select, double-click to toggle sharp/rounded, drag the arc handle to set the radius.',
   cornerMarkers: 'Corners of the result',
   selectedCorner: 'Selected corner',
   cornerSharp: 'Sharp',

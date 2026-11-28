@@ -20,4 +20,8 @@ group: number | null,
 /**
  * A [`CornerEdit`] applies to this corner.
  */
-edited: boolean, };
+edited: boolean, 
+/**
+ * Unit directions of travel along the incoming and outgoing sides (to draw the corner).
+ */
+din: [number, number], dout: [number, number], };

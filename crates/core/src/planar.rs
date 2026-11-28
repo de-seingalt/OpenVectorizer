@@ -173,6 +173,9 @@ pub struct CornerInfo {
     pub group: Option<u32>,
     /// A [`CornerEdit`] applies to this corner.
     pub edited: bool,
+    /// Unit directions of travel along the incoming and outgoing sides (to draw the corner).
+    pub din: [f32; 2],
+    pub dout: [f32; 2],
 }
 
 /// In automatic mode, a corner is sharp when the boundary passes this close to its apex...
@@ -272,6 +275,8 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>
                 max_radius: r_max as f32,
                 group: groups[r][c],
                 edited: edited[r][c],
+                din: [k.din.x as f32, k.din.y as f32],
+                dout: [k.dout.x as f32, k.dout.y as f32],
             });
         }
     }
