@@ -92,6 +92,9 @@ struct OptArgs {
     /// Do not hide the seams between neighbouring shapes
     #[arg(long)]
     no_gap_fill: bool,
+    /// Geometric tolerance in proportion to size 0..1 (Scale)
+    #[arg(long)]
+    scale: Option<f32>,
     /// Clean-up of compression artifacts 0..1 (0 = off)
     #[arg(long)]
     denoise: Option<f32>,
@@ -151,6 +154,9 @@ impl OptArgs {
             o.geometry = g;
         }
         o.fill_gaps = !self.no_gap_fill;
+        if let Some(v) = self.scale {
+            o.scale = v;
+        }
         if let Some(v) = self.denoise {
             o.denoise = v;
         }

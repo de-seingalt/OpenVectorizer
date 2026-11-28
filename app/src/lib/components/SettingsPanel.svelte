@@ -345,6 +345,12 @@
         <span>{t.geometryOff}</span><span>{t.geometryStrong}</span>
       </div>
       <p class="text-xs text-muted-foreground">{t.geometryHint}</p>
+      <div class="flex items-baseline justify-between">
+        <Label for="scale">{t.scale}</Label>
+        <span class="text-xs text-muted-foreground tabular-nums">{pct(options.scale)}</span>
+      </div>
+      <Slider id="scale" label={t.scale} type="single" min={0} max={1} step={0.05} bind:value={options.scale} />
+      <p class="text-xs text-muted-foreground">{t.scaleHint}</p>
       <div class="flex items-start justify-between gap-3">
         <div class="flex flex-col gap-1">
           <Label for="show-guides">

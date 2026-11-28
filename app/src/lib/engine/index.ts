@@ -29,6 +29,7 @@ export const DEFAULT_OPTIONS: Options = {
   paletteEdit: null,
   corners: { mode: 'automatic', sharpCount: null, radius: 0, edits: [] },
   geometry: 0.5,
+  scale: 0.3,
   disabledGuides: [],
   forcedGuides: [],
   fillGaps: true,

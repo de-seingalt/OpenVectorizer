@@ -153,7 +153,7 @@ fn align(a: &Shape, b: &Shape) -> Match {
 /// point for point (same number of points, each moved onto the shared outline).
 /// Every member of a group but its first (the reference) is a guide that can be turned off
 /// or, when it matches only loosely, forced.
-pub fn unify(loops: &[Vec<P>], g: f64, guides: &mut Guides) -> Vec<Option<Vec<P>>> {
+pub fn unify(loops: &[Vec<P>], g: f64, rel: f64, guides: &mut Guides) -> Vec<Option<Vec<P>>> {
     let shapes: Vec<Option<Shape>> = loops.iter().map(|l| Shape::new(l)).collect();
     let (strict, loose) = (tolerance(g), tolerance(CANDIDATE_GEOMETRY));
     // Groups: reference index, then (member, match). References are filed by size (area and
@@ -176,8 +176,13 @@ pub fn unify(loops: &[Vec<P>], g: f64, guides: &mut Guides) -> Vec<Option<Vec<P>
         candidates.sort_unstable();
         let slack = shape.lp.length() / SAMPLES as f64;
         // Small shapes get a tolerance in proportion to their size.
+        // Larger shapes may stray a little more (Scale setting).
+        let extra = rel * shape.lp.length() / std::f64::consts::TAU;
         let cap = |(max, rms): (f64, f64)| {
-            (max.min(RELATIVE_MAX * shape.lp.length()), rms.min(RELATIVE_RMS * shape.lp.length()))
+            (
+                max.min(RELATIVE_MAX * shape.lp.length()) + extra,
+                rms.min(RELATIVE_RMS * shape.lp.length()) + 0.4 * extra,
+            )
         };
         let (strict, loose) = (cap(strict), cap(loose));
         let mut placed = false;
@@ -304,7 +309,7 @@ mod tests {
                 .collect(),
         ];
         let mut guides = Guides::default();
-        let out = unify(&loops, 0.5, &mut guides);
+        let out = unify(&loops, 0.5, 0.0, &mut guides);
         assert!(out[2].is_none());
         let (a, b) = (out[0].as_ref().expect("reference"), out[1].as_ref().expect("copy"));
         // Point for point with the inputs...

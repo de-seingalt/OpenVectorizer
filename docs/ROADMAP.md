@@ -87,7 +87,9 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       ~2/B frontière de bandes d'un dégradé) ; sous 0,45 la frontière est molle : tracé libre, aucune géométrie
 - [x] Vérification contre les points mesurés : un morceau qui a reçu de la géométrie et s'écarte des points de plus de
       la tolérance + 0,6 px est retracé librement (sans ses guides) ; les pointes voulues vives sont excusées
-- [ ] Réglage « Échelle » : tolérance en partie proportionnelle à la taille des formes
+- [x] Réglage « Échelle » : tolérance + jusqu'à 2 % de la taille (droites, arrondis, arcs, cercles, symétries,
+      répétitions, vérification) ; un contour fermé doit faire le tour de sa forme (périmètres à 15 %) ; un arc de forme
+      prend le chemin de la longueur du morceau ; la vérification refuse aussi les détours (tracé trop long)
 - [ ] Repères globaux : segments presque alignés (même interrompus) rangés sur une même droite ; cercles communs,
       parallèles, concentriques
 - [ ] Position sous le pixel au maximum du gradient (Devernay) pour les bords flous

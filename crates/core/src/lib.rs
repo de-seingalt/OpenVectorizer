@@ -98,7 +98,9 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
 fn fit_params(o: &Options) -> fit::FitParams {
     // detail 0 → 1.25 px tolerance, 1 → 0.35 px.
     let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
-    fit::FitParams { tolerance, arc_tol: fit::arc_tolerance(f64::from(o.geometry)), plain: false }
+    // Scale 0..1 → up to 2 % of the size of a line, arc or shape.
+    let relative = 0.02 * f64::from(o.scale);
+    fit::FitParams { tolerance, arc_tol: fit::arc_tolerance(f64::from(o.geometry)), plain: false, relative }
 }
 
 #[cfg(test)]

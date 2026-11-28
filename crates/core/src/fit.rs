@@ -125,6 +125,8 @@ pub struct FitParams {
     pub arc_tol: f64,
     /// Plain tracing: no lines, arcs or fillets (soft boundaries).
     pub plain: bool,
+    /// Extra tolerance in proportion to the size of a line, arc or shape (Scale setting).
+    pub relative: f64,
 }
 
 /// Fillet radii shared across the whole image: `found` collects every fitted radius, `snap`
@@ -251,6 +253,15 @@ impl Prepared {
         if m == 0 {
             return 0.0;
         }
+        // A curve much longer than the boundary (a detour, the long way round a shape) is as
+        // wrong as one that strays: report the excess length.
+        let curve_length: f64 = poly.windows(2).map(|w| (w[1] - w[0]).len()).sum();
+        let closing = if self.closed { (self.pts[0] - self.pts[self.pts.len() - 1]).len() } else { 0.0 };
+        let length: f64 = self.pts.windows(2).map(|w| (w[1] - w[0]).len()).sum::<f64>() + closing;
+        let detour = curve_length - 1.25 * length - 2.0;
+        if detour > 0.0 {
+            return detour;
+        }
         let excused: Vec<(P, f64)> = self
             .corners
             .iter()
@@ -287,6 +298,16 @@ impl Prepared {
         worst
     }
 
+    /// Half the diagonal of the bounding box: a size for the relative tolerances.
+    pub fn size(&self) -> f64 {
+        let (mut lo, mut hi) = (P::new(f64::MAX, f64::MAX), P::new(f64::MIN, f64::MIN));
+        for p in &self.pts {
+            lo = P::new(lo.x.min(p.x), lo.y.min(p.y));
+            hi = P::new(hi.x.max(p.x), hi.y.max(p.y));
+        }
+        (hi - lo).len() / 2.0
+    }
+
     /// Move the end junctions of an open run (a junction placed onto a shape).
     pub fn set_ends(&mut self, start: P, end: P) {
         let n = self.pts.len();
@@ -303,7 +324,7 @@ impl Prepared {
     /// within `arc_tol`, or a forced candidate) into a corner whose apex is where the two lines
     /// meet: the corners tool can then make it sharp, or set its radius, tangent to those lines.
     /// Corner candidates inside such a rounding are replaced by it.
-    pub fn add_fillet_corners(&mut self, arc_tol: f64, guides: &Guides) {
+    pub fn add_fillet_corners(&mut self, arc_tol: f64, rel: f64, guides: &Guides) {
         let n = self.pts.len();
         if self.shape.is_some() || self.soft || n < 8 {
             return;
@@ -312,7 +333,7 @@ impl Prepared {
         smooth(&mut work, self.closed);
         // A loop starts in the middle of its longest straight part (no rounding is cut).
         let start = if self.closed {
-            find_lines(&work)
+            find_lines(&work, rel)
                 .iter()
                 .max_by_key(|l| l.to - l.from)
                 .map_or(0, |l| usize::midpoint(l.from, l.to))
@@ -321,15 +342,15 @@ impl Prepared {
         };
         let seq: Vec<P> = if self.closed { (0..=n).map(|i| work[(start + i) % n]).collect() } else { work };
         let at = |i: usize| (i + start) % n;
-        let lines = find_lines(&seq);
+        let lines = find_lines(&seq, rel);
         let m = seq.len();
         for pair in lines.windows(2) {
             let (a, b) = (&pair[0], &pair[1]);
             let a_start = if a.from == 0 { seq[0] } else { a.project(seq[a.from]) };
             let b_end = if b.to == m - 1 { seq[m - 1] } else { b.project(seq[b.to]) };
             let zone = &seq[a.to..=b.from];
-            let found = fillet(zone, (a, a_start), (b, b_end), arc_tol, &[]).or_else(|| {
-                fillet(zone, (a, a_start), (b, b_end), CANDIDATE_ARC_TOL, &[])
+            let found = fillet(zone, (a, a_start), (b, b_end), arc_tol, rel, &[]).or_else(|| {
+                fillet(zone, (a, a_start), (b, b_end), CANDIDATE_ARC_TOL, rel, &[])
                     .filter(|f| guides.is_forced(GuideKind::Arc, f.middle))
             });
             let Some(f) = found.filter(|f| !guides.is_disabled(GuideKind::Arc, f.middle)) else { continue };
@@ -369,13 +390,13 @@ impl Prepared {
 
     /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
     /// has no corners).
-    pub fn detect_shape(&mut self, geometry: f64, guides: &mut Guides) {
+    pub fn detect_shape(&mut self, geometry: f64, rel: f64, guides: &mut Guides) {
         if !self.closed || self.soft {
             return;
         }
-        let strict = crate::shape::fit_round(&self.pts, geometry);
+        let strict = crate::shape::fit_round(&self.pts, geometry, rel);
         let within = strict.is_some();
-        let found = strict.or_else(|| crate::shape::fit_round(&self.pts, CANDIDATE_GEOMETRY));
+        let found = strict.or_else(|| crate::shape::fit_round(&self.pts, CANDIDATE_GEOMETRY, rel));
         if let Some((ellipse, reverse)) = found
             && guides.add(ellipse.kind(), ellipse.top(), ellipse.guide(), within)
         {
@@ -663,7 +684,7 @@ pub fn fit_prepared(
         smooth(&mut pts, true);
         // Start the loop in the middle of its longest straight part, if it has one: every
         // fillet between straight parts is then inside the span.
-        let lines = enabled_lines(&pts, guides, false);
+        let lines = enabled_lines(&pts, params.relative, guides, false);
         let start = lines.iter().max_by_key(|l| l.to - l.from).map_or(0, |l| usize::midpoint(l.from, l.to));
         pts.rotate_left(start);
         let mut loop_pts = pts.clone();
@@ -746,12 +767,14 @@ impl Line {
 }
 
 /// Whether `pts` is straight: (line, deviation of each point) if so.
-fn straight(pts: &[P]) -> Option<(P, P, Vec<f64>)> {
+fn straight(pts: &[P], rel: f64) -> Option<(P, P, Vec<f64>)> {
     let (origin, dir) = fit_line(pts)?;
     let dir = if dir.dot(pts[pts.len() - 1] - pts[0]) < 0.0 { -dir } else { dir };
     let normal = P::new(-dir.y, dir.x);
     let dev: Vec<f64> = pts.iter().map(|&p| (p - origin).dot(normal)).collect();
-    if dev.iter().any(|d| d.abs() > LINE_TOL) {
+    // Longer lines may stray a little more (Scale setting).
+    let length = (pts[pts.len() - 1] - pts[0]).len();
+    if dev.iter().any(|d| d.abs() > LINE_TOL + rel * length) {
         return None;
     }
     // Bow: least-squares parabola d(u) = c·(u² − mean u²) over u ∈ [−1, 1] along the line; an
@@ -769,27 +792,27 @@ fn straight(pts: &[P]) -> Option<(P, P, Vec<f64>)> {
         den += b * b;
     }
     let bow = if den > 1e-12 { (num / den).abs() } else { 0.0 };
-    (bow <= LINE_BOW).then_some((origin, dir, dev))
+    (bow <= LINE_BOW + 0.5 * rel * length).then_some((origin, dir, dev))
 }
 
 /// Maximal straight parts of a span, in order, not overlapping.
-fn find_lines(pts: &[P]) -> Vec<Line> {
+fn find_lines(pts: &[P], rel: f64) -> Vec<Line> {
     let n = pts.len();
     let min_pts = 5;
     let mut out = Vec::new();
     let mut i = 0;
     while i + min_pts <= n {
         let mut j = i + min_pts - 1;
-        if straight(&pts[i..=j]).is_none() {
+        if straight(&pts[i..=j], rel).is_none() {
             i += 1;
             continue;
         }
-        while j + 1 < n && straight(&pts[i..=j + 1]).is_some() {
+        while j + 1 < n && straight(&pts[i..=j + 1], rel).is_some() {
             j += 1;
         }
         // Trim the ends that already bend away (into the next curve).
         let (mut a, mut b) = (i, j);
-        if let Some((_, _, dev)) = straight(&pts[a..=b]) {
+        if let Some((_, _, dev)) = straight(&pts[a..=b], rel) {
             let mut lo = 0;
             let mut hi = dev.len() - 1;
             while hi > lo + min_pts && dev[lo].abs() > LINE_END_TOL {
@@ -800,7 +823,7 @@ fn find_lines(pts: &[P]) -> Vec<Line> {
             }
             (a, b) = (i + lo, i + hi);
         }
-        match straight(&pts[a..=b]) {
+        match straight(&pts[a..=b], rel) {
             Some((origin, dir, _)) if (pts[b] - pts[a]).len() >= MIN_LINE_LEN && !on_arc(pts, a, b) => {
                 let dir = snap_axis(dir, (pts[b] - pts[a]).len());
                 out.push(Line { from: a, to: b, origin, dir });
@@ -839,7 +862,7 @@ fn fit_span(
     segs: &mut Vec<Seg>,
 ) {
     let n = span.len();
-    let lines = if params.plain { Vec::new() } else { enabled_lines(span, guides, true) };
+    let lines = if params.plain { Vec::new() } else { enabled_lines(span, params.relative, guides, true) };
     let mut starts: Vec<P> =
         lines.iter().map(|l| if l.from == 0 { span[0] } else { l.project(span[l.from]) }).collect();
     let mut ends: Vec<P> =
@@ -849,9 +872,12 @@ fn fit_span(
     for i in 0..lines.len().saturating_sub(1) {
         let (a, b) = (&lines[i], &lines[i + 1]);
         let pts = &span[a.to..=b.from];
-        let strict = fillet(pts, (a, starts[i]), (b, ends[i + 1]), params.arc_tol, &fillets.snap);
+        let strict =
+            fillet(pts, (a, starts[i]), (b, ends[i + 1]), params.arc_tol, params.relative, &fillets.snap);
         let within = strict.is_some();
-        let found = strict.or_else(|| fillet(pts, (a, starts[i]), (b, ends[i + 1]), CANDIDATE_ARC_TOL, &[]));
+        let found = strict.or_else(|| {
+            fillet(pts, (a, starts[i]), (b, ends[i + 1]), CANDIDATE_ARC_TOL, params.relative, &[])
+        });
         if let Some(f) = found
             && guides.add(GuideKind::Arc, f.middle, f.guide.clone(), within)
         {
@@ -880,8 +906,8 @@ fn fit_span(
 
 /// Straight parts of a span that are not turned off. `record`: add them to the guides (the
 /// final fit of the span; a loop looks for lines once more only to choose its start).
-fn enabled_lines(pts: &[P], guides: &mut Guides, record: bool) -> Vec<Line> {
-    find_lines(pts)
+fn enabled_lines(pts: &[P], rel: f64, guides: &mut Guides, record: bool) -> Vec<Line> {
+    find_lines(pts, rel)
         .into_iter()
         .filter(|l| {
             let (a, b) = (l.project(pts[l.from]), l.project(pts[l.to]));
@@ -910,7 +936,7 @@ struct Fillet {
 /// Fit the arc tangent to `a` and `b` (each with its start / end point) that best follows
 /// `pts` (the points from the end of `a` to the start of `b`), if every point stays within
 /// `tol` of the line–arc–line path. A radius of `snap` is preferred when it fits as well.
-fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, snap: &[f64]) -> Option<Fillet> {
+fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, rel: f64, snap: &[f64]) -> Option<Fillet> {
     let ((la, a_start), (lb, b_end)) = (a, b);
     let (d1, d2) = (la.dir, lb.dir);
     let turn = d1.dot(d2).clamp(-1.0, 1.0).acos();
@@ -961,6 +987,8 @@ fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, snap: &[f64]) -> Op
         }
     }
     let mut r = f64::midpoint(lo, hi);
+    // Larger roundings may stray a little more (Scale setting).
+    let tol = tol + rel * r;
     if r < MIN_FILLET || error(r).0 > tol {
         return None;
     }
@@ -1025,9 +1053,9 @@ fn curve_piece(
         fit_cubic(&pts, t1, t2, params.tolerance, segs, 0);
         return;
     }
-    let strict = free_arc(&pts, a.2, b.2, params.arc_tol);
+    let strict = free_arc(&pts, a.2, b.2, params.arc_tol, params.relative);
     let within = strict.is_some();
-    let found = strict.or_else(|| free_arc(&pts, a.2, b.2, CANDIDATE_ARC_TOL));
+    let found = strict.or_else(|| free_arc(&pts, a.2, b.2, CANDIDATE_ARC_TOL, params.relative));
     if let Some(arc) = found
         && guides.add(GuideKind::Arc, arc.middle, arc.guide, within)
     {
@@ -1053,7 +1081,7 @@ const ARC_TANGENT_SLACK: f64 = 4.0;
 
 /// The circular arc from `pts[0]` to the last point that follows all the points within `tol`,
 /// and respects the fixed end tangents (`t1` forward at the start, `t2` backward at the end).
-fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64) -> Option<FreeArc> {
+fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64, rel: f64) -> Option<FreeArc> {
     let n = pts.len();
     if n < 6 || tol <= 0.0 {
         return None;
@@ -1090,11 +1118,12 @@ fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64) -> Option<FreeArc
         }
     }
     let s = f64::midpoint(lo, hi);
-    if error(s).0 > tol {
-        return None;
-    }
     let center = mid + normal * s;
     let r = (a - center).len();
+    // Larger arcs may stray a little more (Scale setting).
+    if error(s).0 > tol + rel * r {
+        return None;
+    }
     // Signed sweep: the way from a to b that passes through the middle point.
     let angle = |p: P| (p - center).y.atan2((p - center).x);
     let tau = std::f64::consts::TAU;
@@ -1352,7 +1381,7 @@ mod tests {
     use super::*;
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false }
+        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false, relative: 0.0 }
     }
 
     /// Midpoints of the crack edges of a run (no sub-pixel information).
@@ -1440,7 +1469,7 @@ mod tests {
         // Its 4 roundings are corners whose apexes are the rectangle's corners; drawn sharp,
         // they give back the exact rectangle.
         let mut rect = rect;
-        rect.add_fillet_corners(0.5, &Guides::default());
+        rect.add_fillet_corners(0.5, 0.0, &Guides::default());
         let mut apexes: Vec<(i64, i64)> = rect
             .corners
             .iter()

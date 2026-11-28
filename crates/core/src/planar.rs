@@ -140,6 +140,8 @@ struct Runs {
     prepared: Vec<Prepared>,
     /// Geometry setting (circles, ellipses, symmetries of isolated shapes; 0 = off).
     geometry: f64,
+    /// Extra tolerance in proportion to size (Scale setting).
+    relative: f64,
     /// Guides of whole shapes (circles, ellipses, symmetries) and the ones turned off.
     guides: Guides,
     /// Isolated shapes (closed runs away from the image frame), finished once all are known.
@@ -370,6 +372,7 @@ pub fn to_svg(
         index: HashMap::new(),
         prepared: Vec::new(),
         geometry: f64::from(options.geometry),
+        relative: params.relative,
         guides: Guides::new(&options.disabled_guides, &options.forced_guides),
         isolated: Vec::new(),
         border: Vec::new(),
@@ -540,7 +543,10 @@ fn fit_runs(
             || run.has_shape()
             || run.corners.iter().any(crate::fit::Corner::is_fillet)
             || run_guides[i].iter().any(|g| matches!(g.status, GuideStatus::Followed | GuideStatus::Forced));
-        if run.soft || !geometric || run.deviation(&styles[i], &curves[i]) <= limit {
+        if run.soft
+            || !geometric
+            || run.deviation(&styles[i], &curves[i]) <= limit + params.relative * run.size()
+        {
             continue;
         }
         let mut scratch = Guides::default();
@@ -575,9 +581,9 @@ const MIN_REGULARIZED_POINTS: usize = 32;
 /// The symmetry of a closed outline, if any, and whether it is within the geometry setting's
 /// tolerance (otherwise it is a candidate). The loose search goes first: it fails for most
 /// outlines, and then nothing else is needed.
-fn find_symmetry(pts: &[P], geometry: f64) -> (Option<crate::shape::Symmetrized>, bool) {
-    let Some(loose) = crate::shape::symmetrize(pts, CANDIDATE_GEOMETRY) else { return (None, false) };
-    match crate::shape::symmetrize(pts, geometry) {
+fn find_symmetry(pts: &[P], geometry: f64, rel: f64) -> (Option<crate::shape::Symmetrized>, bool) {
+    let Some(loose) = crate::shape::symmetrize(pts, CANDIDATE_GEOMETRY, rel) else { return (None, false) };
+    match crate::shape::symmetrize(pts, geometry, rel) {
         Some(strict) => (Some(strict), true),
         None => (Some(loose), false),
     }
@@ -618,11 +624,11 @@ fn regularize_regions(cycles: &[Vec<Cycle>], runs: &mut Runs, size: (f64, f64)) 
             pts
         })
         .collect();
-    let repeated = crate::repeat::unify(&loops, runs.geometry, &mut runs.guides);
+    let repeated = crate::repeat::unify(&loops, runs.geometry, runs.relative, &mut runs.guides);
     let mut claimed = vec![false; runs.prepared.len()];
     for ((cycle, outline), new) in outlines.iter().zip(&loops).zip(repeated) {
         let outline = new.unwrap_or_else(|| outline.clone());
-        let (found, within) = find_symmetry(&outline, runs.geometry);
+        let (found, within) = find_symmetry(&outline, runs.geometry, runs.relative);
         let target = match found {
             Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), within) => {
                 crate::shape::aligned(&outline, &sym)
@@ -656,7 +662,7 @@ fn regularize_regions(cycles: &[Vec<Cycle>], runs: &mut Runs, size: (f64, f64)) 
                         false,
                         None,
                     );
-                    prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
+                    prepared.add_fillet_corners(arc_tolerance(runs.geometry), runs.relative, &runs.guides);
                     split_frame_corners(&mut prepared, size);
                     runs.prepared[idx] = prepared;
                 }
@@ -672,10 +678,10 @@ fn regularize_regions(cycles: &[Vec<Cycle>], runs: &mut Runs, size: (f64, f64)) 
 fn finish_isolated(runs: &mut Runs) {
     let isolated = std::mem::take(&mut runs.isolated);
     let loops: Vec<Vec<P>> = isolated.iter().map(|(_, _, mids)| mids.clone()).collect();
-    let repeated = crate::repeat::unify(&loops, runs.geometry, &mut runs.guides);
+    let repeated = crate::repeat::unify(&loops, runs.geometry, runs.relative, &mut runs.guides);
     for ((idx, vertices, mids), new) in isolated.into_iter().zip(repeated) {
         let mids = new.unwrap_or(mids);
-        let (found, within) = find_symmetry(&mids, runs.geometry);
+        let (found, within) = find_symmetry(&mids, runs.geometry, runs.relative);
         let symmetry_guide = found.as_ref().map(|_| runs.guides.found.len());
         let (mids, symmetry) = match found {
             Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.top, sym.guide.clone(), within) => {
@@ -684,8 +690,8 @@ fn finish_isolated(runs: &mut Runs) {
             _ => (mids, None),
         };
         let mut prepared = prepare(&vertices, &mids, (P::default(), P::default()), true, symmetry);
-        prepared.detect_shape(runs.geometry, &mut runs.guides);
-        prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
+        prepared.detect_shape(runs.geometry, runs.relative, &mut runs.guides);
+        prepared.add_fillet_corners(arc_tolerance(runs.geometry), runs.relative, &runs.guides);
         // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
         if prepared.has_shape()
             && let Some(i) = symmetry_guide
@@ -718,9 +724,11 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
             let skip = usize::from(!pts.is_empty());
             pts.extend(p.into_iter().skip(skip));
         }
-        let strict = crate::shape::fit_round(&pts, runs.geometry);
+        let strict = crate::shape::fit_round(&pts, runs.geometry, runs.relative);
         let within = strict.is_some();
-        if let Some((ellipse, _)) = strict.or_else(|| crate::shape::fit_round(&pts, CANDIDATE_GEOMETRY)) {
+        if let Some((ellipse, _)) =
+            strict.or_else(|| crate::shape::fit_round(&pts, CANDIDATE_GEOMETRY, runs.relative))
+        {
             let rms =
                 (pts.iter().map(|&p| ellipse.distance(p).powi(2)).sum::<f64>() / pts.len() as f64).sqrt();
             fits.push((rms, ellipse, within, cycle.runs.iter().map(|&(i, _)| i).collect::<Vec<_>>()));
@@ -773,7 +781,8 @@ fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
         for &idx in mine {
             let run = &mut runs.prepared[idx];
             let p = run.pts();
-            out[idx] = Some(ellipse.arc(p[0], p[p.len() - 1], p[p.len() / 2]));
+            let length: f64 = p.windows(2).map(|w| (w[1] - w[0]).len()).sum();
+            out[idx] = Some(ellipse.arc(p[0], p[p.len() - 1], length));
             run.corners.clear();
         }
     }
@@ -889,7 +898,7 @@ fn lookup_run(
     }
     let mut prepared = prepare(&vertices, &mids, ends, closed, None);
     prepared.soft = soft;
-    prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
+    prepared.add_fillet_corners(arc_tolerance(runs.geometry), runs.relative, &runs.guides);
     split_frame_corners(&mut prepared, (grid.w as f64, grid.h as f64));
     runs.prepared.push(prepared);
     runs.border.push(on_border);
@@ -1133,7 +1142,7 @@ mod tests {
     }
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false }
+        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false, relative: 0.0 }
     }
 
     fn svg(q: &Quantized, stacking: Stacking) -> String {

@@ -38,6 +38,11 @@ paletteEdit: PaletteEdit | null, corners: Corners,
  */
 geometry: number, 
 /**
+ * Extra geometric tolerance in proportion to size (0 = none, 1 = 2 % of the size): large
+ * shapes drawn a little imprecisely are still recognized.
+ */
+scale: number, 
+/**
  * Guides the user turned off (found again by kind and position).
  */
 disabledGuides: Array<GuideKey>, 

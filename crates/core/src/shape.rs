@@ -12,6 +12,8 @@ use crate::fit::{Curve, P, Seg};
 fn round_tolerance(g: f64) -> (f64, f64) {
     (0.3 + 0.6 * g, 0.1 + 0.24 * g)
 }
+/// The shape's perimeter must match the outline's length within this fraction.
+const PERIMETER_SLACK: f64 = 0.15;
 /// Smallest semi-axis (px) and most elongated ratio considered.
 const MIN_AXIS: f64 = 2.0;
 const MAX_RATIO: f64 = 12.0;
@@ -78,14 +80,33 @@ impl Ellipse {
         (v / self.b).atan2(u / self.a)
     }
 
-    /// The part of the ellipse from `from` to `to` (points near it), going the way that passes
-    /// by `via`, as cubics of at most a quarter turn. The curve starts and ends exactly at
-    /// `from` and `to`.
-    pub fn arc(&self, from: P, to: P, via: P) -> Curve {
+    /// The part of the ellipse from `from` to `to` (points near it) whose length best matches
+    /// `length` (the boundary it replaces): of the two ways round, the one that boundary
+    /// takes. Cubics of at most a quarter turn; the curve starts and ends exactly at `from`
+    /// and `to`.
+    pub fn arc(&self, from: P, to: P, length: f64) -> Curve {
         let tau = std::f64::consts::TAU;
-        let (t0, t1, tv) = (self.param(from), self.param(to), self.param(via));
+        let (t0, t1) = (self.param(from), self.param(to));
         let up = (t1 - t0).rem_euclid(tau);
-        let sweep = if (tv - t0).rem_euclid(tau) < up { up } else { up - tau };
+        // Arc length of a parameter sweep, from a few chords.
+        let along = |sweep: f64| {
+            let k = 32;
+            (0..k)
+                .map(|i| {
+                    let (a, b) = (
+                        t0 + sweep * f64::from(i) / f64::from(k),
+                        t0 + sweep * f64::from(i + 1) / f64::from(k),
+                    );
+                    (self.at(b).0 - self.at(a).0).len()
+                })
+                .sum::<f64>()
+        };
+        let (forward, backward) = (up, up - tau);
+        let sweep = if (along(forward) - length).abs() <= (along(backward) - length).abs() {
+            forward
+        } else {
+            backward
+        };
         let pieces = (sweep.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
         let step = sweep / pieces;
         let k = 4.0 / 3.0 * (step / 4.0).tan();
@@ -124,8 +145,9 @@ impl Ellipse {
 
 /// The circle or ellipse that `pts` (a closed boundary) follows, if any, and whether the
 /// boundary runs against its parametrization.
-pub fn fit_round(pts: &[P], g: f64) -> Option<(Ellipse, bool)> {
+pub fn fit_round(pts: &[P], g: f64, rel: f64) -> Option<(Ellipse, bool)> {
     let (max_err, rms_err) = round_tolerance(g);
+    let outline: f64 = (0..pts.len()).map(|i| (pts[(i + 1) % pts.len()] - pts[i]).len()).sum();
     if g <= 0.0 || pts.len() < 12 {
         return None;
     }
@@ -136,7 +158,18 @@ pub fn fit_round(pts: &[P], g: f64) -> Option<(Ellipse, bool)> {
         (max, rms)
     };
     let ok = |e: &Ellipse, (max, rms): (f64, f64)| {
-        e.b >= MIN_AXIS && e.a / e.b <= MAX_RATIO && max <= max_err && rms <= rms_err
+        // A closed outline goes all the way round its shape: their perimeters agree (a small
+        // speck must not be "a stretch of a huge circle").
+        let perimeter =
+            std::f64::consts::PI * (3.0 * (e.a + e.b) - ((3.0 * e.a + e.b) * (e.a + 3.0 * e.b)).sqrt());
+        let round_trip = (perimeter / outline - 1.0).abs() <= PERIMETER_SLACK;
+        // Larger outlines may stray a little more (Scale setting; size from the outline itself).
+        let extra = rel * outline / std::f64::consts::TAU;
+        round_trip
+            && e.b >= MIN_AXIS
+            && e.a / e.b <= MAX_RATIO
+            && max <= max_err + extra
+            && rms <= rms_err + 0.4 * extra
     };
     let circle = fit_circle(pts).map(|(center, r)| Ellipse { center, a: r, b: r, angle: 0.0 });
     let ellipse = fit_ellipse(pts);
@@ -416,7 +449,7 @@ fn compare(len: f64, samples: usize, f: impl Fn(f64) -> P, g: impl Fn(f64) -> P)
 /// order k about it). Returns the new boundary: evenly spaced points, a multiple of k of them,
 /// point 0 on the mirror axis, so that symmetries map point indices onto point indices (see
 /// [`Symmetry::images`]).
-pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
+pub fn symmetrize(pts: &[P], g: f64, rel: f64) -> Option<Symmetrized> {
     let n = pts.len();
     let (sym_max, sym_rms) = symmetry_tolerance(g);
     if g <= 0.0 || n < 16 {
@@ -426,7 +459,10 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
     let len = lp.length();
     // Small shapes get a tolerance in proportion to their size (1.4 px on a 10 px speck would
     // make anything symmetric).
-    let (sym_max, sym_rms) = (sym_max.min(RELATIVE_MAX * len), sym_rms.min(RELATIVE_RMS * len));
+    // Larger shapes may stray a little more (Scale setting; size = radius of the same perimeter).
+    let extra = rel * len / std::f64::consts::TAU;
+    let (sym_max, sym_rms) =
+        (sym_max.min(RELATIVE_MAX * len) + extra, sym_rms.min(RELATIVE_RMS * len) + 0.4 * extra);
     // Area centroid; the sign of the area gives the turning sense of increasing s.
     let (mut a2, mut cx, mut cy) = (0.0, 0.0, 0.0);
     for i in 0..n {
@@ -659,7 +695,7 @@ mod tests {
     #[test]
     fn recovers_a_rotated_ellipse() {
         let e = Ellipse { center: P::new(210.0, 100.0), a: 50.0, b: 22.0, angle: -0.26 };
-        let (fit, _) = fit_round(&ellipse_pts(&e, 300, 0.2), 0.5).expect("ellipse");
+        let (fit, _) = fit_round(&ellipse_pts(&e, 300, 0.2), 0.5, 0.0).expect("ellipse");
         assert!((fit.center - e.center).len() < 0.1, "{fit:?}");
         assert!((fit.a - e.a).abs() < 0.2 && (fit.b - e.b).abs() < 0.2, "{fit:?}");
         assert!((fit.angle - e.angle).sin().abs() < 0.01, "{fit:?}");
@@ -668,7 +704,7 @@ mod tests {
     #[test]
     fn prefers_the_circle_and_rejects_squares() {
         let c = Ellipse { center: P::new(100.0, 100.0), a: 28.0, b: 28.0, angle: 0.0 };
-        let (fit, _) = fit_round(&ellipse_pts(&c, 200, 0.15), 0.5).expect("circle");
+        let (fit, _) = fit_round(&ellipse_pts(&c, 200, 0.15), 0.5, 0.0).expect("circle");
         assert!((fit.a - fit.b).abs() < 1e-12 && (fit.a - 28.0).abs() < 0.1, "{fit:?}");
 
         let square: Vec<P> = (0..160)
@@ -682,7 +718,7 @@ mod tests {
                 }
             })
             .collect();
-        assert!(fit_round(&square, 0.5).is_none());
+        assert!(fit_round(&square, 0.5, 0.0).is_none());
     }
 
     /// A 5-pointed star (outer radius 40, inner 16) with alternating noise, rotated by `phase`.
@@ -707,7 +743,7 @@ mod tests {
 
     #[test]
     fn star_becomes_exactly_symmetric() {
-        let found = symmetrize(&star(0.1, 0.3), 0.5).expect("symmetric");
+        let found = symmetrize(&star(0.1, 0.3), 0.5, 0.0).expect("symmetric");
         let (sym, kind) = (found.pts, found.kind);
         assert_eq!(kind, Symmetry { order: 5, mirror: true });
         // Every tip at the same distance from the center, within 0.05 px.
@@ -734,16 +770,30 @@ mod tests {
                 pts.push(a + (b - a) * (f64::from(k) / 40.0));
             }
         }
-        assert!(symmetrize(&pts, 0.5).is_none());
+        assert!(symmetrize(&pts, 0.5, 0.0).is_none());
+    }
+
+    #[test]
+    fn a_short_stretch_takes_the_short_way() {
+        // Two points 2° apart on a circle of radius 100: the 3.5 px boundary between them is
+        // drawn as a 3.5 px arc, not as the whole circle the other way round.
+        let c = Ellipse { center: P::new(0.0, 0.0), a: 100.0, b: 100.0, angle: 0.0 };
+        let (from, to) = (c.at(0.0).0, c.at(2f64.to_radians()).0);
+        for (a, b) in [(from, to), (to, from)] {
+            let arc = c.arc(a, b, 3.5);
+            let span =
+                arc.segs.iter().fold((arc.start, 0.0), |(p, l), s| (s.end(), l + (s.end() - p).len())).1;
+            assert!(span < 5.0 && arc.segs.len() == 1, "{arc:?}");
+        }
     }
 
     #[test]
     fn curve_follows_the_boundary_direction() {
         let c = Ellipse { center: P::new(0.0, 0.0), a: 10.0, b: 5.0, angle: 0.3 };
         let pts = ellipse_pts(&c, 100, 0.0);
-        let (_, reverse) = fit_round(&pts, 0.5).expect("fit");
+        let (_, reverse) = fit_round(&pts, 0.5, 0.0).expect("fit");
         assert!(!reverse);
         let rev: Vec<P> = pts.iter().rev().copied().collect();
-        assert!(fit_round(&rev, 0.5).expect("fit").1);
+        assert!(fit_round(&rev, 0.5, 0.0).expect("fit").1);
     }
 }

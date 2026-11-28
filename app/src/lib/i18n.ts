@@ -37,6 +37,9 @@ const fr = {
   rounder: 'Plus rond',
   geometry: 'Géométrie',
   geometryOff: 'Tracé brut',
+  scale: 'Échelle',
+  scaleHint:
+    'Tolérance en proportion de la taille : les grandes formes un peu imprécises sont reconnues, les petites restent exigeantes.',
   showGuides: 'Afficher les guides',
   showGuidesHint:
     'Trait plein : suivi par le tracé. Pointillés colorés : candidat (hors tolérance), un clic le force. Un clic sur un guide suivi le désactive (gris).',
@@ -144,6 +147,9 @@ const en: Messages = {
   rounder: 'Rounder',
   geometry: 'Geometry',
   geometryOff: 'Plain tracing',
+  scale: 'Scale',
+  scaleHint:
+    'Tolerance in proportion to size: large, slightly imprecise shapes are recognized, small ones stay strict.',
   showGuides: 'Show guides',
   showGuidesHint:
     'Solid: followed by the tracing. Colored dots: candidate (beyond tolerance), a click forces it. A click on a followed guide turns it off (grey).',

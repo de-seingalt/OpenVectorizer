@@ -109,6 +109,9 @@ pub struct Options {
     /// larger deviations for tangent arcs between straight parts (fillets, equal radii),
     /// circles, ellipses and symmetries of isolated shapes.
     pub geometry: f32,
+    /// Extra geometric tolerance in proportion to size (0 = none, 1 = 2 % of the size): large
+    /// shapes drawn a little imprecisely are still recognized.
+    pub scale: f32,
     /// Guides the user turned off (found again by kind and position).
     pub disabled_guides: Vec<GuideKey>,
     /// Candidate guides the user asked the tracing to follow anyway.
@@ -133,6 +136,7 @@ impl Default for Options {
             palette_edit: None,
             corners: Corners::default(),
             geometry: 0.5,
+            scale: 0.3,
             disabled_guides: Vec::new(),
             forced_guides: Vec::new(),
             fill_gaps: true,
@@ -155,6 +159,7 @@ impl Options {
         unit("detail", self.detail)?;
         unit("smoothness", self.smoothness)?;
         unit("geometry", self.geometry)?;
+        unit("scale", self.scale)?;
         unit("denoise", self.denoise)?;
         if self.min_area_px > 128 {
             return Err(Error::InvalidOption(format!("minAreaPx must be <= 128, got {}", self.min_area_px)));
