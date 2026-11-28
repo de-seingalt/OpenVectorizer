@@ -17,7 +17,16 @@
   import { Button } from '$lib/components/ui/button';
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Toaster } from '$lib/components/ui/sonner';
-  import { DEFAULT_OPTIONS, Engine, SupersededError, type Options, type Palette, type Stats } from '$lib/engine';
+  import { editCorners, findCorner, targets } from '$lib/corners';
+  import {
+    DEFAULT_OPTIONS,
+    Engine,
+    SupersededError,
+    type CornerInfo,
+    type Options,
+    type Palette,
+    type Stats,
+  } from '$lib/engine';
   import { t } from '$lib/i18n';
   import { ACCEPTED_TYPES, baseName, loadImage, type LoadedImage } from '$lib/image';
   import { pickImage, saveText } from '$lib/platform';
@@ -30,6 +39,10 @@
   let svgUrl = $state<string | null>(null);
   let stats = $state<Stats | null>(null);
   let palette = $state<Palette | null>(null);
+  let corners = $state<CornerInfo[]>([]);
+  let showCorners = $state(false);
+  let selectedCorner = $state<CornerInfo | null>(null);
+  let cornerGroup = $state(true); // edits apply to the whole group of the corner
   let ms = $state(0);
   let working = $state(false);
   let dragging = $state(false);
@@ -83,6 +96,9 @@
         svgUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         stats = res.output.stats;
         palette = res.output.palette;
+        corners = res.output.corners;
+        // Follow the selected corner into the new result.
+        if (selectedCorner) selectedCorner = findCorner(corners, selectedCorner);
         ms = res.ms;
         working = false;
       } catch (e) {
@@ -93,6 +109,10 @@
     }, 120);
     return () => clearTimeout(timer);
   });
+
+  function toggleCorner(k: CornerInfo) {
+    editCorners(options, targets(corners, k, cornerGroup), { sharp: !k.sharp, radius: null });
+  }
 
   async function exportSvg() {
     if (!svg || !image) return;
@@ -123,6 +143,7 @@
 
   function onKeydown(e: KeyboardEvent) {
     const mod = e.ctrlKey || e.metaKey;
+    if (e.key === 'Escape') selectedCorner = null;
     if (mod && e.key === 'o') {
       e.preventDefault();
       void openFile();
@@ -187,7 +208,16 @@
     <!-- Main area -->
     <main class="relative min-w-0 flex-1">
       {#if image}
-        <Viewer rasterUrl={image.url} {svgUrl} width={image.pixels.width} height={image.pixels.height} />
+        <Viewer
+          rasterUrl={image.url}
+          {svgUrl}
+          width={image.pixels.width}
+          height={image.pixels.height}
+          {corners}
+          {showCorners}
+          bind:selectedCorner
+          onToggleCorner={toggleCorner}
+        />
       {:else}
         <div class="flex h-full items-center justify-center p-8">
           <button
@@ -216,7 +246,7 @@
 
     <!-- Settings -->
     <aside class="w-80 shrink-0 overflow-y-auto border-l">
-      <SettingsPanel bind:options {palette} {stats} />
+      <SettingsPanel bind:options {palette} {stats} {corners} bind:showCorners bind:selectedCorner bind:cornerGroup />
     </aside>
   </div>
 

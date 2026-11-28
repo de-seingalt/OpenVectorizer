@@ -59,7 +59,7 @@ l'interface du site n'est pas un modèle. On reprend les capacités et la qualit
   miroir. Une symétrie appliquée moyenne les points du contour avec leur image avant l'ajustement.
 - [INF] Répétitions : signature invariante (moments de Hu ou descripteurs de Fourier), puis regroupement.
 
-## 5. Coins
+## 5. Coins (fait, voir `decide_corners` dans `planar.rs` et `corners.ts`)
 - [OBS] Le compteur affiche le total, les vifs et les arrondis. Les coins d'une forme géométrique forment un seul
   groupe.
 - [OBS] Mode global : automatique, tous vifs ou tous ronds.

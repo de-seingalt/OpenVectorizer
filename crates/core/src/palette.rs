@@ -123,9 +123,9 @@ pub struct Quantized {
     pub palette: Vec<[u8; 3]>,
     /// One entry per pixel: index into `palette`, or [`TRANSPARENT`].
     pub labels: Vec<u16>,
-    /// Color of each group as found in the image (ignores custom colors): used to measure how
-    /// much of each color an anti-aliased pixel contains.
-    pub model: Vec<[u8; 3]>,
+    /// Source colors of each group as found in the image (ignores custom colors): used to
+    /// measure how much of each color an anti-aliased pixel contains.
+    pub model: Vec<Vec<[u8; 3]>>,
     /// Sources and groups, for the palette editor.
     pub info: Palette,
 }
@@ -240,7 +240,10 @@ pub fn quantize(image: &RgbaImage, options: &Options) -> Quantized {
             .map(|((&c, &pixels), custom)| ColorGroup { color: hex(c), pixels, custom: custom.is_some() })
             .collect(),
     };
-    let model = group_centers.iter().map(|&c| oklab_to_srgb(c)).collect();
+    let mut model = vec![Vec::new(); group_centers.len()];
+    for (c, &g) in sources.iter().zip(&group_of) {
+        model[g as usize].push(oklab_to_srgb(c.center));
+    }
     Quantized { width: image.width(), height: image.height(), palette, labels, model, info }
 }
 

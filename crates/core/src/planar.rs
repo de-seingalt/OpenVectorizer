@@ -15,10 +15,14 @@
 use std::collections::HashMap;
 use std::fmt::Write as _;
 
+use serde::{Deserialize, Serialize};
+use ts_rs::TS;
+
 use crate::RgbaImage;
-use crate::fit::{Curve, FitParams, P, Prepared, Seg, fit_prepared, prepare};
+use crate::fit::{CornerStyle, Curve, FitParams, P, Prepared, Seg, fit_prepared, prepare};
+use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
-use crate::{CornerMode, Options, Stacking};
+use crate::{CornerEdit, CornerMode, Options, Stacking};
 
 /// Component id of transparent pixels and of the outside of the image.
 const NONE: u32 = u32::MAX;
@@ -130,17 +134,41 @@ struct Runs {
 }
 
 /// Corner candidates of the whole image and how many are sharp.
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq)]
+#[derive(Debug, Clone, Default, PartialEq)]
 pub struct CornerStats {
     pub total: u32,
     pub sharp: u32,
+    /// Every corner, for the editor (in no particular order).
+    pub list: Vec<CornerInfo>,
+}
+
+/// One corner of the result, as shown in the editor.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CornerInfo {
+    /// Apex (image px): where the corner is when sharp, and the key of its [`CornerEdit`].
+    pub x: f32,
+    pub y: f32,
+    pub sharp: bool,
+    /// Radius drawn when rounded (px), and the largest one that fits.
+    pub radius: f32,
+    pub max_radius: f32,
+    /// Corners of the same closed outline with the same angle (the 4 corners of a square,
+    /// the 5 tips of a star) share a group, edited together by default.
+    pub group: Option<u32>,
+    /// A [`CornerEdit`] applies to this corner.
+    pub edited: bool,
 }
 
 /// In automatic mode, a corner is sharp when the boundary passes this close to its apex.
 const AUTO_SHARP_GAP: f64 = 0.75;
+/// Corners of one outline whose turns differ by less than this (radians) form a group.
+const GROUP_TURN: f64 = 0.2;
 
-/// Decide which corners are sharp, over the whole image (the count is global).
-fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<bool>>, CornerStats) {
+/// Decide how every corner is drawn, over the whole image (the sharp count is global), then
+/// apply the per-corner edits.
+fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>>, CornerStats) {
     let mut sharp: Vec<Vec<bool>> = runs.iter().map(|r| vec![false; r.corners.len()]).collect();
     let mut all: Vec<(usize, usize)> =
         runs.iter().enumerate().flat_map(|(r, run)| (0..run.corners.len()).map(move |c| (r, c))).collect();
@@ -166,9 +194,121 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<bool>>, Corn
             }
         }
     }
-    let total = all.len() as u32;
-    let count = sharp.iter().flatten().filter(|&&b| b).count() as u32;
-    (sharp, CornerStats { total, sharp: count })
+
+    let rel = f64::from(options.corners.radius);
+    let mut styles: Vec<Vec<CornerStyle>> = runs
+        .iter()
+        .zip(&sharp)
+        .map(|(run, sharp)| {
+            (0..run.corners.len())
+                .map(|c| match (sharp[c], rel.abs() < 1e-6) {
+                    (true, _) => CornerStyle::Sharp,
+                    (false, true) => CornerStyle::Free,
+                    (false, false) => CornerStyle::Arc(run.relative_radius(c, rel)),
+                })
+                .collect()
+        })
+        .collect();
+    let mut edited: Vec<Vec<bool>> = runs.iter().map(|r| vec![false; r.corners.len()]).collect();
+    for (r, c, edit) in match_edits(runs, &options.corners.edits) {
+        edited[r][c] = true;
+        styles[r][c] = match (edit.sharp, edit.radius) {
+            (true, _) => CornerStyle::Sharp,
+            (false, Some(radius)) => CornerStyle::Arc(f64::from(radius).min(runs[r].radii(c).1)),
+            (false, None) if rel.abs() < 1e-6 => CornerStyle::Free,
+            (false, None) => CornerStyle::Arc(runs[r].relative_radius(c, rel)),
+        };
+    }
+
+    let groups = corner_groups(runs);
+    let mut list = Vec::with_capacity(all.len());
+    for (r, run) in runs.iter().enumerate() {
+        for (c, k) in run.corners.iter().enumerate() {
+            let (r_fit, r_max) = run.radii(c);
+            let (is_sharp, radius) = match styles[r][c] {
+                CornerStyle::Sharp => (true, 0.0),
+                CornerStyle::Free => (false, r_fit),
+                CornerStyle::Arc(radius) => (false, radius),
+            };
+            list.push(CornerInfo {
+                x: k.apex.x as f32,
+                y: k.apex.y as f32,
+                sharp: is_sharp,
+                radius: radius as f32,
+                max_radius: r_max as f32,
+                group: groups[r][c],
+                edited: edited[r][c],
+            });
+        }
+    }
+    let count = list.iter().filter(|k| k.sharp).count() as u32;
+    (styles, CornerStats { total: list.len() as u32, sharp: count, list })
+}
+
+/// (run, corner, edit) for every edit that finds a corner within reach; the nearest corner
+/// wins, and a later edit of the same corner replaces an earlier one.
+fn match_edits<'a>(runs: &[Prepared], edits: &'a [CornerEdit]) -> Vec<(usize, usize, &'a CornerEdit)> {
+    if edits.is_empty() {
+        return Vec::new();
+    }
+    let reach = f64::from(CORNER_EDIT_REACH);
+    let cell = |x: f64, y: f64| ((x / reach).floor() as i64, (y / reach).floor() as i64);
+    let mut index: HashMap<(i64, i64), Vec<(usize, usize)>> = HashMap::new();
+    for (r, run) in runs.iter().enumerate() {
+        for (c, k) in run.corners.iter().enumerate() {
+            index.entry(cell(k.apex.x, k.apex.y)).or_default().push((r, c));
+        }
+    }
+    let mut out = Vec::new();
+    for edit in edits {
+        let p = P::new(f64::from(edit.x), f64::from(edit.y));
+        let (cx, cy) = cell(p.x, p.y);
+        let mut best: Option<((usize, usize), f64)> = None;
+        for key in (cx - 1..=cx + 1).flat_map(|x| (cy - 1..=cy + 1).map(move |y| (x, y))) {
+            for &(r, c) in index.get(&key).into_iter().flatten() {
+                let d = (runs[r].corners[c].apex - p).len();
+                if d <= reach && best.is_none_or(|(_, b)| d < b) {
+                    best = Some(((r, c), d));
+                }
+            }
+        }
+        if let Some(((r, c), _)) = best {
+            out.push((r, c, edit));
+        }
+    }
+    out
+}
+
+/// Group the corners of each closed run that have nearly the same turn.
+fn corner_groups(runs: &[Prepared]) -> Vec<Vec<Option<u32>>> {
+    let mut next = 0u32;
+    runs.iter()
+        .map(|run| {
+            let mut groups = vec![None; run.corners.len()];
+            if !run.closed {
+                return groups;
+            }
+            let mut order: Vec<usize> = (0..run.corners.len()).collect();
+            order.sort_by(|&a, &b| run.corners[a].turn.total_cmp(&run.corners[b].turn));
+            let mut i = 0;
+            while i < order.len() {
+                let mut j = i + 1;
+                while j < order.len()
+                    && run.corners[order[j]].turn - run.corners[order[j - 1]].turn < GROUP_TURN
+                {
+                    j += 1;
+                }
+                if j - i >= 2 {
+                    for &c in &order[i..j] {
+                        groups[c] = Some(next);
+                    }
+                    next += 1;
+                }
+                i = j;
+            }
+            groups
+        })
+        .collect()
 }
 
 /// Trace all regions and write the SVG document.
@@ -206,9 +346,9 @@ pub fn to_svg(
         }
     }
 
-    let (sharp, corner_stats) = decide_corners(&runs.prepared, options);
+    let (styles, corner_stats) = decide_corners(&runs.prepared, options);
     let curves: Vec<Curve> =
-        runs.prepared.iter().zip(&sharp).map(|(run, sharp)| fit_prepared(run, sharp, params)).collect();
+        runs.prepared.iter().zip(&styles).map(|(run, styles)| fit_prepared(run, styles, *params)).collect();
 
     // Draw order: largest outline first.
     let outer_area = |c: &[Cycle]| c.iter().map(|k| -k.area).fold(0.0, f64::max);
@@ -366,6 +506,9 @@ struct EdgePoint<'a> {
 
 /// Largest sub-pixel shift: keeps neighboring boundaries from crossing.
 const MAX_SHIFT: f64 = 0.45;
+/// Largest distance of a pixel color from the segment between its two region colors, relative
+/// to the segment length, for its coverage to be trusted.
+const OFF_SEGMENT: f64 = 0.25;
 
 impl EdgePoint<'_> {
     /// A junction sits at the mean of the boundary points of its incident crack edges, so the
@@ -421,20 +564,39 @@ impl EdgePoint<'_> {
             let px = &image.data()[i * 4..i * 4 + 3];
             [f64::from(px[0]), f64::from(px[1]), f64::from(px[2])]
         };
-        let model = |l: u16| self.q.model[l as usize].map(f64::from);
-        let (ca, cb) = (model(la), model(lb));
-        let ab: [f64; 3] = std::array::from_fn(|k| cb[k] - ca[k]);
-        let len2: f64 = ab.iter().map(|v| v * v).sum();
-        if len2 < 40.0 * 40.0 {
+        let (cl, cr) = (color(il), color(ir));
+        // Each region may group several source colors: measure against the pair that explains
+        // both pixels best (a merged tint is not a mix of the group average).
+        let mut best: Option<(f64, f64)> = None; // (worst relative residual, e)
+        for a in &self.q.model[la as usize] {
+            for b in &self.q.model[lb as usize] {
+                let (ca, cb) = (a.map(f64::from), b.map(f64::from));
+                let ab: [f64; 3] = std::array::from_fn(|k| cb[k] - ca[k]);
+                let len2: f64 = ab.iter().map(|v| v * v).sum();
+                if len2 < 40.0 * 40.0 {
+                    continue;
+                }
+                // Fraction of color b in a pixel (projection on the a→b segment), and the
+                // squared distance of the pixel from that segment relative to its length.
+                let fit = |c: [f64; 3]| {
+                    let t = (0..3).map(|k| ab[k] * (c[k] - ca[k])).sum::<f64>() / len2;
+                    let t = t.clamp(0.0, 1.0);
+                    let d2: f64 = (0..3).map(|k| (c[k] - ca[k] - ab[k] * t).powi(2)).sum();
+                    (t, d2 / len2)
+                };
+                let ((tl, dl), (tr, dr)) = (fit(cl), fit(cr));
+                let worst = dl.max(dr);
+                if best.is_none_or(|(w, _)| worst < w) {
+                    // b occupies the axis beyond e (crack at 0, l covers [-1, 0], r covers [0, 1]).
+                    best = Some((worst, (1.0 - tr) - tl));
+                }
+            }
+        }
+        // A pixel far from every segment is not a mix of the two regions (a third color).
+        let (worst, e) = best?;
+        if worst > OFF_SEGMENT * OFF_SEGMENT {
             return None;
         }
-        // Fraction of color b in a pixel (projection on the a→b segment).
-        let cover_b = |c: [f64; 3]| {
-            (ab.iter().zip(c.iter().zip(&ca)).map(|(d, (x, a))| d * (x - a)).sum::<f64>() / len2)
-                .clamp(0.0, 1.0)
-        };
-        // b occupies the axis beyond e (crack at 0, l covers [-1, 0], r covers [0, 1]).
-        let e = (1.0 - cover_b(color(ir))) - cover_b(color(il));
         Some(e.clamp(-MAX_SHIFT, MAX_SHIFT))
     }
 }
@@ -514,13 +676,13 @@ mod tests {
             height: h,
             palette: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]],
             labels,
-            model: vec![[255, 255, 255], [200, 0, 0], [0, 0, 200]],
+            model: vec![vec![[255, 255, 255]], vec![[200, 0, 0]], vec![[0, 0, 200]]],
             info: crate::Palette::default(),
         }
     }
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, radius: 0.0 }
+        FitParams { tolerance: 0.7 }
     }
 
     fn svg(q: &Quantized, stacking: Stacking) -> String {
@@ -553,6 +715,31 @@ mod tests {
         for p in ["20 0", "20 10"] {
             assert!(red.contains(p) && blue.contains(p), "{p} in {svg}");
         }
+    }
+
+    #[test]
+    fn corner_edits_override_the_global_mode() {
+        let q = quantized(20, 20, |x, y| u16::from((5..15).contains(&x) && (5..15).contains(&y)));
+        let mut options = Options::default();
+        options.corners.mode = CornerMode::Sharp;
+        let (_, stats) = to_svg(&q, None, &options, &params());
+        assert_eq!((stats.total, stats.sharp), (4, 4), "{stats:?}");
+        // The 4 corners of the square are one group.
+        let group = stats.list[0].group;
+        assert!(group.is_some() && stats.list.iter().all(|k| k.group == group), "{stats:?}");
+
+        // Round the top-left corner (edit placed slightly off its apex) with a 3 px radius.
+        options.corners.edits = vec![CornerEdit { x: 5.3, y: 4.8, sharp: false, radius: Some(3.0) }];
+        let (svg, stats) = to_svg(&q, None, &options, &params());
+        assert_eq!(stats.sharp, 3, "{stats:?}");
+        let k = stats.list.iter().find(|k| k.edited).expect("edited corner");
+        assert!(!k.sharp && (k.radius - 3.0).abs() < 1e-6 && (k.x - 5.0).abs() < 0.1, "{k:?}");
+        assert!(!svg.contains("M5 5") && !svg.contains("L5 5"), "{svg}");
+
+        // An edit far from every corner is ignored.
+        options.corners.edits = vec![CornerEdit { x: 10.0, y: 10.0, sharp: false, radius: None }];
+        let (_, stats) = to_svg(&q, None, &options, &params());
+        assert_eq!(stats.sharp, 4);
     }
 
     #[test]

@@ -33,7 +33,11 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       rayon ajusté et rayon max (moitié des côtés), arcs tangents ; les coins du cadre de l'image sont ignorés
 - [x] Outil **Coins** : auto / tous vifs / tous ronds, curseur « nombre de coins vifs » classés par écart,
       rayon relatif −100..100
-- [ ] Coins : bascule et rayon coin par coin (clic dans l'aperçu), groupes de coins (symétries)
+- [x] Coins coin par coin : repères dans l'aperçu (clic = sélection, double-clic = vif/arrondi), rayon en px,
+      retouches retrouvées par la position du sommet à chaque tracé (`corners.edits`)
+- [x] Groupes de coins : coins d'un même contour fermé de même angle (carré, pointes d'étoile), retouchés ensemble
+      par défaut. Les groupes de formes géométriques et de symétries viendront avec M3
+- [x] Bords sous-pixel mesurés avec les teintes sources du groupe (une teinte fusionnée ne fausse plus la position)
 
 ## M3 — Géométrie
 - [ ] Ajustement par segment : droite, puis arc de cercle, puis arc d'ellipse, puis Bézier cubique, choix par erreur + complexité

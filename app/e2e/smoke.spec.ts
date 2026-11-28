@@ -44,6 +44,25 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(cornerCount).toContainText(/\b0\s+vifs\s+sur\s+[1-9]/);
   await page.getByRole('radio', { name: 'Tous vifs' }).click();
   await expect(cornerCount).toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);
+
+  // Per-corner editing: double-click a marker rounds that corner (and its group).
+  await page.getByRole('switch', { name: 'Afficher les coins' }).click();
+  const marker = page.locator('[data-corner]').first();
+  await marker.dblclick();
+  await expect(cornerCount).not.toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);
+  const resetCorners = page.getByRole('button', { name: /Annuler les retouches de coins/ });
+  await expect(resetCorners).toBeVisible();
+  // A click selects it: the panel shows it rounded, with its radius.
+  await page.locator('[data-corner][aria-label^="Arrondi"]').first().click();
+  const panel = page.getByRole('group', { name: 'Coin sélectionné' });
+  await expect(panel.getByRole('radio', { name: 'Arrondi' })).toBeChecked();
+  await expect(panel.getByRole('slider', { name: 'Rayon' })).toBeVisible();
+  await page.screenshot({ path: 'test-results/screens/02d-corner-edit.png' });
+  await panel.getByRole('radio', { name: 'Vif' }).click();
+  await resetCorners.click();
+  await expect(cornerCount).toHaveText(/(\d+)\s+vifs\s+sur\s+\1\s*$/);
+  await page.keyboard.press('Escape');
+  await expect(panel).toBeHidden();
   const autoCorners = page.getByRole('radio', { name: 'Auto', exact: true });
   await autoCorners.click();
   await expect(autoCorners).toBeChecked();

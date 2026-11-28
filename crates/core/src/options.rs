@@ -45,8 +45,27 @@ pub enum CornerMode {
     Round,
 }
 
-/// Corner settings (the "Coins" tool).
+/// A manual change to one corner, found again at each tracing by its apex position.
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize, TS)]
+#[serde(rename_all = "camelCase")]
+#[ts(export)]
+pub struct CornerEdit {
+    /// Apex of the corner (image px). The edit applies to the nearest corner within
+    /// [`CORNER_EDIT_REACH`] px, and is ignored when there is none.
+    pub x: f32,
+    pub y: f32,
+    pub sharp: bool,
+    /// Radius in px of a rounded corner (clamped to what fits); `None` = the global setting.
+    pub radius: Option<f32>,
+}
+
+/// How far (px) an edit looks for its corner.
+pub const CORNER_EDIT_REACH: f32 = 1.5;
+/// Upper bound on the number of corner edits (keeps matching cheap).
+const MAX_CORNER_EDITS: usize = 20_000;
+
+/// Corner settings (the "Coins" tool).
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]
 #[serde(rename_all = "camelCase", default)]
 #[ts(export)]
 pub struct Corners {
@@ -55,11 +74,13 @@ pub struct Corners {
     pub sharp_count: Option<u32>,
     /// Radius of rounded corners: −1 = sharp, 0 = best fit, 1 = largest radius.
     pub radius: f32,
+    /// Per-corner changes, applied over the global setting.
+    pub edits: Vec<CornerEdit>,
 }
 
 impl Default for Corners {
     fn default() -> Self {
-        Self { mode: CornerMode::Automatic, sharp_count: None, radius: 0.0 }
+        Self { mode: CornerMode::Automatic, sharp_count: None, radius: 0.0, edits: Vec::new() }
     }
 }
 
@@ -127,6 +148,15 @@ impl Options {
                 "corners.radius must be in -1..=1, got {}",
                 self.corners.radius
             )));
+        }
+        if self.corners.edits.len() > MAX_CORNER_EDITS {
+            return Err(Error::InvalidOption(format!("at most {MAX_CORNER_EDITS} corner edits")));
+        }
+        for e in &self.corners.edits {
+            let radius_ok = e.radius.is_none_or(|r| r.is_finite() && r >= 0.0);
+            if !e.x.is_finite() || !e.y.is_finite() || !radius_ok {
+                return Err(Error::InvalidOption(format!("invalid corner edit {e:?}")));
+            }
         }
         if let Some(edit) = &self.palette_edit {
             edit.validate()?;

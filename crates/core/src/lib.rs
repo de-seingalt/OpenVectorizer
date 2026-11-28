@@ -20,8 +20,9 @@ pub mod planar;
 
 pub use error::Error;
 pub use image::RgbaImage;
-pub use options::{CornerMode, Corners, Options, Preset, Stacking};
+pub use options::{CornerEdit, CornerMode, Corners, Options, Preset, Stacking};
 pub use palette::{ColorGroup, Palette, PaletteEdit, SourceColor};
+pub use planar::CornerInfo;
 
 use serde::{Deserialize, Serialize};
 use ts_rs::TS;
@@ -36,6 +37,8 @@ pub struct Output {
     pub stats: Stats,
     /// Source colors and output groups. `None` for the Photo preset.
     pub palette: Option<Palette>,
+    /// Every corner of the result (empty for the Photo preset).
+    pub corners: Vec<CornerInfo>,
 }
 
 /// Cheap statistics about the produced SVG, shown in the UI status bar.
@@ -77,14 +80,14 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         corners: corners.total,
         sharp_corners: corners.sharp,
     };
-    Ok(Output { svg, stats, palette })
+    Ok(Output { svg, stats, palette, corners: corners.list })
 }
 
 /// Curve fitting settings derived from the user options.
 fn fit_params(o: &Options) -> fit::FitParams {
     // detail 0 → 1.25 px tolerance, 1 → 0.35 px.
     let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
-    fit::FitParams { tolerance, radius: f64::from(o.corners.radius) }
+    fit::FitParams { tolerance }
 }
 
 #[cfg(test)]

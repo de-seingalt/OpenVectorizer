@@ -5,6 +5,7 @@
   import { Maximize, Minus, Plus } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import * as ToggleGroup from '$lib/components/ui/toggle-group';
+  import type { CornerInfo } from '$lib/engine';
   import { t } from '$lib/i18n';
 
   type Mode = 'compare' | 'original' | 'vector';
@@ -14,7 +15,25 @@
     svgUrl,
     width,
     height,
-  }: { rasterUrl: string; svgUrl: string | null; width: number; height: number } = $props();
+    corners = [],
+    showCorners = false,
+    selectedCorner = $bindable(null),
+    onToggleCorner,
+  }: {
+    rasterUrl: string;
+    svgUrl: string | null;
+    width: number;
+    height: number;
+    /** Corner markers drawn over the preview when `showCorners` is on. */
+    corners?: CornerInfo[];
+    showCorners?: boolean;
+    selectedCorner?: CornerInfo | null;
+    /** Double-click on a marker. */
+    onToggleCorner?: (corner: CornerInfo) => void;
+  } = $props();
+
+  const isSelected = (k: CornerInfo) => selectedCorner !== null && k.x === selectedCorner.x && k.y === selectedCorner.y;
+  const inGroup = (k: CornerInfo) => selectedCorner?.group != null && k.group === selectedCorner.group;
 
   let mode = $state<Mode>('compare');
   let split = $state(0.5);
@@ -80,6 +99,8 @@
 
   const endDrag = () => (drag = null);
   const pixelated = $derived(scale >= 2);
+  // Markers keep a constant size on screen.
+  const mark = $derived(6 / scale);
 </script>
 
 <div
@@ -119,6 +140,61 @@
         class="absolute inset-0 h-full w-full"
         style:clip-path={mode === 'compare' ? `inset(0 0 0 ${split * 100}%)` : 'none'}
       />
+    {/if}
+    {#if showCorners && svgUrl}
+      <svg
+        class="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+        viewBox="0 0 {width} {height}"
+        role="group"
+        aria-label={t.cornerMarkers}
+      >
+        {#each corners as k, i (i)}
+          {@const sel = isSelected(k)}
+          {@const r = sel ? mark * 1.4 : mark}
+          <g
+            class="pointer-events-auto cursor-pointer outline-none"
+            role="button"
+            tabindex={corners.length <= 300 ? 0 : -1}
+            aria-label={`${k.sharp ? t.cornerSharp : t.cornerRound} (${Math.round(k.x)}, ${Math.round(k.y)})`}
+            aria-pressed={sel}
+            data-corner={i}
+            onpointerdown={(e) => e.stopPropagation()}
+            onclick={() => (selectedCorner = sel ? null : k)}
+            ondblclick={() => onToggleCorner?.(k)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter') selectedCorner = sel ? null : k;
+              else if (e.key === ' ') {
+                e.preventDefault();
+                onToggleCorner?.(k);
+              }
+            }}
+          >
+            <!-- Larger invisible hit area. -->
+            <circle cx={k.x} cy={k.y} r={mark * 1.8} fill="transparent" />
+            {#if k.sharp}
+              <rect
+                x={k.x - r * 0.75}
+                y={k.y - r * 0.75}
+                width={r * 1.5}
+                height={r * 1.5}
+                transform="rotate(45 {k.x} {k.y})"
+                class={sel ? 'fill-primary' : k.edited ? 'fill-amber-400' : 'fill-white'}
+                stroke={inGroup(k) ? 'var(--primary)' : '#111'}
+                stroke-width={(inGroup(k) ? 2.5 : 1.25) / scale}
+              />
+            {:else}
+              <circle
+                cx={k.x}
+                cy={k.y}
+                r={r * 0.7}
+                class={sel ? 'fill-primary' : k.edited ? 'fill-amber-400/80' : 'fill-white/40'}
+                stroke={inGroup(k) ? 'var(--primary)' : '#111'}
+                stroke-width={(inGroup(k) ? 2.5 : 1.25) / scale}
+              />
+            {/if}
+          </g>
+        {/each}
+      </svg>
     {/if}
   </div>
 

@@ -1,12 +1,21 @@
 <script lang="ts">
-  import { ChevronRight, RotateCcw } from '@lucide/svelte';
+  import { ChevronRight, RotateCcw, X } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import * as Collapsible from '$lib/components/ui/collapsible';
   import { Label } from '$lib/components/ui/label';
   import { Slider } from '$lib/components/ui/slider';
   import { Switch } from '$lib/components/ui/switch';
   import * as ToggleGroup from '$lib/components/ui/toggle-group';
-  import { DEFAULT_OPTIONS, type CornerMode, type Options, type Palette, type Preset, type Stats } from '$lib/engine';
+  import { editCorners, targets } from '$lib/corners';
+  import {
+    DEFAULT_OPTIONS,
+    type CornerInfo,
+    type CornerMode,
+    type Options,
+    type Palette,
+    type Preset,
+    type Stats,
+  } from '$lib/engine';
   import PaletteEditor from './PaletteEditor.svelte';
   import { t } from '$lib/i18n';
 
@@ -14,7 +23,32 @@
     options = $bindable(),
     palette = null,
     stats = null,
-  }: { options: Options; palette?: Palette | null; stats?: Stats | null } = $props();
+    corners = [],
+    showCorners = $bindable(false),
+    selectedCorner = $bindable(null),
+    cornerGroup = $bindable(true),
+  }: {
+    options: Options;
+    palette?: Palette | null;
+    stats?: Stats | null;
+    corners?: CornerInfo[];
+    showCorners?: boolean;
+    selectedCorner?: CornerInfo | null;
+    cornerGroup?: boolean;
+  } = $props();
+
+  // --- selected corner ------------------------------------------------------------------
+  const groupSize = $derived(
+    selectedCorner?.group != null ? corners.filter((k) => k.group === selectedCorner!.group).length : 1,
+  );
+  const selection = $derived(selectedCorner ? targets(corners, selectedCorner, cornerGroup) : []);
+  const anyEdited = $derived(selection.some((k) => k.edited));
+  function setSharp(sharp: boolean) {
+    editCorners(options, selection, { sharp, radius: null });
+  }
+  function setRadius(radius: number) {
+    editCorners(options, selection, { sharp: false, radius });
+  }
 
   const auto = $derived(options.maxColors === 0);
   const maxSources = $derived(Math.max(2, palette?.sources.length ?? 24));
@@ -184,6 +218,88 @@
           <span>{t.sharper}</span><span>{t.bestFit}</span><span>{t.rounder}</span>
         </div>
       </div>
+
+      {#if stats && stats.corners > 0}
+        <div class="flex items-start justify-between gap-3">
+          <div class="flex flex-col gap-1">
+            <Label for="show-corners">{t.showCorners}</Label>
+            <p class="text-xs text-muted-foreground">{t.showCornersHint}</p>
+          </div>
+          <Switch
+            id="show-corners"
+            checked={showCorners}
+            onCheckedChange={(c) => {
+              showCorners = c;
+              if (!c) selectedCorner = null;
+            }}
+          />
+        </div>
+      {/if}
+
+      {#if selectedCorner}
+        {@const k = selectedCorner}
+        <div class="flex flex-col gap-3 rounded-lg border p-3" role="group" aria-labelledby="corner-title">
+          <div class="flex items-center justify-between">
+            <span id="corner-title" class="text-sm font-medium">{t.selectedCorner}</span>
+            <Button variant="ghost" size="icon-sm" aria-label={t.close} onclick={() => (selectedCorner = null)}>
+              <X />
+            </Button>
+          </div>
+          {#if groupSize > 1}
+            <div class="flex items-center justify-between gap-2">
+              <Label for="corner-group" class="text-xs font-normal">
+                {t.wholeGroup.replace('{n}', String(groupSize))}
+              </Label>
+              <Switch id="corner-group" bind:checked={cornerGroup} />
+            </div>
+          {/if}
+          <ToggleGroup.Root
+            type="single"
+            variant="outline"
+            size="sm"
+            class="w-full"
+            aria-label={t.selectedCorner}
+            value={k.sharp ? 'sharp' : 'round'}
+            onValueChange={(v) => {
+              if (v) setSharp(v === 'sharp');
+            }}
+          >
+            <ToggleGroup.Item value="sharp" class="flex-1">{t.cornerSharp}</ToggleGroup.Item>
+            <ToggleGroup.Item value="round" class="flex-1">{t.cornerRound}</ToggleGroup.Item>
+          </ToggleGroup.Root>
+          {#if !k.sharp && k.maxRadius > 0.05}
+            <div class="flex flex-col gap-2">
+              <div class="flex items-baseline justify-between">
+                <Label for="corner-radius">{t.cornerRadius}</Label>
+                <span class="text-xs text-muted-foreground tabular-nums">{k.radius.toFixed(1)} px</span>
+              </div>
+              <Slider
+                id="corner-radius"
+                label={t.cornerRadius}
+                type="single"
+                min={0}
+                max={Math.round(k.maxRadius * 10) / 10}
+                step={0.1}
+                value={Math.min(k.radius, k.maxRadius)}
+                onValueChange={setRadius}
+              />
+            </div>
+          {/if}
+          {#if anyEdited}
+            <Button variant="ghost" size="sm" onclick={() => editCorners(options, selection, null)}>
+              <RotateCcw />
+              {t.revertCorner}
+            </Button>
+          {/if}
+        </div>
+      {/if}
+
+      {#if options.corners.edits.length > 0}
+        <Button variant="outline" size="sm" onclick={() => (options.corners = { ...options.corners, edits: [] })}>
+          <RotateCcw />
+          {t.resetCorners} ({options.corners.edits.length})
+        </Button>
+      {/if}
     {/if}
   </section>
 

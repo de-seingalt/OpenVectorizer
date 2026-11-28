@@ -24,7 +24,7 @@ impl P {
     fn dot(self, o: P) -> f64 {
         self.x * o.x + self.y * o.y
     }
-    fn len(self) -> f64 {
+    pub fn len(self) -> f64 {
         self.dot(self).sqrt()
     }
     fn normalized(self) -> P {
@@ -102,9 +102,17 @@ impl Curve {
 pub struct FitParams {
     /// Max distance (px) between the fitted curve and the edge midpoints.
     pub tolerance: f64,
-    /// Radius of rounded corners: 0 = best fit (the curve follows the pixels), −1 = sharp,
-    /// +1 = largest radius that fits between the neighboring segments.
-    pub radius: f64,
+}
+
+/// How one corner is drawn.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CornerStyle {
+    /// Through its apex, with the tangents of its two sides.
+    Sharp,
+    /// No constraint: the curve follows the pixels (best-fit rounding).
+    Free,
+    /// A circular arc of this radius (px), tangent to both sides.
+    Arc(f64),
 }
 
 const RDP_EPSILON: f64 = 0.8;
@@ -142,8 +150,30 @@ pub struct Corner {
 #[derive(Debug, Clone)]
 pub struct Prepared {
     pts: Vec<P>,
-    closed: bool,
+    pub closed: bool,
     pub corners: Vec<Corner>,
+}
+
+impl Prepared {
+    /// (best-fit radius, largest radius) of corner `c`, in px. The best fit comes from the
+    /// gap; the largest radius keeps the tangent points on the first half of each side (the
+    /// neighboring corner may round the other half).
+    pub fn radii(&self, c: usize) -> (f64, f64) {
+        let c = &self.corners[c];
+        let half = ((std::f64::consts::PI - c.turn) / 2.0).max(1e-3); // half interior angle
+        let r_fit = c.gap.max(0.0) / (1.0 / half.sin() - 1.0).max(1e-6);
+        let side = |i: usize| (self.pts[i] - c.apex).len();
+        let r_max = (side(c.prev).min(side(c.next)) * 0.5 * half.tan()).max(0.0);
+        (r_fit.min(r_max), r_max)
+    }
+
+    /// Radius for the relative setting `rel` (−1 = sharp, 0 = best fit, 1 = largest).
+    /// Quadratic above best fit: small slider values give small, controllable radii.
+    pub fn relative_radius(&self, c: usize, rel: f64) -> f64 {
+        let (r_fit, r_max) = self.radii(c);
+        let r = if rel < 0.0 { r_fit * (1.0 + rel) } else { r_fit + rel * rel * (r_max - r_fit) };
+        r.clamp(0.0, r_max)
+    }
 }
 
 /// Build the polyline of a run from its grid vertices and one boundary point per crack edge
@@ -322,22 +352,21 @@ struct Anchor {
     arc: Option<(P, P)>,
 }
 
-/// Fit a prepared run; `sharp[i]` says whether corner `i` stays sharp (otherwise it is rounded
-/// with `params.radius`).
-pub fn fit_prepared(run: &Prepared, sharp: &[bool], params: &FitParams) -> Curve {
+/// Fit a prepared run; `styles[i]` says how corner `i` is drawn.
+pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -> Curve {
     let n = run.pts.len();
     let mut anchors: Vec<Anchor> = Vec::new();
-    for (corner, &is_sharp) in run.corners.iter().zip(sharp) {
-        if is_sharp {
-            anchors.push(Anchor {
+    for (corner, &style) in run.corners.iter().zip(styles) {
+        match style {
+            CornerStyle::Sharp => anchors.push(Anchor {
                 index: corner.index,
                 p: corner.apex,
                 t_in: Some(corner.din),
                 t_out: Some(corner.dout),
                 arc: None,
-            });
-        } else if params.radius.abs() > 1e-6 {
-            anchors.extend(arc_anchors(run, corner, params.radius));
+            }),
+            CornerStyle::Arc(r) if r > 1e-3 => anchors.extend(arc_anchors(run, corner, r)),
+            CornerStyle::Arc(_) | CornerStyle::Free => {}
         }
     }
     let mut pts = run.pts.clone();
@@ -403,23 +432,9 @@ pub fn fit_prepared(run: &Prepared, sharp: &[bool], params: &FitParams) -> Curve
     Curve { start: anchors[0].p, segs }
 }
 
-/// Tangent points and arc of a rounded corner. The best-fit radius comes from the gap; the
-/// relative `radius` moves it toward 0 (sharp) or toward the largest radius whose tangent
-/// points stay on the first half of each neighboring side.
-fn arc_anchors(run: &Prepared, c: &Corner, radius: f64) -> [Anchor; 2] {
-    let alpha = std::f64::consts::PI - c.turn; // interior angle
-    let half = (alpha / 2.0).max(1e-3);
-    let r_fit = c.gap.max(0.0) / (1.0 / half.sin() - 1.0).max(1e-6);
-    let side = |i: usize| (run.pts[i] - c.apex).len();
-    // Each corner may use at most half of each side (its neighbor rounds the other half).
-    let r_max = (side(c.prev).min(side(c.next)) * 0.5) * half.tan();
-    // Quadratic above best fit: small slider values give small, controllable radii.
-    let r = if radius < 0.0 {
-        r_fit * (1.0 + radius)
-    } else {
-        r_fit + radius * radius * (r_max - r_fit).max(0.0)
-    };
-    let r = r.clamp(0.0, r_max.max(0.0));
+/// Tangent points and arc (radius `r`, already clamped by the caller) of a rounded corner.
+fn arc_anchors(run: &Prepared, c: &Corner, r: f64) -> [Anchor; 2] {
+    let half = ((std::f64::consts::PI - c.turn) / 2.0).max(1e-3);
     let t = r / half.tan();
     let tin = c.apex - c.din * t;
     let tout = c.apex + c.dout * t;
@@ -633,7 +648,7 @@ mod tests {
     use super::*;
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, radius: 0.0 }
+        FitParams { tolerance: 0.7 }
     }
 
     /// Midpoints of the crack edges of a run (no sub-pixel information).
@@ -651,7 +666,7 @@ mod tests {
     /// Fit with every corner sharp.
     fn fit_sharp(v: &[(i64, i64)], closed: bool, ends: (P, P)) -> Curve {
         let run = prepare(v, &grid_mids(v, closed), ends, closed);
-        fit_prepared(&run, &vec![true; run.corners.len()], &params())
+        fit_prepared(&run, &vec![CornerStyle::Sharp; run.corners.len()], params())
     }
 
     fn square(n: i64) -> Vec<(i64, i64)> {
