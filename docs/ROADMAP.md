@@ -103,7 +103,12 @@ Construction en phases, chacune fermée par des tests chiffrés (§16).
       en WASM), interdiction des fonctions de `std` et des `HashMap` dans le moteur (règles clippy), PCG32, tri total,
       plans d'image, rastériseur de couverture exacte, générateur de scènes à vérité terrain (formes, coins arrondis,
       traits, dégradés, flou, bruit, agrandissement), filtre de débruitage par tables, WASM avec `simd128`
-- [ ] P1 — Oklab et modèle de bruit, classification de l'entrée, gaussiennes par bandes, pyramide, chronomètres
+- [x] P1 — Analyse raster : Oklab et jacobien, modèle de bruit mesuré sur les valeurs codées (courbe libre par classe,
+      médiane groupée, pixels écrêtés exclus, carte locale par tuiles), classification (JPEG, pixel art, petite image,
+      transparence), gaussiennes par rangées en anneau (mêmes bits avec ou sans SIMD), noyau discret de Lindeberg sous
+      σ = 0,8, pyramide en une passe, commande `openvectorizer analyze` (classes, bruit, chronomètres sur le corpus).
+      Mesures : bruit gaussien à 10 % près ; JPEG 60 % détectés pour 2 % de fausses alarmes ; pixel art 3/3 ;
+      ~80 ms/MP en natif pour les étapes A–B
 - [ ] P2 — Bords sous-pixel, chaînage, analyse par point, traits fins
 - [ ] P3 — Bord réel / bord de postérisation dans le pipeline actuel, mesure des coutures
 - [ ] P4 — Détecteurs (segments, coins, arrondis, cercles, ellipses, taches), graphe de repères

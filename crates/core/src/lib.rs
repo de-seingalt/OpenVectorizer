@@ -10,6 +10,7 @@
 //! SVG writer) gets its own module and replaces part of the baseline.
 
 mod align;
+pub mod analysis;
 pub mod baseline;
 mod color;
 mod denoise;

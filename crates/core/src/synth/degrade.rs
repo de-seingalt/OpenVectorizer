@@ -123,3 +123,33 @@ pub fn upscale_bilinear(planes: &[Plane<f64>; 4], factor: u32) -> [Plane<f64>; 4
         out
     })
 }
+
+/// Add signal-dependent noise in linear light, σ²(v) = alpha·v + beta (the model of
+/// `raster::noise`), to the colours of gamma-encoded planes.
+pub fn noise_linear(planes: &[Plane<f64>; 4], alpha: f64, beta: f64, seed: u64) -> [Plane<f64>; 4] {
+    use super::{srgb_decode, srgb_encode};
+    let mut rng = Pcg32::new(seed, 0x006c_696e_6f69);
+    let mut out = planes.clone();
+    for p in &mut out[..3] {
+        for c in p.data_mut() {
+            let v = srgb_decode(*c);
+            *c = srgb_encode(v + (alpha * v + beta).max(0.0).sqrt() * gaussian(&mut rng));
+        }
+    }
+    out
+}
+
+/// Multiply the noise already present in the bottom half by `k` (relative to `clean`).
+pub fn amplify_bottom_half(noisy: &[Plane<f64>; 4], clean: &[Plane<f64>; 4], k: f64) -> [Plane<f64>; 4] {
+    let mut out = noisy.clone();
+    for c in 0..3 {
+        let h = out[c].height();
+        for y in h / 2..h {
+            for x in 0..out[c].width() {
+                let (n, s) = (noisy[c].get(x, y), clean[c].get(x, y));
+                out[c].set(x, y, s + k * (n - s));
+            }
+        }
+    }
+    out
+}

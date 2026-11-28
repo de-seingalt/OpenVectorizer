@@ -394,3 +394,153 @@ fn compare(report: &Report, base: &Report, max_regression: f64) -> Result<()> {
     }
     Ok(())
 }
+
+/// Arguments of `openvectorizer analyze`.
+#[derive(Debug)]
+pub struct AnalyzeArgs<'a> {
+    pub corpus: &'a Path,
+    pub variants: &'a [Variant],
+    pub filter: Option<&'a str>,
+}
+
+#[derive(Default)]
+struct VariantStats {
+    cases: usize,
+    jpeg: usize,
+    pixel_art: usize,
+    blockiness: Vec<f64>,
+    /// Estimated noise at mid-grey, in 8-bit code units (mean of R, G, B).
+    noise_codes: Vec<f64>,
+    stages: BTreeMap<&'static str, f64>,
+    megapixels: f64,
+    peak_mb: f64,
+}
+
+/// Run the raster analysis of the custom algorithm (stages A–B) on a corpus: input
+/// classification, noise estimate and per-stage timings, per variant.
+pub fn analyze(args: &AnalyzeArgs) -> Result<()> {
+    use openvectorizer_core::analysis::analyze;
+    use openvectorizer_core::raster::oklab::{decode, decode_slope};
+
+    let mut sources = Vec::new();
+    collect(args.corpus, args.corpus, &mut sources)?;
+    sources.retain(|s| s.ground_truth && args.filter.is_none_or(|f| s.name.contains(f)));
+    sources.sort_by(|a, b| a.name.cmp(&b.name));
+    if sources.is_empty() {
+        bail!("no ground-truth SVGs found in {}", args.corpus.display());
+    }
+    let mut svg_options = usvg::Options::default();
+    let fonts = args.corpus.join("fonts");
+    if fonts.is_dir() {
+        svg_options.fontdb_mut().load_fonts_dir(&fonts);
+    }
+    let mut stats: BTreeMap<Variant, VariantStats> = BTreeMap::new();
+    let mut misclassified = Vec::new();
+    let mut pixel_art = Vec::new();
+    for src in &sources {
+        let svg = fs::read_to_string(&src.path)?;
+        let (w, h) = svg_size(&svg)
+            .with_context(|| format!("{}: root <svg> needs width and height", src.path.display()))?;
+        let reference = render_svg_with(&svg, w, h, &svg_options)?;
+        for &variant in args.variants {
+            let input = variant.apply(&reference)?;
+            let start = Instant::now();
+            let mut clock = || start.elapsed().as_secs_f64() * 1000.0;
+            let (a, timings) = analyze(&input, &mut clock);
+            let s = stats.entry(variant).or_default();
+            s.cases += 1;
+            let jpeg_input = matches!(variant, Variant::Jpeg35 | Variant::Jpeg75);
+            if a.info.jpeg != jpeg_input {
+                misclassified.push(format!("{}@{} score {:.3}", src.name, variant.name(), a.info.jpeg_score));
+            }
+            s.jpeg += usize::from(a.info.jpeg);
+            s.pixel_art += usize::from(a.info.pixel_art.is_some());
+            if let Some(g) = a.info.pixel_art {
+                pixel_art.push(format!("{}@{} cell {}", src.name, variant.name(), g.cell));
+            }
+            s.blockiness.push(a.info.jpeg_score);
+            let mid = decode(0.5);
+            let codes: f64 =
+                a.noise.channels.iter().map(|lf| lf.sigma(mid, 1.0) / decode_slope(0.5) * 255.0).sum::<f64>()
+                    / 3.0;
+            s.noise_codes.push(codes);
+            for (name, ms) in timings {
+                *s.stages.entry(name).or_default() += ms;
+            }
+            let mp = f64::from(input.width()) * f64::from(input.height()) / 1e6;
+            s.megapixels += mp;
+            let planes = 6.0
+                + a.pyramids[0].levels.iter().skip(1).map(|l| f64::from(l.width() * l.height())).sum::<f64>()
+                    * 3.0
+                    / (mp * 1e6);
+            s.peak_mb = s.peak_mb.max(planes * mp * 4.0);
+        }
+    }
+    print_jpeg_calibration(&stats);
+    let median = |v: &mut Vec<f64>| {
+        v.sort_by(f64::total_cmp);
+        v.get(v.len() / 2).copied().unwrap_or(0.0)
+    };
+    println!(
+        "{:<8} {:>5} {:>6} {:>6} {:>11} {:>12}  ms per MP by stage",
+        "variant", "cases", "jpeg", "pixel", "jpeg score", "noise codes"
+    );
+    for (v, s) in &mut stats {
+        let stages: Vec<String> =
+            s.stages.iter().map(|(k, ms)| format!("{k} {:.0}", ms / s.megapixels)).collect();
+        println!(
+            "{:<8} {:>5} {:>6} {:>6} {:>11.3} {:>12.2}  {}",
+            v.name(),
+            s.cases,
+            s.jpeg,
+            s.pixel_art,
+            median(&mut s.blockiness),
+            median(&mut s.noise_codes),
+            stages.join(", ")
+        );
+    }
+    let peak = stats.values().map(|s| s.peak_mb).fold(0.0, f64::max);
+    println!("\nLargest analysis (planes kept): {peak:.0} MB");
+    println!("Pixel art: {}", pixel_art.join(", "));
+    println!(
+        "JPEG misclassified: {} of {}",
+        misclassified.len(),
+        stats.values().map(|s| s.cases).sum::<usize>()
+    );
+    for m in misclassified.iter().take(20) {
+        println!("  {m}");
+    }
+    Ok(())
+}
+
+/// Distribution of the JPEG score per variant, and detection rates around the threshold.
+fn print_jpeg_calibration(stats: &BTreeMap<Variant, VariantStats>) {
+    for (v, s) in stats {
+        let mut b = s.blockiness.clone();
+        b.sort_by(f64::total_cmp);
+        let q = |f: f64| b[((b.len() - 1) as f64 * f) as usize];
+        println!(
+            "{:<8} score quantiles 10% {:.2} 25% {:.2} 50% {:.2} 75% {:.2} 90% {:.2}",
+            v.name(),
+            q(0.1),
+            q(0.25),
+            q(0.5),
+            q(0.75),
+            q(0.9)
+        );
+    }
+    for t in [1.02, 1.04, 1.06, 1.08, 1.10, 1.15, 1.2] {
+        let (mut tp, mut pos, mut fp, mut neg) = (0, 0, 0, 0);
+        for (v, s) in stats {
+            let n = s.blockiness.iter().filter(|&&b| b >= t).count();
+            if matches!(v, Variant::Jpeg35 | Variant::Jpeg75) {
+                tp += n;
+                pos += s.blockiness.len();
+            } else {
+                fp += n;
+                neg += s.blockiness.len();
+            }
+        }
+        println!("threshold {t:.2}: JPEG found {tp}/{pos}, false alarms {fp}/{neg}");
+    }
+}

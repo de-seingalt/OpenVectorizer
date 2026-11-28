@@ -57,6 +57,15 @@ enum Command {
         #[command(flatten)]
         opts: OptArgs,
     },
+    /// Measure the raster analysis of the custom algorithm (input classes, noise, timings).
+    Analyze {
+        #[arg(default_value = "testdata")]
+        corpus: PathBuf,
+        #[arg(long, value_enum, value_delimiter = ',', default_values_t = Variant::ALL)]
+        variants: Vec<Variant>,
+        #[arg(long)]
+        filter: Option<String>,
+    },
 }
 
 #[derive(Args, Debug)]
@@ -168,6 +177,11 @@ fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.command {
         Command::Convert { input, output, opts } => convert(&input, output, &opts.to_options()),
+        Command::Analyze { corpus, variants, filter } => bench::analyze(&bench::AnalyzeArgs {
+            corpus: &corpus,
+            variants: &variants,
+            filter: filter.as_deref(),
+        }),
         Command::Eval { corpus, out, baseline, max_regression, variants, filter, opts } => {
             bench::run(&bench::EvalArgs {
                 corpus: &corpus,
