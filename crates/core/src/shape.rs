@@ -31,7 +31,7 @@ pub struct Ellipse {
 
 impl Ellipse {
     /// Approximate distance from `p` to the ellipse (accurate near it).
-    fn distance(&self, p: P) -> f64 {
+    pub fn distance(&self, p: P) -> f64 {
         let (s, c) = self.angle.sin_cos();
         let d = p - self.center;
         let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
@@ -46,6 +46,41 @@ impl Ellipse {
         let (st, ct) = t.sin_cos();
         let rot = |x: f64, y: f64| P::new(x * c - y * s, x * s + y * c);
         (self.center + rot(self.a * ct, self.b * st), rot(-self.a * st, self.b * ct))
+    }
+
+    /// Parameter of the point of the ellipse nearest (radially) to `p`.
+    fn param(&self, p: P) -> f64 {
+        let (s, c) = self.angle.sin_cos();
+        let d = p - self.center;
+        let (u, v) = (d.x * c + d.y * s, -d.x * s + d.y * c);
+        (v / self.b).atan2(u / self.a)
+    }
+
+    /// The part of the ellipse from `from` to `to` (points near it), going the way that passes
+    /// by `via`, as cubics of at most a quarter turn. The curve starts and ends exactly at
+    /// `from` and `to`.
+    pub fn arc(&self, from: P, to: P, via: P) -> Curve {
+        let tau = std::f64::consts::TAU;
+        let (t0, t1, tv) = (self.param(from), self.param(to), self.param(via));
+        let up = (t1 - t0).rem_euclid(tau);
+        let sweep = if (tv - t0).rem_euclid(tau) < up { up } else { up - tau };
+        let pieces = (sweep.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
+        let step = sweep / pieces;
+        let k = 4.0 / 3.0 * (step / 4.0).tan();
+        let count = pieces as usize;
+        let segs = (0..count)
+            .map(|i| {
+                let (p0, d0) = self.at(t0 + step * i as f64);
+                let (p3, d3) = self.at(t0 + step * (i + 1) as f64);
+                // Pin the ends on the given points (they are within the fit tolerance).
+                let (shift0, shift3) = (
+                    if i == 0 { from - p0 } else { P::default() },
+                    if i + 1 == count { to - p3 } else { P::default() },
+                );
+                Seg::Cubic(p0 + shift0 + d0 * k, p3 + shift3 - d3 * k, p3 + shift3)
+            })
+            .collect();
+        Curve { start: from, segs }
     }
 
     /// The ellipse as four cubics, traversed in the direction of increasing parameter, or the

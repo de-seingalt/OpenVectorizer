@@ -378,31 +378,12 @@ pub fn to_svg(
         }
     }
 
+    // Circles and ellipses on whole region outlines made of several runs.
+    let region_shapes = region_shapes(&cycles, &mut runs);
     let (styles, mut corner_stats) = decide_corners(&runs.prepared, options);
-    // Fit every run, then refit those with fillets so that close radii become equal. The guides
-    // of each run are kept from its last fit.
-    let mut fillets = Fillets::default();
-    let mut with_fillets = Vec::new();
-    let mut curves: Vec<Curve> = Vec::with_capacity(runs.prepared.len());
-    let mut run_guides: Vec<Vec<Guide>> = Vec::with_capacity(runs.prepared.len());
-    let mut guides = Guides::new(&options.disabled_guides, &options.forced_guides);
-    for (i, (run, styles)) in runs.prepared.iter().zip(&styles).enumerate() {
-        let before = fillets.found.len();
-        curves.push(fit_prepared(run, styles, *params, &mut fillets, &mut guides));
-        run_guides.push(std::mem::take(&mut guides.found));
-        if fillets.found.len() > before {
-            with_fillets.push(i);
-        }
-    }
-    fillets.snap = Fillets::clusters(&fillets.found);
-    if !fillets.snap.is_empty() {
-        for i in with_fillets {
-            curves[i] = fit_prepared(&runs.prepared[i], &styles[i], *params, &mut fillets, &mut guides);
-            run_guides[i] = std::mem::take(&mut guides.found);
-        }
-    }
+    let (curves, run_guides) = fit_runs(&runs.prepared, &styles, &region_shapes, options, *params);
     corner_stats.guides = std::mem::take(&mut runs.guides.found);
-    corner_stats.guides.extend(run_guides.into_iter().flatten());
+    corner_stats.guides.extend(run_guides);
     // The image frame is not part of the drawing.
     let (w, h) = (
         f32::from(u16::try_from(q.width).unwrap_or(u16::MAX)),
@@ -448,6 +429,93 @@ pub fn to_svg(
     }
     svg.push_str("</svg>\n");
     (svg, corner_stats)
+}
+
+/// Fit every run (or take the shape that replaces it), then refit those with fillets so that
+/// close radii become equal. Returns the curves and the guides of the runs (from their last fit).
+fn fit_runs(
+    prepared: &[Prepared],
+    styles: &[Vec<CornerStyle>],
+    region_shapes: &[Option<Curve>],
+    options: &Options,
+    params: FitParams,
+) -> (Vec<Curve>, Vec<Guide>) {
+    let mut fillets = Fillets::default();
+    let mut with_fillets = Vec::new();
+    let mut curves: Vec<Curve> = Vec::with_capacity(prepared.len());
+    let mut run_guides: Vec<Vec<Guide>> = Vec::with_capacity(prepared.len());
+    let mut guides = Guides::new(&options.disabled_guides, &options.forced_guides);
+    for (i, (run, styles)) in prepared.iter().zip(styles).enumerate() {
+        if let Some(curve) = &region_shapes[i] {
+            curves.push(curve.clone());
+            run_guides.push(Vec::new());
+            continue;
+        }
+        let before = fillets.found.len();
+        curves.push(fit_prepared(run, styles, params, &mut fillets, &mut guides));
+        run_guides.push(std::mem::take(&mut guides.found));
+        if fillets.found.len() > before {
+            with_fillets.push(i);
+        }
+    }
+    fillets.snap = Fillets::clusters(&fillets.found);
+    if !fillets.snap.is_empty() {
+        for i in with_fillets {
+            curves[i] = fit_prepared(&prepared[i], &styles[i], params, &mut fillets, &mut guides);
+            run_guides[i] = std::mem::take(&mut guides.found);
+        }
+    }
+    (curves, run_guides.into_iter().flatten().collect())
+}
+
+/// Circles and ellipses that whole region outlines (cycles of two runs or more) follow. Each run
+/// of such an outline becomes the matching part of the shape, between its own end junctions
+/// (shared with the other runs that meet there, so nothing opens). A run claimed by two shapes
+/// keeps the best-fitting one. Returns the curve of each run that a shape replaces; those runs
+/// lose their corner candidates.
+fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
+    let mut fits = Vec::new();
+    for cycle in cycles.iter().flatten().filter(|c| c.runs.len() >= 2) {
+        let mut pts = Vec::new();
+        for &(idx, reversed) in &cycle.runs {
+            let mut p = runs.prepared[idx].pts().to_vec();
+            if reversed {
+                p.reverse();
+            }
+            // Each run starts where the previous one ended.
+            let skip = usize::from(!pts.is_empty());
+            pts.extend(p.into_iter().skip(skip));
+        }
+        let strict = crate::shape::fit_round(&pts, runs.geometry);
+        let within = strict.is_some();
+        if let Some((ellipse, _)) = strict.or_else(|| crate::shape::fit_round(&pts, CANDIDATE_GEOMETRY)) {
+            let rms =
+                (pts.iter().map(|&p| ellipse.distance(p).powi(2)).sum::<f64>() / pts.len() as f64).sqrt();
+            fits.push((rms, ellipse, within, cycle.runs.iter().map(|&(i, _)| i).collect::<Vec<_>>()));
+        }
+    }
+    fits.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let mut out: Vec<Option<Curve>> = vec![None; runs.prepared.len()];
+    for (_, ellipse, within, members) in fits {
+        // Both sides of an outline find the same shape: one guide.
+        let top = ellipse.top();
+        let seen =
+            runs.guides.found.iter().any(|g| {
+                g.kind == ellipse.kind() && (P::new(f64::from(g.x), f64::from(g.y)) - top).len() < 1.0
+            });
+        if seen || !runs.guides.add(ellipse.kind(), top, ellipse.guide(), within) {
+            continue;
+        }
+        for idx in members {
+            if out[idx].is_none() {
+                let run = &mut runs.prepared[idx];
+                let p = run.pts();
+                out[idx] = Some(ellipse.arc(p[0], p[p.len() - 1], p[p.len() / 2]));
+                run.corners.clear();
+            }
+        }
+    }
+    out
 }
 
 #[allow(clippy::too_many_lines)]
@@ -828,6 +896,24 @@ mod tests {
         options.corners.edits = vec![CornerEdit { x: 10.0, y: 10.0, sharp: false, radius: None }];
         let (_, stats) = to_svg(&q, None, &options, &params());
         assert_eq!(stats.sharp, 4);
+    }
+
+    #[test]
+    fn disc_across_two_backgrounds_becomes_a_circle() {
+        // Red disc (r = 20) over a white/blue boundary: its outline has two runs.
+        let q = quantized(80, 60, |x, y| {
+            let (dx, dy) = (f64::from(x) + 0.5 - 40.0, f64::from(y) + 0.5 - 30.0);
+            if dx.hypot(dy) <= 20.0 { 1 } else { u16::from(x >= 40) * 2 }
+        });
+        // Hard pixel staircases (no anti-aliasing): the strongest geometry setting.
+        let options = Options { geometry: 1.0, ..Options::default() };
+        let (svg, info) = to_svg(&q, None, &options, &params());
+        let circle = info.guides.iter().find(|g| g.kind == GuideKind::Circle).expect("circle guide");
+        assert_eq!(circle.status, crate::guide::GuideStatus::Followed, "{:?}", info.guides);
+        // The red path is made of quarter-or-less arcs only (no lines, no corners).
+        let red = svg.lines().find(|l| l.contains("#c80000")).expect("red path");
+        assert!(!red.contains('L'), "{red}");
+        assert_eq!(info.total, 0);
     }
 
     #[test]

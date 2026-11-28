@@ -207,6 +207,11 @@ pub struct Prepared {
 impl Prepared {
     /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
     /// has no corners).
+    /// The boundary points (with the end junctions of an open run).
+    pub fn pts(&self) -> &[P] {
+        &self.pts
+    }
+
     /// Whether the boundary was replaced by a circle or an ellipse.
     pub fn has_shape(&self) -> bool {
         self.shape.is_some()

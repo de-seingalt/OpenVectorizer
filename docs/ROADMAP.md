@@ -55,7 +55,9 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Formes entières (contours isolés) : cercle (Kåsa) et ellipse (Fitzgibbon / Halíř-Flusser) exacts si l'écart
       reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».
       Rectangles, polygones et étoiles : coins vifs + droites
-- [ ] Choix « tracé ou forme » forme par forme (clic dans l'aperçu)
+- [x] Cercles et ellipses sur le **contour complet d'une région**, même coupé par plusieurs couleurs : chaque morceau
+      devient la portion exacte de la forme entre ses jonctions (qui ne bougent pas) ; à conflit, la meilleure forme
+- [x] Choix « tracé ou forme » forme par forme : guides désactivables / forçables
 - [x] Symétries des formes isolées : axe miroir par le centroïde et rotation d'ordre 2..12, contour remplacé par la
       moyenne de ses images (écart ≤ 0,7 px) ; coins candidats reportés sur leurs images, décision « auto » commune
       à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 0,5 px
