@@ -17,6 +17,7 @@ mod image;
 mod options;
 pub mod palette;
 pub mod planar;
+mod shape;
 
 pub use error::Error;
 pub use image::RgbaImage;

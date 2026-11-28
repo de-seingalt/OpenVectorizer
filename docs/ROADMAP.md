@@ -43,9 +43,13 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Droites : parties droites détectées (écart ≤ 0,45 px, pas de courbure systématique, ≥ 6 px, pas un morceau
       d'arc), tracées en segments, les courbes voisines leur sont tangentes ; coins du cadre toujours vifs
 - [ ] Arcs de cercle et d'ellipse par segment, choix par erreur + complexité
-- [ ] Formes entières (régions isolées) : cercle, ellipse, rectangle, polygone, étoile ; choix « tracé ou forme »
+- [x] Formes entières (contours isolés) : cercle (Kåsa) et ellipse (Fitzgibbon / Halíř-Flusser) exacts si l'écart
+      reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».
+      Rectangles, polygones et étoiles : coins vifs + droites
+- [ ] Choix « tracé ou forme » forme par forme (clic dans l'aperçu)
 - [ ] Symétries détectées (axes actifs ou candidats), formes répétées partageant un contour
-- [ ] Alignement horizontal/vertical, rayons égaux
+- [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
+- [ ] Rayons égaux
 
 ## M4 — Édition
 - [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu

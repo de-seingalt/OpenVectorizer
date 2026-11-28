@@ -85,6 +85,9 @@ struct OptArgs {
     /// Rounded corner radius: -1 sharp, 0 best fit, 1 largest
     #[arg(long, allow_hyphen_values = true)]
     radius: Option<f32>,
+    /// Keep traced outlines instead of exact circles and ellipses
+    #[arg(long)]
+    no_shapes: bool,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -137,6 +140,7 @@ impl OptArgs {
         if self.cutout {
             o.stacking = Stacking::Cutout;
         }
+        o.shapes = !self.no_shapes;
         o
     }
 }

@@ -29,4 +29,8 @@ maxColors: number,
  * Manual regrouping of the colors (palette editor). Ignored when it was made for other
  * source colors (its key no longer matches).
  */
-paletteEdit: PaletteEdit | null, corners: Corners, };
+paletteEdit: PaletteEdit | null, corners: Corners, 
+/**
+ * Replace boundaries that follow a circle or an ellipse by the exact shape.
+ */
+shapes: boolean, };

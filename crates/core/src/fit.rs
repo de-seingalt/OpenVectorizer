@@ -154,9 +154,22 @@ pub struct Prepared {
     pub corners: Vec<Corner>,
     /// Corners on the image frame: always sharp, not shown to the user.
     pub frame: Vec<Corner>,
+    /// The exact circle or ellipse this closed boundary follows, if any.
+    shape: Option<Curve>,
 }
 
 impl Prepared {
+    /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
+    /// has no corners).
+    pub fn detect_shape(&mut self) {
+        if self.closed
+            && let Some((ellipse, reverse)) = crate::shape::fit_round(&self.pts)
+        {
+            self.shape = Some(ellipse.curve(reverse));
+            self.corners.clear();
+        }
+    }
+
     /// (best-fit radius, largest radius) of corner `c`, in px. The best fit comes from the
     /// gap; the largest radius keeps the tangent points on the first half of each side (the
     /// neighboring corner may round the other half).
@@ -223,7 +236,7 @@ pub fn prepare(vertices: &[(i64, i64)], mids: &[P], ends: (P, P), closed: bool) 
     keep.dedup();
     let keep = merge_close_vertices(&keep, n, closed);
     let corners = find_corners(&pts, &keep, closed);
-    Prepared { pts, closed, corners, frame: Vec::new() }
+    Prepared { pts, closed, corners, frame: Vec::new(), shape: None }
 }
 
 /// A sharp tip a few pixels wide leaves 2 or 3 simplified-polygon vertices a couple of points
@@ -287,7 +300,8 @@ fn find_corners(pts: &[P], keep: &[usize], closed: bool) -> Vec<Corner> {
             let lo = from.min(to);
             let hi = from.max(to);
             let pts: Vec<P> = (lo..=hi).map(at).collect();
-            fit_line(&pts)
+            let (origin, dir) = fit_line(&pts)?;
+            Some((origin, snap_axis(dir, (pts[pts.len() - 1] - pts[0]).len())))
         };
         let skip = 2isize;
         // Each side is fitted away from both of its ends (the neighboring corner bends too).
@@ -314,6 +328,21 @@ fn find_corners(pts: &[P], keep: &[usize], closed: bool) -> Vec<Corner> {
         out.push(Corner { index: c, apex, din, dout, gap, turn, prev, next });
     }
     out
+}
+
+/// A line within this drift (px over its length) of horizontal or vertical is made exactly so.
+const SNAP_DRIFT: f64 = 0.3;
+
+/// `dir`, made exactly horizontal or vertical when that moves the ends of a line of length
+/// `len` by less than [`SNAP_DRIFT`].
+fn snap_axis(dir: P, len: f64) -> P {
+    if dir.y.abs() * len <= SNAP_DRIFT {
+        P::new(dir.x.signum(), 0.0)
+    } else if dir.x.abs() * len <= SNAP_DRIFT {
+        P::new(0.0, dir.y.signum())
+    } else {
+        dir
+    }
 }
 
 /// Total least-squares line through `pts`: (centroid, unit direction).
@@ -356,6 +385,9 @@ struct Anchor {
 
 /// Fit a prepared run; `styles[i]` says how corner `i` is drawn.
 pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -> Curve {
+    if let Some(shape) = &run.shape {
+        return shape.clone();
+    }
     let n = run.pts.len();
     let mut anchors: Vec<Anchor> = Vec::new();
     let frame = run.frame.iter().map(|c| (c, CornerStyle::Sharp));
@@ -524,6 +556,7 @@ fn find_lines(pts: &[P]) -> Vec<Line> {
         }
         match straight(&pts[a..=b]) {
             Some((origin, dir, _)) if (pts[b] - pts[a]).len() >= MIN_LINE_LEN && !on_arc(pts, a, b) => {
+                let dir = snap_axis(dir, (pts[b] - pts[a]).len());
                 out.push(Line { from: a, to: b, origin, dir });
                 i = b + 1;
             }
@@ -542,51 +575,8 @@ fn on_arc(pts: &[P], a: usize, b: usize) -> bool {
         return false; // nothing around to compare with
     }
     let ext = &pts[lo..=hi];
-    let Some((center, r)) = fit_circle(ext) else { return false };
+    let Some((center, r)) = crate::shape::fit_circle(ext) else { return false };
     ext.iter().all(|&p| ((p - center).len() - r).abs() <= ARC_TOL)
-}
-
-/// Algebraic (Kåsa) circle fit: (center, radius).
-fn fit_circle(pts: &[P]) -> Option<(P, f64)> {
-    let k = 1.0 / pts.len() as f64;
-    let c = pts.iter().fold(P::default(), |a, &p| a + p) * k;
-    // Centered coordinates: minimize Σ (x² + y² + D x + E y + F)².
-    let (mut sxx, mut sxy, mut syy, mut sx, mut sy, mut sz, mut sxz, mut syz) =
-        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
-    for &p in pts {
-        let (x, y) = (p.x - c.x, p.y - c.y);
-        let z = x * x + y * y;
-        sxx += x * x;
-        sxy += x * y;
-        syy += y * y;
-        sx += x;
-        sy += y;
-        sz += z;
-        sxz += x * z;
-        syz += y * z;
-    }
-    let n = pts.len() as f64;
-    // Normal equations [sxx sxy sx; sxy syy sy; sx sy n]·[D E F] = −[sxz syz sz].
-    let m = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]];
-    let rhs = [-sxz, -syz, -sz];
-    let det3 = |m: [[f64; 3]; 3]| {
-        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
-            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
-    };
-    let det = det3(m);
-    if det.abs() < 1e-9 {
-        return None;
-    }
-    let solve = |col: usize| {
-        let mut mm = m;
-        for (row, v) in mm.iter_mut().zip(rhs) {
-            row[col] = v;
-        }
-        det3(mm) / det
-    };
-    let (d, e, f) = (solve(0), solve(1), solve(2));
-    let r2 = (d * d + e * e) / 4.0 - f;
-    (r2 > 0.0).then(|| (c + P::new(-d / 2.0, -e / 2.0), r2.sqrt()))
 }
 
 /// Fit a span: its straight parts become lines, the rest cubics tangent to them. `t1` is the

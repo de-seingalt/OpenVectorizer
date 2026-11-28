@@ -303,6 +303,16 @@
     {/if}
   </section>
 
+  {#if options.preset !== 'photo'}
+    <section class="flex items-start justify-between gap-3">
+      <div class="flex flex-col gap-1">
+        <Label for="shapes">{t.exactShapes}</Label>
+        <p class="text-xs text-muted-foreground">{t.exactShapesHint}</p>
+      </div>
+      <Switch id="shapes" bind:checked={options.shapes} />
+    </section>
+  {/if}
+
   <Collapsible.Root>
     <Collapsible.Trigger
       class="group flex w-full items-center gap-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase hover:text-foreground"

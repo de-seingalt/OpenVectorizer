@@ -131,6 +131,8 @@ struct Cycle {
 struct Runs {
     index: HashMap<u64, usize>,
     prepared: Vec<Prepared>,
+    /// Replace closed boundaries by circles and ellipses.
+    shapes: bool,
 }
 
 /// Corner candidates of the whole image and how many are sharp.
@@ -322,7 +324,7 @@ pub fn to_svg(
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
     let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
-    let mut runs = Runs { index: HashMap::new(), prepared: Vec::new() };
+    let mut runs = Runs { index: HashMap::new(), prepared: Vec::new(), shapes: options.shapes };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
 
@@ -485,6 +487,9 @@ fn lookup_run(
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
     let idx = runs.prepared.len();
     let mut prepared = prepare(&vertices, &mids, ends, closed);
+    if runs.shapes {
+        prepared.detect_shape();
+    }
     // Corners on the image frame are not shape corners: always sharp, never counted.
     let (w, h) = (grid.w as f64, grid.h as f64);
     let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;

@@ -104,6 +104,8 @@ pub struct Options {
     /// source colors (its key no longer matches).
     pub palette_edit: Option<PaletteEdit>,
     pub corners: Corners,
+    /// Replace boundaries that follow a circle or an ellipse by the exact shape.
+    pub shapes: bool,
 }
 
 impl Default for Options {
@@ -117,6 +119,7 @@ impl Default for Options {
             max_colors: 0,
             palette_edit: None,
             corners: Corners::default(),
+            shapes: true,
         }
     }
 }
