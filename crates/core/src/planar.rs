@@ -163,14 +163,18 @@ pub struct CornerInfo {
     pub edited: bool,
 }
 
-/// In automatic mode, a corner is sharp when the boundary passes this close to its apex.
+/// In automatic mode, a corner is sharp when the boundary passes this close to its apex...
 const AUTO_SHARP_GAP: f64 = 0.75;
+/// ... or when the radius that would round it is this small (acute tips: anti-aliasing cuts
+/// their point, so their gap is large even when they are sharp).
+const AUTO_SHARP_RADIUS: f64 = 0.5;
 /// Corners of one outline whose turns differ by less than this (radians) form a group.
 const GROUP_TURN: f64 = 0.2;
 
 /// Decide how every corner is drawn, over the whole image (the sharp count is global), then
 /// apply the per-corner edits.
 fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>>, CornerStats) {
+    let groups = corner_groups(runs);
     let mut sharp: Vec<Vec<bool>> = runs.iter().map(|r| vec![false; r.corners.len()]).collect();
     let mut all: Vec<(usize, usize)> =
         runs.iter().enumerate().flat_map(|(r, run)| (0..run.corners.len()).map(move |c| (r, c))).collect();
@@ -192,7 +196,24 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>
         (None, CornerMode::Automatic) => {
             for &(r, c) in &all {
                 let k = runs[r].corners[c];
-                sharp[r][c] = k.gap <= AUTO_SHARP_GAP && k.turn >= min_turn;
+                let close = k.gap <= AUTO_SHARP_GAP || runs[r].radii(c).0 <= AUTO_SHARP_RADIUS;
+                sharp[r][c] = close && k.turn >= min_turn;
+            }
+            // Corners of one group (the tips of a star) get one decision: the majority's.
+            for (r, groups) in groups.iter().enumerate() {
+                let mut votes: HashMap<u32, (u32, u32)> = HashMap::new();
+                for (c, g) in groups.iter().enumerate() {
+                    if let Some(g) = g {
+                        let v = votes.entry(*g).or_default();
+                        v.0 += u32::from(sharp[r][c]);
+                        v.1 += 1;
+                    }
+                }
+                for (c, g) in groups.iter().enumerate() {
+                    if let Some((yes, all)) = g.and_then(|g| votes.get(&g)) {
+                        sharp[r][c] = 2 * yes >= *all;
+                    }
+                }
             }
         }
     }
@@ -222,7 +243,6 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>
         };
     }
 
-    let groups = corner_groups(runs);
     let mut list = Vec::with_capacity(all.len());
     for (r, run) in runs.iter().enumerate() {
         for (c, k) in run.corners.iter().enumerate() {
@@ -486,7 +506,15 @@ fn lookup_run(
     let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
     let idx = runs.prepared.len();
-    let mut prepared = prepare(&vertices, &mids, ends, closed);
+    // An isolated shape that is nearly symmetric is made exactly symmetric.
+    // Boundaries along the image frame keep their straight frame edges as they are.
+    let on_border = vertices.iter().any(|&(x, y)| x == 0 || y == 0 || x == grid.w || y == grid.h);
+    let found = if closed && runs.shapes && !on_border { crate::shape::symmetrize(&mids) } else { None };
+    let (mids, symmetry) = match found {
+        Some((sym, kind)) => (sym, Some(kind)),
+        None => (mids, None),
+    };
+    let mut prepared = prepare(&vertices, &mids, ends, closed, symmetry);
     if runs.shapes {
         prepared.detect_shape();
     }

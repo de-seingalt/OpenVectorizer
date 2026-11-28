@@ -32,8 +32,9 @@ const fr = {
   sharper: 'Plus vif',
   bestFit: 'Fidèle',
   rounder: 'Plus rond',
-  exactShapes: 'Cercles et ellipses exacts',
-  exactShapesHint: 'Une forme isolée qui suit un cercle ou une ellipse devient cette forme parfaite.',
+  exactShapes: 'Géométrie exacte',
+  exactShapesHint:
+    'Une forme isolée qui suit un cercle, une ellipse ou une symétrie (miroir, rotation) devient parfaitement régulière.',
   showCorners: 'Afficher les coins',
   showCornersHint: 'Dans l’aperçu : clic pour sélectionner un coin, double-clic pour le rendre vif ou arrondi.',
   cornerMarkers: 'Coins du résultat',
@@ -115,8 +116,9 @@ const en: Messages = {
   sharper: 'Sharper',
   bestFit: 'Faithful',
   rounder: 'Rounder',
-  exactShapes: 'Exact circles and ellipses',
-  exactShapesHint: 'An isolated shape that follows a circle or an ellipse becomes that perfect shape.',
+  exactShapes: 'Exact geometry',
+  exactShapesHint:
+    'An isolated shape that follows a circle, an ellipse or a symmetry (mirror, rotation) becomes perfectly regular.',
   showCorners: 'Show corners',
   showCornersHint: 'In the preview: click to select a corner, double-click to make it sharp or rounded.',
   cornerMarkers: 'Corners of the result',

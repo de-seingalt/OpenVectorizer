@@ -47,7 +47,10 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».
       Rectangles, polygones et étoiles : coins vifs + droites
 - [ ] Choix « tracé ou forme » forme par forme (clic dans l'aperçu)
-- [ ] Symétries détectées (axes actifs ou candidats), formes répétées partageant un contour
+- [x] Symétries des formes isolées : axe miroir par le centroïde et rotation d'ordre 2..12, contour remplacé par la
+      moyenne de ses images (écart ≤ 0,7 px) ; coins candidats reportés sur leurs images, décision « auto » commune
+      à un groupe de coins (majorité) ; pointes aiguës vives si leur rayon ajusté ≤ 0,5 px
+- [ ] Formes répétées partageant un contour ; symétries des formes non isolées
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
 - [ ] Rayons égaux
 

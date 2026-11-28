@@ -199,6 +199,184 @@ pub fn fit_ellipse(pts: &[P]) -> Option<Ellipse> {
     })
 }
 
+/// Largest distance (px) between a boundary and its symmetric image...
+const SYM_MAX_ERR: f64 = 0.7;
+/// ...and largest RMS distance.
+const SYM_RMS_ERR: f64 = 0.25;
+/// Highest rotational order tried.
+const MAX_ORDER: u32 = 12;
+/// Samples used to search and test symmetries.
+const SYM_SAMPLES: usize = 128;
+
+/// Symmetries found on a closed boundary.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub struct Symmetry {
+    /// Order of rotational symmetry (1 = none).
+    pub order: u32,
+    /// Has a mirror axis (then `order` axes in all).
+    pub mirror: bool,
+}
+
+impl Symmetry {
+    /// Indices of the images of point `i` of a symmetrized boundary of `n` points.
+    pub fn images(self, i: usize, n: usize) -> impl Iterator<Item = usize> {
+        let k = self.order.max(1) as usize;
+        let step = n / k;
+        let mirrored = if self.mirror { Some((n - i) % n) } else { None };
+        (0..k).flat_map(move |j| {
+            let rot = |p: usize| (p + j * step) % n;
+            std::iter::once(rot(i)).chain(mirrored.map(rot))
+        })
+    }
+}
+
+/// A closed boundary as a function of arc length.
+struct Loop {
+    pts: Vec<P>,
+    /// Cumulative length at each point (cum[0] = 0), total length last.
+    cum: Vec<f64>,
+}
+
+impl Loop {
+    fn new(pts: &[P]) -> Self {
+        let n = pts.len();
+        let mut cum = vec![0.0; n + 1];
+        for i in 0..n {
+            cum[i + 1] = cum[i] + (pts[(i + 1) % n] - pts[i]).len();
+        }
+        Loop { pts: pts.to_vec(), cum }
+    }
+    fn length(&self) -> f64 {
+        self.cum[self.pts.len()]
+    }
+    /// Point at arc length `s` (any real; wraps around).
+    fn at(&self, s: f64) -> P {
+        let n = self.pts.len();
+        let s = s.rem_euclid(self.length());
+        let i = self.cum.partition_point(|&c| c <= s).clamp(1, n) - 1;
+        let seg = self.cum[i + 1] - self.cum[i];
+        let t = if seg > 1e-12 { (s - self.cum[i]) / seg } else { 0.0 };
+        self.pts[i] + (self.pts[(i + 1) % n] - self.pts[i]) * t
+    }
+}
+
+fn rotate(p: P, c: P, angle: f64) -> P {
+    let (s, co) = angle.sin_cos();
+    let d = p - c;
+    c + P::new(d.x * co - d.y * s, d.x * s + d.y * co)
+}
+
+/// Mirror `p` about the line through `c` with unit direction `u`.
+fn mirror(p: P, c: P, u: P) -> P {
+    let d = p - c;
+    let along = d.x * u.x + d.y * u.y;
+    c + u * (2.0 * along) - d
+}
+
+/// (max, rms) distance between `f(s)` and `g(s)` over `samples` points of the loop.
+fn compare(len: f64, samples: usize, f: impl Fn(f64) -> P, g: impl Fn(f64) -> P) -> (f64, f64) {
+    let (mut max, mut sum) = (0.0f64, 0.0);
+    for i in 0..samples {
+        let s = len * i as f64 / samples as f64;
+        let d = (f(s) - g(s)).len();
+        max = max.max(d);
+        sum += d * d;
+    }
+    (max, (sum / samples as f64).sqrt())
+}
+
+/// Make a closed boundary exactly symmetric when it nearly is: every point becomes the mean of
+/// its images under the symmetries found (a mirror axis through the centroid, a rotation of
+/// order k about it). Returns the new boundary: evenly spaced points, a multiple of k of them,
+/// point 0 on the mirror axis, so that symmetries map point indices onto point indices (see
+/// [`Symmetry::images`]).
+pub fn symmetrize(pts: &[P]) -> Option<(Vec<P>, Symmetry)> {
+    let n = pts.len();
+    if n < 16 {
+        return None;
+    }
+    let lp = Loop::new(pts);
+    let len = lp.length();
+    // Area centroid; the sign of the area gives the turning sense of increasing s.
+    let (mut a2, mut cx, mut cy) = (0.0, 0.0, 0.0);
+    for i in 0..n {
+        let (p, q) = (pts[i], pts[(i + 1) % n]);
+        let cross = p.x * q.y - q.x * p.y;
+        a2 += cross;
+        cx += (p.x + q.x) * cross;
+        cy += (p.y + q.y) * cross;
+    }
+    if a2.abs() < 1e-9 {
+        return None;
+    }
+    let c = P::new(cx / (3.0 * a2), cy / (3.0 * a2));
+    let sense = a2.signum();
+    let good = |(max, rms): (f64, f64)| max <= SYM_MAX_ERR && rms <= SYM_RMS_ERR;
+
+    // Rotation: the highest order whose rotated copy matches.
+    let rot_err = |k: u32| {
+        let shift = len / f64::from(k);
+        let angle = -sense * std::f64::consts::TAU / f64::from(k);
+        compare(len, SYM_SAMPLES, |s| lp.at(s), |s| rotate(lp.at(s + shift), c, angle))
+    };
+    let order = (2..=MAX_ORDER).rev().find(|&k| good(rot_err(k))).unwrap_or(1);
+
+    // Mirror: the axis through the centroid and the boundary point at s0 maps s0 + t to s0 − t.
+    let mir_err = |s0: f64| {
+        let d = lp.at(s0) - c;
+        let l = d.len();
+        if l < 1e-9 {
+            return (f64::MAX, f64::MAX);
+        }
+        let u = d * (1.0 / l);
+        compare(len, SYM_SAMPLES, |t| lp.at(s0 + t), |t| mirror(lp.at(s0 - t), c, u))
+    };
+    // Coarse search over the boundary (half of it suffices: the axis crosses it twice), then a
+    // golden-section refinement around the best sample.
+    let step = len / SYM_SAMPLES as f64;
+    let coarse = (0..=SYM_SAMPLES / 2)
+        .map(|i| i as f64 * step)
+        .min_by(|&a, &b| mir_err(a).1.total_cmp(&mir_err(b).1))
+        .unwrap_or(0.0);
+    let (mut lo, mut hi) = (coarse - step, coarse + step);
+    let phi = (5f64.sqrt() - 1.0) / 2.0;
+    for _ in 0..24 {
+        let (m1, m2) = (hi - phi * (hi - lo), lo + phi * (hi - lo));
+        if mir_err(m1).1 < mir_err(m2).1 {
+            hi = m2;
+        } else {
+            lo = m1;
+        }
+    }
+    let s0 = f64::midpoint(lo, hi);
+    let mirror_ok = good(mir_err(s0));
+    if order == 1 && !mirror_ok {
+        return None;
+    }
+
+    // Average over the symmetry group, sampled evenly from s0.
+    let u = (lp.at(s0) - c).normalized_or_x();
+    let p1 = |s: f64| {
+        let p = lp.at(s0 + s);
+        if mirror_ok { (p + mirror(lp.at(s0 - s), c, u)) * 0.5 } else { p }
+    };
+    // A multiple of the order: rotations then map sample indices onto sample indices.
+    let n = n.div_ceil(order as usize) * order as usize;
+    let out: Vec<P> = (0..n)
+        .map(|i| {
+            let s = len * i as f64 / n as f64;
+            let mut sum = P::default();
+            for j in 0..order {
+                let shift = len * f64::from(j) / f64::from(order);
+                let angle = -sense * std::f64::consts::TAU * f64::from(j) / f64::from(order);
+                sum = sum + rotate(p1(s + shift), c, angle);
+            }
+            sum * (1.0 / f64::from(order))
+        })
+        .collect();
+    Some((out, Symmetry { order, mirror: mirror_ok }))
+}
+
 /// Solve m·x = rhs (Cramer's rule).
 fn solve3(m: [[f64; 3]; 3], rhs: [f64; 3]) -> Option<[f64; 3]> {
     let det3 = |m: [[f64; 3]; 3]| {
@@ -306,6 +484,57 @@ mod tests {
             })
             .collect();
         assert!(fit_round(&square).is_none());
+    }
+
+    /// A 5-pointed star (outer radius 40, inner 16) with alternating noise, rotated by `phase`.
+    fn star(noise: f64, phase: f64) -> Vec<P> {
+        let tips: Vec<P> = (0..10)
+            .map(|i| {
+                let r = if i % 2 == 0 { 40.0 } else { 16.0 };
+                let a = phase + f64::from(i) * std::f64::consts::PI / 5.0;
+                P::new(100.0 + r * a.cos(), 100.0 + r * a.sin())
+            })
+            .collect();
+        let mut pts = Vec::new();
+        for i in 0..10 {
+            let (a, b) = (tips[i], tips[(i + 1) % 10]);
+            for k in 0..30 {
+                let p = a + (b - a) * (f64::from(k) / 30.0);
+                pts.push(p + P::new(0.0, if pts.len() % 3 == 0 { noise } else { -noise / 2.0 }));
+            }
+        }
+        pts
+    }
+
+    #[test]
+    fn star_becomes_exactly_symmetric() {
+        let (sym, kind) = symmetrize(&star(0.1, 0.3)).expect("symmetric");
+        assert_eq!(kind, Symmetry { order: 5, mirror: true });
+        // Every tip at the same distance from the center, within 0.05 px.
+        let c = P::new(100.0, 100.0);
+        let far: Vec<f64> = (0..5)
+            .map(|k| {
+                let a = 0.3 + f64::from(k) * std::f64::consts::TAU / 5.0;
+                let dir = P::new(a.cos(), a.sin());
+                sym.iter().map(|&p| (p - c).dot(dir)).fold(f64::MIN, f64::max)
+            })
+            .collect();
+        let (lo, hi) = far.iter().fold((f64::MAX, f64::MIN), |(l, h), &v| (l.min(v), h.max(v)));
+        assert!(hi - lo < 0.05, "{far:?}");
+    }
+
+    #[test]
+    fn asymmetric_shape_is_left_alone() {
+        // A right triangle with legs 60 and 25 has no symmetry.
+        let corners = [P::new(0.0, 0.0), P::new(60.0, 0.0), P::new(0.0, 25.0)];
+        let mut pts = Vec::new();
+        for i in 0..3 {
+            let (a, b) = (corners[i], corners[(i + 1) % 3]);
+            for k in 0..40 {
+                pts.push(a + (b - a) * (f64::from(k) / 40.0));
+            }
+        }
+        assert!(symmetrize(&pts).is_none());
     }
 
     #[test]

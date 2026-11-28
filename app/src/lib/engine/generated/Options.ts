@@ -31,6 +31,7 @@ maxColors: number,
  */
 paletteEdit: PaletteEdit | null, corners: Corners, 
 /**
- * Replace boundaries that follow a circle or an ellipse by the exact shape.
+ * Isolated shapes that follow a circle, an ellipse or a symmetry (mirror axis, rotation)
+ * are made exact.
  */
 shapes: boolean, };

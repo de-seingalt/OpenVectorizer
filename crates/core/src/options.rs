@@ -104,7 +104,8 @@ pub struct Options {
     /// source colors (its key no longer matches).
     pub palette_edit: Option<PaletteEdit>,
     pub corners: Corners,
-    /// Replace boundaries that follow a circle or an ellipse by the exact shape.
+    /// Isolated shapes that follow a circle, an ellipse or a symmetry (mirror axis, rotation)
+    /// are made exact.
     pub shapes: bool,
 }
 

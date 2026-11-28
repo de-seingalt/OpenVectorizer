@@ -21,7 +21,7 @@ impl P {
     pub fn new(x: f64, y: f64) -> Self {
         Self { x, y }
     }
-    fn dot(self, o: P) -> f64 {
+    pub fn dot(self, o: P) -> f64 {
         self.x * o.x + self.y * o.y
     }
     pub fn len(self) -> f64 {
@@ -30,6 +30,11 @@ impl P {
     fn normalized(self) -> P {
         let l = self.len();
         if l < 1e-12 { P::default() } else { self * (1.0 / l) }
+    }
+    /// Unit vector, or +x for a null vector.
+    pub fn normalized_or_x(self) -> P {
+        let l = self.len();
+        if l < 1e-12 { P::new(1.0, 0.0) } else { self * (1.0 / l) }
     }
 }
 
@@ -194,7 +199,16 @@ impl Prepared {
 /// Build the polyline of a run from its grid vertices and one boundary point per crack edge
 /// (`mids[i]` lies on the edge from `vertices[i]` to the next vertex), and find its corners.
 /// `ends` are the positions of the two end junctions of an open run (ignored when closed).
-pub fn prepare(vertices: &[(i64, i64)], mids: &[P], ends: (P, P), closed: bool) -> Prepared {
+///
+/// `symmetry` (closed runs made symmetric by [`crate::shape::symmetrize`]): corner candidates
+/// are repeated at all their symmetric positions, so symmetric corners stay alike.
+pub fn prepare(
+    vertices: &[(i64, i64)],
+    mids: &[P],
+    ends: (P, P),
+    closed: bool,
+    symmetry: Option<crate::shape::Symmetry>,
+) -> Prepared {
     let pts: Vec<P> = if closed {
         mids.to_vec()
     } else {
@@ -232,6 +246,9 @@ pub fn prepare(vertices: &[(i64, i64)], mids: &[P], ends: (P, P), closed: bool) 
         keep
     };
     let mut keep = keep;
+    if let Some(sym) = symmetry {
+        keep = keep.iter().flat_map(|&i| sym.images(i, n)).collect();
+    }
     keep.sort_unstable();
     keep.dedup();
     let keep = merge_close_vertices(&keep, n, closed);
@@ -851,7 +868,7 @@ mod tests {
 
     /// Fit with every corner sharp.
     fn fit_sharp(v: &[(i64, i64)], closed: bool, ends: (P, P)) -> Curve {
-        let run = prepare(v, &grid_mids(v, closed), ends, closed);
+        let run = prepare(v, &grid_mids(v, closed), ends, closed, None);
         fit_prepared(&run, &vec![CornerStyle::Sharp; run.corners.len()], params())
     }
 
@@ -867,7 +884,7 @@ mod tests {
     /// Points every ~0.7 px along a closed outline given by `f(t)`, t ∈ [0, 1).
     fn sample(n: usize, f: impl Fn(f64) -> P) -> Prepared {
         let pts: Vec<P> = (0..n).map(|i| f(i as f64 / n as f64)).collect();
-        prepare(&vec![(0, 0); n], &pts, (P::default(), P::default()), true)
+        prepare(&vec![(0, 0); n], &pts, (P::default(), P::default()), true, None)
     }
 
     fn lines(c: &Curve) -> usize {

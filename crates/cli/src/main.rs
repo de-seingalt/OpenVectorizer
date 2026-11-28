@@ -85,7 +85,7 @@ struct OptArgs {
     /// Rounded corner radius: -1 sharp, 0 best fit, 1 largest
     #[arg(long, allow_hyphen_values = true)]
     radius: Option<f32>,
-    /// Keep traced outlines instead of exact circles and ellipses
+    /// Keep traced outlines instead of exact circles, ellipses and symmetries
     #[arg(long)]
     no_shapes: bool,
 }
