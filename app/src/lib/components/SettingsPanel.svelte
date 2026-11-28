@@ -11,6 +11,7 @@
     DEFAULT_OPTIONS,
     type CornerInfo,
     type CornerMode,
+    type Guide,
     type Options,
     type Palette,
     type Preset,
@@ -27,6 +28,8 @@
     showCorners = $bindable(false),
     selectedCorner = $bindable(null),
     cornerGroup = $bindable(true),
+    guides = [],
+    showGuides = $bindable(false),
   }: {
     options: Options;
     palette?: Palette | null;
@@ -35,7 +38,10 @@
     showCorners?: boolean;
     selectedCorner?: CornerInfo | null;
     cornerGroup?: boolean;
+    guides?: Guide[];
+    showGuides?: boolean;
   } = $props();
+  const guidesOff = $derived(guides.filter((g) => !g.enabled).length);
 
   // --- selected corner ------------------------------------------------------------------
   const groupSize = $derived(
@@ -322,6 +328,24 @@
         <span>{t.geometryOff}</span><span>{t.geometryStrong}</span>
       </div>
       <p class="text-xs text-muted-foreground">{t.geometryHint}</p>
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex flex-col gap-1">
+          <Label for="show-guides">
+            {t.showGuides}
+            <span id="guides-count" class="ml-1 text-xs font-normal text-muted-foreground tabular-nums">
+              {guides.length}{#if guidesOff > 0}&nbsp;· {guidesOff} {t.guidesOff}{/if}
+            </span>
+          </Label>
+          <p class="text-xs text-muted-foreground">{t.showGuidesHint}</p>
+        </div>
+        <Switch id="show-guides" bind:checked={showGuides} />
+      </div>
+      {#if options.disabledGuides.length > 0}
+        <Button variant="outline" size="sm" onclick={() => (options.disabledGuides = [])}>
+          <RotateCcw />
+          {t.resetGuides} ({options.disabledGuides.length})
+        </Button>
+      {/if}
     </section>
   {/if}
 

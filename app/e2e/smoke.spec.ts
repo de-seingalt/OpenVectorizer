@@ -68,6 +68,18 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(autoCorners).toBeChecked();
   await page.screenshot({ path: 'test-results/screens/02c-corners.png' });
 
+  // Guides: show them, turn one line off (the tracing ignores it), then turn all back on.
+  await page.getByRole('switch', { name: /Afficher les guides/ }).click();
+  const guidesCount = page.locator('#guides-count');
+  await expect(guidesCount).toHaveText(/^\s*[1-9]\d*\s*$/);
+  // (A horizontal line has an empty bounding box: dispatch the click instead of aiming at it.)
+  await page.locator('[data-guide][aria-label^="Droite"]').first().dispatchEvent('click');
+  await expect(guidesCount).toContainText('1 désactivés');
+  await expect(page.locator('[data-guide][aria-pressed="false"]')).toHaveCount(1);
+  await page.screenshot({ path: 'test-results/screens/02e-guides.png' });
+  await page.getByRole('button', { name: /Réactiver tous les guides/ }).click();
+  await expect(guidesCount).not.toContainText('désactivés');
+
   // Changing an option triggers a new vectorization.
   await page.getByRole('radio', { name: 'Photo' }).click();
   await expect(page.locator('footer')).toContainText('formes');

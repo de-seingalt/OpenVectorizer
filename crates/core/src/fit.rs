@@ -11,6 +11,8 @@
 
 use std::ops::{Add, Mul, Neg, Sub};
 
+use crate::guide::{GuideKind, Guides};
+
 #[derive(Debug, Clone, Copy, PartialEq, Default)]
 pub struct P {
     pub x: f64,
@@ -202,9 +204,19 @@ pub struct Prepared {
 impl Prepared {
     /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
     /// has no corners).
-    pub fn detect_shape(&mut self, geometry: f64) {
+    /// Whether the boundary was replaced by a circle or an ellipse.
+    pub fn has_shape(&self) -> bool {
+        self.shape.is_some()
+    }
+
+    pub fn detect_shape(&mut self, geometry: f64, guides: &mut Guides) {
         if self.closed
             && let Some((ellipse, reverse)) = crate::shape::fit_round(&self.pts, geometry)
+            && guides.add(
+                if (ellipse.a - ellipse.b).abs() < 1e-9 { GuideKind::Circle } else { GuideKind::Ellipse },
+                ellipse.center,
+                ellipse.guide(),
+            )
         {
             self.shape = Some(ellipse.curve(reverse));
             self.corners.clear();
@@ -442,6 +454,7 @@ pub fn fit_prepared(
     styles: &[CornerStyle],
     params: FitParams,
     fillets: &mut Fillets,
+    guides: &mut Guides,
 ) -> Curve {
     if let Some(shape) = &run.shape {
         return shape.clone();
@@ -476,14 +489,14 @@ pub fn fit_prepared(
         smooth(&mut pts, true);
         // Start the loop in the middle of its longest straight part, if it has one: every
         // fillet between straight parts is then inside the span.
-        let lines = find_lines(&pts);
+        let lines = enabled_lines(&pts, guides, false);
         let start = lines.iter().max_by_key(|l| l.to - l.from).map_or(0, |l| usize::midpoint(l.from, l.to));
         pts.rotate_left(start);
         let mut loop_pts = pts.clone();
         loop_pts.push(pts[0]);
         let t = (pts[1 % n] - pts[n - 1]).normalized();
         let mut segs = Vec::new();
-        fit_span(&loop_pts, Some(t), Some(-t), params, fillets, &mut segs);
+        fit_span(&loop_pts, Some(t), Some(-t), params, fillets, guides, &mut segs);
         return Curve { start: pts[0], segs };
     }
     let mut segs = Vec::new();
@@ -523,7 +536,7 @@ pub fn fit_prepared(
         if span.len() < 3 && (span[0] - span[span.len() - 1]).len() < 1e-9 {
             continue;
         }
-        fit_span(&span, a.t_out, b.t_in.map(|t| -t), params, fillets, &mut segs);
+        fit_span(&span, a.t_out, b.t_in.map(|t| -t), params, fillets, guides, &mut segs);
     }
     Curve { start: anchors[0].p, segs }
 }
@@ -646,11 +659,12 @@ fn fit_span(
     t2: Option<P>,
     params: FitParams,
     fillets: &mut Fillets,
+    guides: &mut Guides,
     segs: &mut Vec<Seg>,
 ) {
     let n = span.len();
     let tol = params.tolerance;
-    let lines = find_lines(span);
+    let lines = enabled_lines(span, guides, true);
     let mut starts: Vec<P> =
         lines.iter().map(|l| if l.from == 0 { span[0] } else { l.project(span[l.from]) }).collect();
     let mut ends: Vec<P> =
@@ -662,6 +676,7 @@ fn fit_span(
             let (a, b) = (&lines[i], &lines[i + 1]);
             if let Some(f) =
                 fillet(&span[a.to..=b.from], (a, starts[i]), (b, ends[i + 1]), params.arc_tol, &fillets.snap)
+                && guides.add(GuideKind::Arc, f.middle, f.guide.clone())
             {
                 ends[i] = f.from;
                 starts[i + 1] = f.to;
@@ -687,6 +702,23 @@ fn fit_span(
     }
 }
 
+/// Straight parts of a span that are not turned off. `record`: add them to the guides (the
+/// final fit of the span; a loop looks for lines once more only to choose its start).
+fn enabled_lines(pts: &[P], guides: &mut Guides, record: bool) -> Vec<Line> {
+    find_lines(pts)
+        .into_iter()
+        .filter(|l| {
+            let (a, b) = (l.project(pts[l.from]), l.project(pts[l.to]));
+            let key = (a + b) * 0.5;
+            if record {
+                guides.add(GuideKind::Line, key, crate::guide::segment(a, b))
+            } else {
+                !guides.is_disabled(GuideKind::Line, key)
+            }
+        })
+        .collect()
+}
+
 /// A circular arc tangent to two straight parts.
 struct Fillet {
     /// Tangent points on the first and the second line.
@@ -694,6 +726,9 @@ struct Fillet {
     to: P,
     radius: f64,
     segs: Vec<Seg>,
+    /// Middle of the arc (guide key) and path data drawing it.
+    middle: P,
+    guide: String,
 }
 
 /// Fit the arc tangent to `a` and `b` (each with its start / end point) that best follows
@@ -782,7 +817,9 @@ fn fillet(pts: &[P], a: (&Line, P), b: (&Line, P), tol: f64, snap: &[f64]) -> Op
         segs.push(Seg::Cubic(p0 + dir * k, p3 - next_dir * k, p3));
         (radial, dir) = (next_radial, next_dir);
     }
-    Some(Fillet { from: t1, to: t2, radius: r, segs })
+    let middle = center + ((t1 + t2) * 0.5 - center).normalized_or_x() * r;
+    let guide = crate::guide::arc(t1, t2, r, sense > 0.0);
+    Some(Fillet { from: t1, to: t2, radius: r, segs, middle, guide })
 }
 
 /// Smallest fillet radius (px): below, the turn is a corner, not an arc.
@@ -1043,7 +1080,13 @@ mod tests {
     /// Fit with every corner sharp.
     fn fit_sharp(v: &[(i64, i64)], closed: bool, ends: (P, P)) -> Curve {
         let run = prepare(v, &grid_mids(v, closed), ends, closed, None);
-        fit_prepared(&run, &vec![CornerStyle::Sharp; run.corners.len()], params(), &mut Fillets::default())
+        fit_prepared(
+            &run,
+            &vec![CornerStyle::Sharp; run.corners.len()],
+            params(),
+            &mut Fillets::default(),
+            &mut Guides::default(),
+        )
     }
 
     fn square(n: i64) -> Vec<(i64, i64)> {
@@ -1098,14 +1141,15 @@ mod tests {
         // Candidates on the arcs stay rounded (free).
         let free = |p: &Prepared| vec![CornerStyle::Free; p.corners.len()];
         let mut fillets = Fillets::default();
-        let c = fit_prepared(&rect, &free(&rect), params(), &mut fillets);
+        let c = fit_prepared(&rect, &free(&rect), params(), &mut fillets, &mut Guides::default());
         // 4 sides (the loop starts in the middle of one: 5 lines) and 4 tangent arcs of radius 15.
         assert_eq!(lines(&c), 5, "{c:?}");
         assert_eq!(fillets.found.len(), 4, "{c:?}");
         assert!(fillets.found.iter().all(|r| (r - 15.0).abs() < 0.3), "{:?}", fillets.found);
 
         let circle = sample(300, |t| P::new(50.0 + 30.0 * (t * TAU).cos(), 50.0 + 30.0 * (t * TAU).sin()));
-        let c = fit_prepared(&circle, &free(&circle), params(), &mut Fillets::default());
+        let c =
+            fit_prepared(&circle, &free(&circle), params(), &mut Fillets::default(), &mut Guides::default());
         assert_eq!(lines(&c), 0, "{c:?}");
     }
 

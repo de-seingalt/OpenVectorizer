@@ -20,6 +20,7 @@ use ts_rs::TS;
 
 use crate::RgbaImage;
 use crate::fit::{CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, fit_prepared, prepare};
+use crate::guide::{Guide, GuideKind, Guides};
 use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
 use crate::{CornerEdit, CornerMode, Options, Stacking};
@@ -133,6 +134,8 @@ struct Runs {
     prepared: Vec<Prepared>,
     /// Geometry setting (circles, ellipses, symmetries of isolated shapes; 0 = off).
     geometry: f64,
+    /// Guides of whole shapes (circles, ellipses, symmetries) and the ones turned off.
+    guides: Guides,
 }
 
 /// Corner candidates of the whole image and how many are sharp.
@@ -142,6 +145,8 @@ pub struct CornerStats {
     pub sharp: u32,
     /// Every corner, for the editor (in no particular order).
     pub list: Vec<CornerInfo>,
+    /// Every guide the tracing found (see [`crate::guide`]).
+    pub guides: Vec<Guide>,
 }
 
 /// One corner of the result, as shown in the editor.
@@ -264,7 +269,7 @@ fn decide_corners(runs: &[Prepared], options: &Options) -> (Vec<Vec<CornerStyle>
         }
     }
     let count = list.iter().filter(|k| k.sharp).count() as u32;
-    (styles, CornerStats { total: list.len() as u32, sharp: count, list })
+    (styles, CornerStats { total: list.len() as u32, sharp: count, list, guides: Vec::new() })
 }
 
 /// (run, corner, edit) for every edit that finds a corner within reach; the nearest corner
@@ -344,8 +349,12 @@ pub fn to_svg(
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
     let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
-    let mut runs =
-        Runs { index: HashMap::new(), prepared: Vec::new(), geometry: f64::from(options.geometry) };
+    let mut runs = Runs {
+        index: HashMap::new(),
+        prepared: Vec::new(),
+        geometry: f64::from(options.geometry),
+        guides: Guides::new(&options.disabled_guides),
+    };
     let mut cycles: Vec<Vec<Cycle>> = (0..comp_labels.len()).map(|_| Vec::new()).collect();
     let mut visited = vec![false; ((grid.w + 1) * (grid.h + 1) * 4) as usize];
 
@@ -369,14 +378,18 @@ pub fn to_svg(
         }
     }
 
-    let (styles, corner_stats) = decide_corners(&runs.prepared, options);
-    // Fit every run, then refit those with fillets so that close radii become equal.
+    let (styles, mut corner_stats) = decide_corners(&runs.prepared, options);
+    // Fit every run, then refit those with fillets so that close radii become equal. The guides
+    // of each run are kept from its last fit.
     let mut fillets = Fillets::default();
     let mut with_fillets = Vec::new();
     let mut curves: Vec<Curve> = Vec::with_capacity(runs.prepared.len());
+    let mut run_guides: Vec<Vec<Guide>> = Vec::with_capacity(runs.prepared.len());
+    let mut guides = Guides::new(&options.disabled_guides);
     for (i, (run, styles)) in runs.prepared.iter().zip(&styles).enumerate() {
         let before = fillets.found.len();
-        curves.push(fit_prepared(run, styles, *params, &mut fillets));
+        curves.push(fit_prepared(run, styles, *params, &mut fillets, &mut guides));
+        run_guides.push(std::mem::take(&mut guides.found));
         if fillets.found.len() > before {
             with_fillets.push(i);
         }
@@ -384,9 +397,20 @@ pub fn to_svg(
     fillets.snap = Fillets::clusters(&fillets.found);
     if !fillets.snap.is_empty() {
         for i in with_fillets {
-            curves[i] = fit_prepared(&runs.prepared[i], &styles[i], *params, &mut fillets);
+            curves[i] = fit_prepared(&runs.prepared[i], &styles[i], *params, &mut fillets, &mut guides);
+            run_guides[i] = std::mem::take(&mut guides.found);
         }
     }
+    corner_stats.guides = std::mem::take(&mut runs.guides.found);
+    corner_stats.guides.extend(run_guides.into_iter().flatten());
+    // The image frame is not part of the drawing.
+    let (w, h) = (
+        f32::from(u16::try_from(q.width).unwrap_or(u16::MAX)),
+        f32::from(u16::try_from(q.height).unwrap_or(u16::MAX)),
+    );
+    corner_stats.guides.retain(|g| {
+        g.kind != GuideKind::Line || (g.x > 0.01 && g.y > 0.01 && g.x < w - 0.01 && g.y < h - 0.01)
+    });
 
     // Draw order: largest outline first.
     let outer_area = |c: &[Cycle]| c.iter().map(|k| -k.area).fold(0.0, f64::max);
@@ -527,11 +551,20 @@ fn lookup_run(
     let on_border = vertices.iter().any(|&(x, y)| x == 0 || y == 0 || x == grid.w || y == grid.h);
     let found = if closed && !on_border { crate::shape::symmetrize(&mids, runs.geometry) } else { None };
     let (mids, symmetry) = match found {
-        Some((sym, kind)) => (sym, Some(kind)),
-        None => (mids, None),
+        Some(sym) if runs.guides.add(GuideKind::Symmetry, sym.center, sym.guide.clone()) => {
+            (sym.pts, Some(sym.kind))
+        }
+        _ => (mids, None),
     };
     let mut prepared = prepare(&vertices, &mids, ends, closed, symmetry);
-    prepared.detect_shape(runs.geometry);
+    let symmetry_guide = symmetry.map(|_| runs.guides.found.len() - 1);
+    prepared.detect_shape(runs.geometry, &mut runs.guides);
+    // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
+    if prepared.has_shape()
+        && let Some(i) = symmetry_guide
+    {
+        runs.guides.found.remove(i);
+    }
     // Corners on the image frame are not shape corners: always sharp, never counted.
     let (w, h) = (grid.w as f64, grid.h as f64);
     let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;

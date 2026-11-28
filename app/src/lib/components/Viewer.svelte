@@ -5,7 +5,7 @@
   import { Maximize, Minus, Plus } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button';
   import * as ToggleGroup from '$lib/components/ui/toggle-group';
-  import type { CornerInfo } from '$lib/engine';
+  import type { CornerInfo, Guide, GuideKind } from '$lib/engine';
   import { t } from '$lib/i18n';
 
   type Mode = 'compare' | 'original' | 'vector';
@@ -19,6 +19,9 @@
     showCorners = false,
     selectedCorner = $bindable(null),
     onToggleCorner,
+    guides = [],
+    showGuides = false,
+    onToggleGuide,
   }: {
     rasterUrl: string;
     svgUrl: string | null;
@@ -30,7 +33,19 @@
     selectedCorner?: CornerInfo | null;
     /** Double-click on a marker. */
     onToggleCorner?: (corner: CornerInfo) => void;
+    /** Guides drawn over the preview when `showGuides` is on; a click turns one off or on. */
+    guides?: Guide[];
+    showGuides?: boolean;
+    onToggleGuide?: (guide: Guide) => void;
   } = $props();
+
+  const guideColor: Record<GuideKind, string> = {
+    line: '#0891b2',
+    arc: '#c026d3',
+    circle: '#ea580c',
+    ellipse: '#ea580c',
+    symmetry: '#7c3aed',
+  };
 
   const isSelected = (k: CornerInfo) => selectedCorner !== null && k.x === selectedCorner.x && k.y === selectedCorner.y;
   const inGroup = (k: CornerInfo) => selectedCorner?.group != null && k.group === selectedCorner.group;
@@ -140,6 +155,44 @@
         class="absolute inset-0 h-full w-full"
         style:clip-path={mode === 'compare' ? `inset(0 0 0 ${split * 100}%)` : 'none'}
       />
+    {/if}
+    {#if showGuides && svgUrl}
+      <svg
+        class="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
+        viewBox="0 0 {width} {height}"
+        role="group"
+        aria-label={t.guideMarkers}
+      >
+        {#each guides as g, i (i)}
+          <g
+            class="pointer-events-auto cursor-pointer outline-none"
+            role="button"
+            tabindex={guides.length <= 300 ? 0 : -1}
+            aria-label={`${t.guideKinds[g.kind]} (${Math.round(g.x)}, ${Math.round(g.y)})`}
+            aria-pressed={g.enabled}
+            data-guide={i}
+            onpointerdown={(e) => e.stopPropagation()}
+            onclick={() => onToggleGuide?.(g)}
+            onkeydown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onToggleGuide?.(g);
+              }
+            }}
+          >
+            <!-- Wide invisible stroke: easier to click. -->
+            <path d={g.d} fill="none" stroke="transparent" stroke-width="10" vector-effect="non-scaling-stroke" />
+            <path
+              d={g.d}
+              fill="none"
+              stroke={g.enabled ? guideColor[g.kind] : '#9ca3af'}
+              stroke-width={g.enabled ? 1.5 : 1.25}
+              stroke-dasharray={g.enabled && g.kind !== 'symmetry' ? 'none' : `${4 / scale} ${3 / scale}`}
+              vector-effect="non-scaling-stroke"
+            />
+          </g>
+        {/each}
+      </svg>
     {/if}
     {#if showCorners && svgUrl}
       <svg

@@ -6,6 +6,9 @@ import type { WorkerRequest, WorkerResponse } from './worker';
 export type { CornerEdit } from './generated/CornerEdit';
 export type { CornerInfo } from './generated/CornerInfo';
 export type { CornerMode } from './generated/CornerMode';
+export type { Guide } from './generated/Guide';
+export type { GuideKey } from './generated/GuideKey';
+export type { GuideKind } from './generated/GuideKind';
 export type { Options } from './generated/Options';
 export type { Palette } from './generated/Palette';
 export type { PaletteEdit } from './generated/PaletteEdit';
@@ -25,6 +28,7 @@ export const DEFAULT_OPTIONS: Options = {
   paletteEdit: null,
   corners: { mode: 'automatic', sharpCount: null, radius: 0, edits: [] },
   geometry: 0.5,
+  disabledGuides: [],
 };
 
 export type Result = { output: Output; ms: number };

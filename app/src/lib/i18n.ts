@@ -34,6 +34,13 @@ const fr = {
   rounder: 'Plus rond',
   geometry: 'Géométrie',
   geometryOff: 'Tracé brut',
+  showGuides: 'Afficher les guides',
+  showGuidesHint:
+    'Droites, arcs, cercles, ellipses et axes de symétrie repérés. Cliquez sur un guide pour que le tracé l’ignore (pointillés), recliquez pour le rétablir.',
+  guidesOff: 'désactivés',
+  guideMarkers: 'Guides géométriques',
+  guideKinds: { line: 'Droite', arc: 'Arc', circle: 'Cercle', ellipse: 'Ellipse', symmetry: 'Symétrie' },
+  resetGuides: 'Réactiver tous les guides',
   geometryStrong: 'Formes régulières',
   geometryHint:
     'Arrondis en arcs tangents aux côtés droits, rayons proches égalisés, cercles, ellipses et symétries des formes isolées.',
@@ -120,6 +127,13 @@ const en: Messages = {
   rounder: 'Rounder',
   geometry: 'Geometry',
   geometryOff: 'Plain tracing',
+  showGuides: 'Show guides',
+  showGuidesHint:
+    'Lines, arcs, circles, ellipses and symmetry axes found. Click a guide to make the tracing ignore it (dashed), click again to restore it.',
+  guidesOff: 'off',
+  guideMarkers: 'Geometric guides',
+  guideKinds: { line: 'Line', arc: 'Arc', circle: 'Circle', ellipse: 'Ellipse', symmetry: 'Symmetry' },
+  resetGuides: 'Turn all guides back on',
   geometryStrong: 'Regular shapes',
   geometryHint:
     'Roundings as arcs tangent to straight sides, close radii made equal, circles, ellipses and symmetries of isolated shapes.',

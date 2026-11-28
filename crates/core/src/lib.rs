@@ -13,6 +13,7 @@ pub mod baseline;
 mod color;
 mod error;
 mod fit;
+pub mod guide;
 mod image;
 mod options;
 pub mod palette;
@@ -40,6 +41,8 @@ pub struct Output {
     pub palette: Option<Palette>,
     /// Every corner of the result (empty for the Photo preset).
     pub corners: Vec<CornerInfo>,
+    /// Guides found on the boundaries (empty for the Photo preset).
+    pub guides: Vec<guide::Guide>,
 }
 
 /// Cheap statistics about the produced SVG, shown in the UI status bar.
@@ -81,7 +84,7 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
         corners: corners.total,
         sharp_corners: corners.sharp,
     };
-    Ok(Output { svg, stats, palette, corners: corners.list })
+    Ok(Output { svg, stats, palette, corners: corners.list, guides: corners.guides })
 }
 
 /// Curve fitting settings derived from the user options.

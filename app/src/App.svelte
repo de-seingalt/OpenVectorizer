@@ -18,11 +18,13 @@
   import * as DropdownMenu from '$lib/components/ui/dropdown-menu';
   import { Toaster } from '$lib/components/ui/sonner';
   import { editCorners, findCorner, targets } from '$lib/corners';
+  import { toggleGuide } from '$lib/guides';
   import {
     DEFAULT_OPTIONS,
     Engine,
     SupersededError,
     type CornerInfo,
+    type Guide,
     type Options,
     type Palette,
     type Stats,
@@ -43,6 +45,8 @@
   let showCorners = $state(false);
   let selectedCorner = $state<CornerInfo | null>(null);
   let cornerGroup = $state(true); // edits apply to the whole group of the corner
+  let guides = $state<Guide[]>([]);
+  let showGuides = $state(false);
   let ms = $state(0);
   let working = $state(false);
   let dragging = $state(false);
@@ -97,6 +101,7 @@
         stats = res.output.stats;
         palette = res.output.palette;
         corners = res.output.corners;
+        guides = res.output.guides;
         // Follow the selected corner into the new result.
         if (selectedCorner) selectedCorner = findCorner(corners, selectedCorner);
         ms = res.ms;
@@ -217,6 +222,9 @@
           {showCorners}
           bind:selectedCorner
           onToggleCorner={toggleCorner}
+          {guides}
+          {showGuides}
+          onToggleGuide={(g) => toggleGuide(options, g)}
         />
       {:else}
         <div class="flex h-full items-center justify-center p-8">
@@ -246,7 +254,17 @@
 
     <!-- Settings -->
     <aside class="w-80 shrink-0 overflow-y-auto border-l">
-      <SettingsPanel bind:options {palette} {stats} {corners} bind:showCorners bind:selectedCorner bind:cornerGroup />
+      <SettingsPanel
+        bind:options
+        {palette}
+        {stats}
+        {corners}
+        bind:showCorners
+        bind:selectedCorner
+        bind:cornerGroup
+        {guides}
+        bind:showGuides
+      />
     </aside>
   </div>
 

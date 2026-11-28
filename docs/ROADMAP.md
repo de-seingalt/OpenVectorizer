@@ -46,6 +46,8 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       les droites s'arrêtent aux points de contact
 - [x] Rayons égaux : rayons de raccord proches (4 % ou 0,3 px) égalisés sur toute l'image (deuxième passe)
 - [x] Curseur **Géométrie** (0 = tracé brut … 100 %) : dose raccords, cercles, ellipses et symétries
+- [x] **Guides** affichés dans l'aperçu (droites, arcs, cercles, ellipses, axes de symétrie) ; un clic en désactive
+      un (le tracé l'ignore), retrouvé par type et position à chaque tracé (`disabledGuides`)
 - [ ] Arcs de cercle et d'ellipse libres (hors raccords), choix par erreur + complexité
 - [x] Formes entières (contours isolés) : cercle (Kåsa) et ellipse (Fitzgibbon / Halíř-Flusser) exacts si l'écart
       reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».

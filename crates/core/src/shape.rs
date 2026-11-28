@@ -293,7 +293,7 @@ fn compare(len: f64, samples: usize, f: impl Fn(f64) -> P, g: impl Fn(f64) -> P)
 /// order k about it). Returns the new boundary: evenly spaced points, a multiple of k of them,
 /// point 0 on the mirror axis, so that symmetries map point indices onto point indices (see
 /// [`Symmetry::images`]).
-pub fn symmetrize(pts: &[P], g: f64) -> Option<(Vec<P>, Symmetry)> {
+pub fn symmetrize(pts: &[P], g: f64) -> Option<Symmetrized> {
     let n = pts.len();
     let (sym_max, sym_rms) = symmetry_tolerance(g);
     if g <= 0.0 || n < 16 {
@@ -378,7 +378,35 @@ pub fn symmetrize(pts: &[P], g: f64) -> Option<(Vec<P>, Symmetry)> {
             sum * (1.0 / f64::from(order))
         })
         .collect();
-    Some((out, Symmetry { order, mirror: mirror_ok }))
+    // Guide: the mirror axes, or a small circle at the center of a rotation.
+    let extent = pts.iter().map(|&p| (p - c).len()).fold(0.0, f64::max);
+    let guide = if mirror_ok {
+        (0..order)
+            .map(|k| {
+                let v = rotate(u, P::default(), std::f64::consts::PI * f64::from(k) / f64::from(order));
+                crate::guide::segment(c - v * extent, c + v * extent)
+            })
+            .collect::<String>()
+    } else {
+        crate::guide::ellipse(c, 2.0, 2.0, 0.0)
+    };
+    Some(Symmetrized { pts: out, kind: Symmetry { order, mirror: mirror_ok }, center: c, guide })
+}
+
+/// Result of [`symmetrize`].
+pub struct Symmetrized {
+    pub pts: Vec<P>,
+    pub kind: Symmetry,
+    /// Center of the symmetries (area centroid) and path data drawing them.
+    pub center: P,
+    pub guide: String,
+}
+
+impl Ellipse {
+    /// Path data drawing the ellipse.
+    pub fn guide(&self) -> String {
+        crate::guide::ellipse(self.center, self.a, self.b, self.angle)
+    }
 }
 
 /// Solve m·x = rhs (Cramer's rule).
@@ -512,7 +540,8 @@ mod tests {
 
     #[test]
     fn star_becomes_exactly_symmetric() {
-        let (sym, kind) = symmetrize(&star(0.1, 0.3), 0.5).expect("symmetric");
+        let found = symmetrize(&star(0.1, 0.3), 0.5).expect("symmetric");
+        let (sym, kind) = (found.pts, found.kind);
         assert_eq!(kind, Symmetry { order: 5, mirror: true });
         // Every tip at the same distance from the center, within 0.05 px.
         let c = P::new(100.0, 100.0);

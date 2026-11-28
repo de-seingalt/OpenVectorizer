@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::Error;
+use crate::guide::GuideKey;
 use crate::palette::PaletteEdit;
 
 /// Kind of source image; selects sensible defaults for the other options.
@@ -108,6 +109,8 @@ pub struct Options {
     /// larger deviations for tangent arcs between straight parts (fillets, equal radii),
     /// circles, ellipses and symmetries of isolated shapes.
     pub geometry: f32,
+    /// Guides the user turned off (found again by kind and position).
+    pub disabled_guides: Vec<GuideKey>,
 }
 
 impl Default for Options {
@@ -122,6 +125,7 @@ impl Default for Options {
             palette_edit: None,
             corners: Corners::default(),
             geometry: 0.5,
+            disabled_guides: Vec::new(),
         }
     }
 }
