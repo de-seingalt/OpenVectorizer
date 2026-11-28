@@ -667,7 +667,6 @@ fn fit_span(
     segs: &mut Vec<Seg>,
 ) {
     let n = span.len();
-    let tol = params.tolerance;
     let lines = enabled_lines(span, guides, true);
     let mut starts: Vec<P> =
         lines.iter().map(|l| if l.from == 0 { span[0] } else { l.project(span[l.from]) }).collect();
@@ -694,7 +693,7 @@ fn fit_span(
     for (i, line) in lines.iter().enumerate() {
         let after_arc = i > 0 && arcs[i - 1].is_some();
         if line.from > 0 && !after_arc {
-            curve_piece(span, cursor, (line.from, starts[i], Some(-line.dir)), tol, segs);
+            curve_piece(span, cursor, (line.from, starts[i], Some(-line.dir)), params, guides, segs);
         }
         segs.push(Seg::Line(ends[i]));
         cursor = (line.to, ends[i], Some(line.dir));
@@ -703,7 +702,7 @@ fn fit_span(
         }
     }
     if cursor.0 < n - 1 {
-        curve_piece(span, cursor, (n - 1, span[n - 1], t2), tol, segs);
+        curve_piece(span, cursor, (n - 1, span[n - 1], t2), params, guides, segs);
     }
 }
 
@@ -836,19 +835,127 @@ fn cross(a: P, b: P) -> f64 {
 
 /// Cubics from break point `a` to `b` (index, position, tangent): `a`'s tangent points forward,
 /// `b`'s backward; missing tangents are estimated from the points.
+/// A piece that follows one circle becomes that circular arc (a guide); otherwise cubics.
 fn curve_piece(
     span: &[P],
     a: (usize, P, Option<P>),
     b: (usize, P, Option<P>),
-    tol: f64,
+    params: FitParams,
+    guides: &mut Guides,
     segs: &mut Vec<Seg>,
 ) {
     let mut pts = vec![a.1];
     pts.extend_from_slice(&span[a.0 + 1..b.0]);
     pts.push(b.1);
+    let strict = free_arc(&pts, a.2, b.2, params.arc_tol);
+    let within = strict.is_some();
+    let found = strict.or_else(|| free_arc(&pts, a.2, b.2, CANDIDATE_ARC_TOL));
+    if let Some(arc) = found
+        && guides.add(GuideKind::Arc, arc.middle, arc.guide, within)
+    {
+        segs.extend(arc.segs);
+        return;
+    }
     let t1 = a.2.unwrap_or_else(|| end_tangent(pts.iter().copied()));
     let t2 = b.2.unwrap_or_else(|| end_tangent(pts.iter().rev().copied()));
-    fit_cubic(&pts, t1, t2, tol, segs, 0);
+    fit_cubic(&pts, t1, t2, params.tolerance, segs, 0);
+}
+
+/// A circular arc through the end points of a piece.
+struct FreeArc {
+    segs: Vec<Seg>,
+    middle: P,
+    guide: String,
+}
+
+/// Smallest turn (degrees) of a free arc: flatter pieces are left to the cubics.
+const MIN_ARC_SWEEP: f64 = 25.0;
+/// A fixed end tangent must match the arc's within this angle (degrees).
+const ARC_TANGENT_SLACK: f64 = 4.0;
+
+/// The circular arc from `pts[0]` to the last point that follows all the points within `tol`,
+/// and respects the fixed end tangents (`t1` forward at the start, `t2` backward at the end).
+fn free_arc(pts: &[P], t1: Option<P>, t2: Option<P>, tol: f64) -> Option<FreeArc> {
+    let n = pts.len();
+    if n < 6 || tol <= 0.0 {
+        return None;
+    }
+    let (a, b) = (pts[0], pts[n - 1]);
+    let chord = (b - a).len();
+    if chord < 2.0 {
+        return None;
+    }
+    // Centers on the perpendicular bisector of the chord: C(s) = mid + normal·s.
+    let mid = (a + b) * 0.5;
+    let normal = P::new(-(b - a).y, (b - a).x) * (1.0 / chord);
+    let (kasa, _) = crate::shape::fit_circle(pts)?;
+    let s0 = (kasa - mid).dot(normal);
+    let error = |s: f64| {
+        let c = mid + normal * s;
+        let r = (a - c).len();
+        let (mut max, mut sum) = (0.0f64, 0.0);
+        for &p in pts {
+            let d = ((p - c).len() - r).abs();
+            max = max.max(d);
+            sum += d * d;
+        }
+        (max, sum)
+    };
+    let (mut lo, mut hi) = (s0 - chord, s0 + chord);
+    let phi = (5f64.sqrt() - 1.0) / 2.0;
+    for _ in 0..40 {
+        let (m1, m2) = (hi - phi * (hi - lo), lo + phi * (hi - lo));
+        if error(m1).1 < error(m2).1 {
+            hi = m2;
+        } else {
+            lo = m1;
+        }
+    }
+    let s = f64::midpoint(lo, hi);
+    if error(s).0 > tol {
+        return None;
+    }
+    let center = mid + normal * s;
+    let r = (a - center).len();
+    // Signed sweep: the way from a to b that passes through the middle point.
+    let angle = |p: P| (p - center).y.atan2((p - center).x);
+    let tau = std::f64::consts::TAU;
+    let (ta, tb, tm) = (angle(a), angle(b), angle(pts[n / 2]));
+    let ccw = (tb - ta).rem_euclid(tau);
+    let sweep = if (tm - ta).rem_euclid(tau) < ccw { ccw } else { ccw - tau };
+    if sweep.abs() < MIN_ARC_SWEEP.to_radians() {
+        return None;
+    }
+    let sense = sweep.signum();
+    let tangent = |p: P| {
+        let u = (p - center) * (1.0 / r);
+        P::new(-u.y, u.x) * sense
+    };
+    let slack = ARC_TANGENT_SLACK.to_radians().cos();
+    if t1.is_some_and(|t| t.dot(tangent(a)) < slack) || t2.is_some_and(|t| (-t).dot(tangent(b)) < slack) {
+        return None;
+    }
+    // Cubic pieces of at most a quarter turn: handle 4/3·tan(φ/4)·r.
+    let pieces = (sweep.abs() / std::f64::consts::FRAC_PI_2).ceil().max(1.0);
+    let step = sweep / pieces;
+    let k = 4.0 / 3.0 * (step.abs() / 4.0).tan() * r;
+    let at = |t: f64| center + P::new(t.cos(), t.sin()) * r;
+    let mut segs = Vec::new();
+    for i in 0..pieces as usize {
+        let (t0, t3) = (ta + step * i as f64, ta + step * (i + 1) as f64);
+        let (p0, p3) = (at(t0), if i + 1 == pieces as usize { b } else { at(t3) });
+        let (d0, d3) = (tangent(p0), tangent(at(t3)));
+        let p0 = if i == 0 { a } else { p0 };
+        segs.push(Seg::Cubic(p0 + d0 * k, p3 - d3 * k, p3));
+    }
+    let middle = at(ta + sweep / 2.0);
+    let guide = if sweep.abs() < std::f64::consts::PI {
+        crate::guide::arc(a, b, r, sense > 0.0)
+    } else {
+        // SVG arcs of 180° or more need the large-arc flag: draw two halves instead.
+        crate::guide::arc(a, middle, r, sense > 0.0) + &crate::guide::arc(middle, b, r, sense > 0.0)
+    };
+    Some(FreeArc { segs, middle, guide })
 }
 
 /// Tangent points and arc (radius `r`, already clamped by the caller) of a rounded corner.

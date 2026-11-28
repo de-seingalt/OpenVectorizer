@@ -50,7 +50,8 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       un (le tracé l'ignore), retrouvé par type et position à chaque tracé (`disabledGuides`)
 - [x] Guides **candidats** (trouvés avec une tolérance plus large que le réglage) : affichés en pointillés, un clic
       les **force** (`forcedGuides`)
-- [ ] Arcs de cercle et d'ellipse libres (hors raccords), choix par erreur + complexité
+- [x] Arcs libres : une portion courbe qui suit un cercle (centre sur la médiatrice de ses extrémités, écart ≤ la
+      tolérance des arcs, ≥ 25°, tangentes imposées respectées à 4° près) devient cet arc ; guide « Arc »
 - [x] Formes entières (contours isolés) : cercle (Kåsa) et ellipse (Fitzgibbon / Halíř-Flusser) exacts si l'écart
       reste ≤ 0,6 px (RMS ≤ 0,22) ; le cercle l'emporte à qualité égale. Réglage « Cercles et ellipses exacts ».
       Rectangles, polygones et étoiles : coins vifs + droites
