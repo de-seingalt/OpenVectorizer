@@ -40,7 +40,9 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Bords sous-pixel mesurés avec les teintes sources du groupe (une teinte fusionnée ne fausse plus la position)
 
 ## M3 — Géométrie
-- [ ] Ajustement par segment : droite, puis arc de cercle, puis arc d'ellipse, puis Bézier cubique, choix par erreur + complexité
+- [x] Droites : parties droites détectées (écart ≤ 0,45 px, pas de courbure systématique, ≥ 6 px, pas un morceau
+      d'arc), tracées en segments, les courbes voisines leur sont tangentes ; coins du cadre toujours vifs
+- [ ] Arcs de cercle et d'ellipse par segment, choix par erreur + complexité
 - [ ] Formes entières (régions isolées) : cercle, ellipse, rectangle, polygone, étoile ; choix « tracé ou forme »
 - [ ] Symétries détectées (axes actifs ou candidats), formes répétées partageant un contour
 - [ ] Alignement horizontal/vertical, rayons égaux

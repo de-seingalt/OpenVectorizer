@@ -152,6 +152,8 @@ pub struct Prepared {
     pts: Vec<P>,
     pub closed: bool,
     pub corners: Vec<Corner>,
+    /// Corners on the image frame: always sharp, not shown to the user.
+    pub frame: Vec<Corner>,
 }
 
 impl Prepared {
@@ -221,7 +223,7 @@ pub fn prepare(vertices: &[(i64, i64)], mids: &[P], ends: (P, P), closed: bool) 
     keep.dedup();
     let keep = merge_close_vertices(&keep, n, closed);
     let corners = find_corners(&pts, &keep, closed);
-    Prepared { pts, closed, corners }
+    Prepared { pts, closed, corners, frame: Vec::new() }
 }
 
 /// A sharp tip a few pixels wide leaves 2 or 3 simplified-polygon vertices a couple of points
@@ -356,7 +358,8 @@ struct Anchor {
 pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -> Curve {
     let n = run.pts.len();
     let mut anchors: Vec<Anchor> = Vec::new();
-    for (corner, &style) in run.corners.iter().zip(styles) {
+    let frame = run.frame.iter().map(|c| (c, CornerStyle::Sharp));
+    for (corner, style) in run.corners.iter().zip(styles.iter().copied()).chain(frame) {
         match style {
             CornerStyle::Sharp => anchors.push(Anchor {
                 index: corner.index,
@@ -381,11 +384,17 @@ pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -
     if anchors.is_empty() {
         // Smooth closed loop: one span starting at point 0 with a central tangent.
         smooth(&mut pts, true);
+        // Start the loop at the beginning of a straight part, if it has one: the closing
+        // curve then ends tangent to it.
+        let lines = find_lines(&pts);
+        let inner = lines.iter().filter(|l| l.from > 0 && l.to < n - 1);
+        let start = inner.max_by_key(|l| l.to - l.from).or(lines.first()).map_or(0, |l| l.from);
+        pts.rotate_left(start);
         let mut loop_pts = pts.clone();
         loop_pts.push(pts[0]);
         let t = (pts[1 % n] - pts[n - 1]).normalized();
         let mut segs = Vec::new();
-        fit_cubic(&loop_pts, t, -t, params.tolerance, &mut segs, 0);
+        fit_span(&loop_pts, Some(t), Some(-t), params.tolerance, &mut segs);
         return Curve { start: pts[0], segs };
     }
     let mut segs = Vec::new();
@@ -425,11 +434,198 @@ pub fn fit_prepared(run: &Prepared, styles: &[CornerStyle], params: FitParams) -
         if span.len() < 3 && (span[0] - span[span.len() - 1]).len() < 1e-9 {
             continue;
         }
-        let t1 = a.t_out.unwrap_or_else(|| end_tangent(span.iter().copied()));
-        let t2 = b.t_in.map_or_else(|| end_tangent(span.iter().rev().copied()), |t| -t);
-        fit_cubic(&span, t1, t2, params.tolerance, &mut segs, 0);
+        fit_span(&span, a.t_out, b.t_in.map(|t| -t), params.tolerance, &mut segs);
     }
     Curve { start: anchors[0].p, segs }
+}
+
+/// Straight parts must stay this close to their line (px)...
+const LINE_TOL: f64 = 0.3;
+/// ...show no systematic bow larger than this (sagitta of the best parabola, px)...
+const LINE_BOW: f64 = 0.06;
+/// ...and be at least this long (px).
+const MIN_LINE_LEN: f64 = 6.0;
+/// Line ends are trimmed back to where the points are this close to the line: the curve that
+/// follows starts where the shape really leaves the line.
+const LINE_END_TOL: f64 = 0.15;
+/// A straight part whose surroundings lie this close to one circle is part of an arc.
+const ARC_TOL: f64 = 0.3;
+
+/// A straight part `pts[from..=to]` of a span.
+#[derive(Debug, Clone, Copy)]
+struct Line {
+    from: usize,
+    to: usize,
+    /// A point of the line and its unit direction (along the span).
+    origin: P,
+    dir: P,
+}
+
+impl Line {
+    fn project(&self, p: P) -> P {
+        self.origin + self.dir * (p - self.origin).dot(self.dir)
+    }
+}
+
+/// Whether `pts` is straight: (line, deviation of each point) if so.
+fn straight(pts: &[P]) -> Option<(P, P, Vec<f64>)> {
+    let (origin, dir) = fit_line(pts)?;
+    let dir = if dir.dot(pts[pts.len() - 1] - pts[0]) < 0.0 { -dir } else { dir };
+    let normal = P::new(-dir.y, dir.x);
+    let dev: Vec<f64> = pts.iter().map(|&p| (p - origin).dot(normal)).collect();
+    if dev.iter().any(|d| d.abs() > LINE_TOL) {
+        return None;
+    }
+    // Bow: least-squares parabola d(u) = c·(u² − mean u²) over u ∈ [−1, 1] along the line; an
+    // arc shows up as a parabola, pixel ripples average out.
+    let along: Vec<f64> = pts.iter().map(|&p| (p - origin).dot(dir)).collect();
+    let (lo, hi) = (along[0], along[along.len() - 1]);
+    let half = ((hi - lo) / 2.0).max(1e-9);
+    let mid = f64::midpoint(lo, hi);
+    let u: Vec<f64> = along.iter().map(|a| (a - mid) / half).collect();
+    let mean_u2 = u.iter().map(|x| x * x).sum::<f64>() / u.len() as f64;
+    let (mut num, mut den) = (0.0, 0.0);
+    for (x, d) in u.iter().zip(&dev) {
+        let b = x * x - mean_u2;
+        num += b * d;
+        den += b * b;
+    }
+    let bow = if den > 1e-12 { (num / den).abs() } else { 0.0 };
+    (bow <= LINE_BOW).then_some((origin, dir, dev))
+}
+
+/// Maximal straight parts of a span, in order, not overlapping.
+fn find_lines(pts: &[P]) -> Vec<Line> {
+    let n = pts.len();
+    let min_pts = 5;
+    let mut out = Vec::new();
+    let mut i = 0;
+    while i + min_pts <= n {
+        let mut j = i + min_pts - 1;
+        if straight(&pts[i..=j]).is_none() {
+            i += 1;
+            continue;
+        }
+        while j + 1 < n && straight(&pts[i..=j + 1]).is_some() {
+            j += 1;
+        }
+        // Trim the ends that already bend away (into the next curve).
+        let (mut a, mut b) = (i, j);
+        if let Some((_, _, dev)) = straight(&pts[a..=b]) {
+            let mut lo = 0;
+            let mut hi = dev.len() - 1;
+            while hi > lo + min_pts && dev[lo].abs() > LINE_END_TOL {
+                lo += 1;
+            }
+            while hi > lo + min_pts && dev[hi].abs() > LINE_END_TOL {
+                hi -= 1;
+            }
+            (a, b) = (i + lo, i + hi);
+        }
+        match straight(&pts[a..=b]) {
+            Some((origin, dir, _)) if (pts[b] - pts[a]).len() >= MIN_LINE_LEN && !on_arc(pts, a, b) => {
+                out.push(Line { from: a, to: b, origin, dir });
+                i = b + 1;
+            }
+            _ => i += 1,
+        }
+    }
+    out
+}
+
+/// Whether the straight part `pts[a..=b]` is only a flat-looking piece of an arc: the part and
+/// its neighbors on both sides (half its length each) lie on one circle.
+fn on_arc(pts: &[P], a: usize, b: usize) -> bool {
+    let k = (b - a) / 2 + 2;
+    let (lo, hi) = (a.saturating_sub(k), (b + k).min(pts.len() - 1));
+    if a - lo < 3 && hi - b < 3 {
+        return false; // nothing around to compare with
+    }
+    let ext = &pts[lo..=hi];
+    let Some((center, r)) = fit_circle(ext) else { return false };
+    ext.iter().all(|&p| ((p - center).len() - r).abs() <= ARC_TOL)
+}
+
+/// Algebraic (Kåsa) circle fit: (center, radius).
+fn fit_circle(pts: &[P]) -> Option<(P, f64)> {
+    let k = 1.0 / pts.len() as f64;
+    let c = pts.iter().fold(P::default(), |a, &p| a + p) * k;
+    // Centered coordinates: minimize Σ (x² + y² + D x + E y + F)².
+    let (mut sxx, mut sxy, mut syy, mut sx, mut sy, mut sz, mut sxz, mut syz) =
+        (0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0);
+    for &p in pts {
+        let (x, y) = (p.x - c.x, p.y - c.y);
+        let z = x * x + y * y;
+        sxx += x * x;
+        sxy += x * y;
+        syy += y * y;
+        sx += x;
+        sy += y;
+        sz += z;
+        sxz += x * z;
+        syz += y * z;
+    }
+    let n = pts.len() as f64;
+    // Normal equations [sxx sxy sx; sxy syy sy; sx sy n]·[D E F] = −[sxz syz sz].
+    let m = [[sxx, sxy, sx], [sxy, syy, sy], [sx, sy, n]];
+    let rhs = [-sxz, -syz, -sz];
+    let det3 = |m: [[f64; 3]; 3]| {
+        m[0][0] * (m[1][1] * m[2][2] - m[1][2] * m[2][1]) - m[0][1] * (m[1][0] * m[2][2] - m[1][2] * m[2][0])
+            + m[0][2] * (m[1][0] * m[2][1] - m[1][1] * m[2][0])
+    };
+    let det = det3(m);
+    if det.abs() < 1e-9 {
+        return None;
+    }
+    let solve = |col: usize| {
+        let mut mm = m;
+        for (row, v) in mm.iter_mut().zip(rhs) {
+            row[col] = v;
+        }
+        det3(mm) / det
+    };
+    let (d, e, f) = (solve(0), solve(1), solve(2));
+    let r2 = (d * d + e * e) / 4.0 - f;
+    (r2 > 0.0).then(|| (c + P::new(-d / 2.0, -e / 2.0), r2.sqrt()))
+}
+
+/// Fit a span: its straight parts become lines, the rest cubics tangent to them. `t1` is the
+/// start tangent (direction of travel) and `t2` the end tangent pointing backward, when fixed.
+/// The span's end points are kept exactly.
+fn fit_span(span: &[P], t1: Option<P>, t2: Option<P>, tol: f64, segs: &mut Vec<Seg>) {
+    let n = span.len();
+    let lines = find_lines(span);
+    // Break points: (index, position, tangent of travel there, is the start of a line).
+    let mut cursor = (0usize, span[0], t1);
+    for line in &lines {
+        let start = if line.from == 0 { span[0] } else { line.project(span[line.from]) };
+        let end = if line.to == n - 1 { span[n - 1] } else { line.project(span[line.to]) };
+        if line.from > 0 {
+            curve_piece(span, cursor, (line.from, start, Some(-line.dir)), tol, segs);
+        }
+        segs.push(Seg::Line(end));
+        cursor = (line.to, end, Some(line.dir));
+    }
+    if cursor.0 < n - 1 {
+        curve_piece(span, cursor, (n - 1, span[n - 1], t2), tol, segs);
+    }
+}
+
+/// Cubics from break point `a` to `b` (index, position, tangent): `a`'s tangent points forward,
+/// `b`'s backward; missing tangents are estimated from the points.
+fn curve_piece(
+    span: &[P],
+    a: (usize, P, Option<P>),
+    b: (usize, P, Option<P>),
+    tol: f64,
+    segs: &mut Vec<Seg>,
+) {
+    let mut pts = vec![a.1];
+    pts.extend_from_slice(&span[a.0 + 1..b.0]);
+    pts.push(b.1);
+    let t1 = a.2.unwrap_or_else(|| end_tangent(pts.iter().copied()));
+    let t2 = b.2.unwrap_or_else(|| end_tangent(pts.iter().rev().copied()));
+    fit_cubic(&pts, t1, t2, tol, segs, 0);
 }
 
 /// Tangent points and arc (radius `r`, already clamped by the caller) of a rounded corner.
@@ -676,6 +872,56 @@ mod tests {
         v.extend((0..n).map(|i| (n - i, n)));
         v.extend((0..n).map(|i| (0, n - i)));
         v
+    }
+
+    /// Points every ~0.7 px along a closed outline given by `f(t)`, t ∈ [0, 1).
+    fn sample(n: usize, f: impl Fn(f64) -> P) -> Prepared {
+        let pts: Vec<P> = (0..n).map(|i| f(i as f64 / n as f64)).collect();
+        prepare(&vec![(0, 0); n], &pts, (P::default(), P::default()), true)
+    }
+
+    fn lines(c: &Curve) -> usize {
+        c.segs.iter().filter(|s| matches!(s, Seg::Line(_))).count()
+    }
+
+    #[test]
+    fn straight_sides_become_lines_and_circles_do_not() {
+        use std::f64::consts::TAU;
+        // Rounded rectangle 120×60, corner radius 15: no corner, 4 straight sides.
+        let (w, h, r) = (120.0, 60.0, 15.0);
+        let (sw, sh, arc) = (w - 2.0 * r, h - 2.0 * r, TAU / 4.0 * r);
+        let perimeter = 2.0 * (sw + sh) + 4.0 * arc;
+        let rect = sample(400, |t| {
+            let mut d = t * perimeter;
+            let sides = [
+                (sw, P::new(r, 0.0), 0.0),
+                (sh, P::new(w, r), 1.0),
+                (sw, P::new(w - r, h), 2.0),
+                (sh, P::new(0.0, h - r), 3.0),
+            ];
+            for (len, start, q) in sides {
+                let dir = P::new((q * TAU / 4.0).cos(), (q * TAU / 4.0).sin());
+                if d < len {
+                    return start + dir * d;
+                }
+                d -= len;
+                if d < arc {
+                    let center = start + dir * len + P::new(-dir.y, dir.x) * r;
+                    let a = (q - 1.0) * TAU / 4.0 + d / r;
+                    return center + P::new(a.cos(), a.sin()) * r;
+                }
+                d -= arc;
+            }
+            P::new(r, 0.0)
+        });
+        // Candidates on the arcs stay rounded (free).
+        let free = |p: &Prepared| vec![CornerStyle::Free; p.corners.len()];
+        let c = fit_prepared(&rect, &free(&rect), params());
+        assert_eq!(lines(&c), 4, "{c:?}");
+
+        let circle = sample(300, |t| P::new(50.0 + 30.0 * (t * TAU).cos(), 50.0 + 30.0 * (t * TAU).sin()));
+        let c = fit_prepared(&circle, &free(&circle), params());
+        assert_eq!(lines(&c), 0, "{c:?}");
     }
 
     #[test]

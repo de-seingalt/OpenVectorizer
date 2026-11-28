@@ -485,10 +485,11 @@ fn lookup_run(
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
     let idx = runs.prepared.len();
     let mut prepared = prepare(&vertices, &mids, ends, closed);
-    // Corners of the image frame are not shape corners: never round or count them.
+    // Corners on the image frame are not shape corners: always sharp, never counted.
     let (w, h) = (grid.w as f64, grid.h as f64);
     let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;
-    prepared.corners.retain(|c| !on_frame(c.apex));
+    let (frame, corners) = prepared.corners.iter().partition(|c| on_frame(c.apex));
+    (prepared.frame, prepared.corners) = (frame, corners);
     runs.prepared.push(prepared);
     runs.index.insert(key, idx);
     (idx, reversed)
@@ -603,6 +604,7 @@ impl EdgePoint<'_> {
 
 fn fmt(v: f64, out: &mut String) {
     let r = (v * 100.0).round() / 100.0;
+    let r = if r == 0.0 { 0.0 } else { r }; // no "-0"
     let _ = write!(out, "{r}");
 }
 
