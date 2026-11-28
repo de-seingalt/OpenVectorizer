@@ -82,6 +82,15 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [ ] Dégradés : zones à variation de couleur régulière fusionnées en une forme à dégradé linéaire ou radial (opacité
       comprise)
 
+## M3bis — Géométrie fiable (détection hybride)
+- [x] Carte de netteté des bords (gradient de Scharr en Oklab) : indice 2·G/C par morceau de frontière (~1 vrai bord,
+      ~2/B frontière de bandes d'un dégradé) ; sous 0,45 la frontière est molle : tracé libre, aucune géométrie
+- [ ] Vérification contre les points mesurés : un tracé géométrique qui s'en écarte plus que le tracé libre est refusé
+- [ ] Réglage « Échelle » : tolérance en partie proportionnelle à la taille des formes
+- [ ] Repères globaux : segments presque alignés (même interrompus) rangés sur une même droite ; cercles communs,
+      parallèles, concentriques
+- [ ] Position sous le pixel au maximum du gradient (Devernay) pour les bords flous
+
 ## M4 — Édition
 - [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu
 - [ ] Outil **Fond** : retrait automatique, bascule par région (masque) ou par couleur

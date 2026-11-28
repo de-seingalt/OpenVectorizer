@@ -12,6 +12,7 @@
 pub mod baseline;
 mod color;
 mod denoise;
+mod edges;
 mod error;
 mod fit;
 pub mod guide;
@@ -97,7 +98,7 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
 fn fit_params(o: &Options) -> fit::FitParams {
     // detail 0 → 1.25 px tolerance, 1 → 0.35 px.
     let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
-    fit::FitParams { tolerance, arc_tol: fit::arc_tolerance(f64::from(o.geometry)) }
+    fit::FitParams { tolerance, arc_tol: fit::arc_tolerance(f64::from(o.geometry)), plain: false }
 }
 
 #[cfg(test)]
@@ -123,6 +124,33 @@ mod tests {
         assert!(out.svg.contains("<svg"));
         assert!(out.stats.path_count >= 1, "stats: {:?}", out.stats);
         assert_eq!((out.stats.width, out.stats.height), (32, 32));
+    }
+
+    #[test]
+    fn band_boundaries_of_a_gradient_get_no_geometry() {
+        // A red→yellow ramp across 160 px (quantized into vertical bands with straight
+        // boundaries) and a sharp black square: only the square's sides are line guides.
+        let (w, h) = (160u32, 80u32);
+        let mut data = Vec::with_capacity((w * h * 4) as usize);
+        for y in 0..h {
+            for x in 0..w {
+                let square = (20..50).contains(&x) && (25..55).contains(&y);
+                let g = (60.0 + 180.0 * f64::from(x) / f64::from(w - 1)).round() as u8;
+                let px: [u8; 4] = if square { [10, 10, 10, 255] } else { [230, g, 40, 255] };
+                data.extend_from_slice(&px);
+            }
+        }
+        let image = RgbaImage::new(w, h, data).expect("valid buffer");
+        let options = Options { detail: 1.0, denoise: 0.0, max_colors: 8, ..Options::default() };
+        let out = vectorize(&image, &options).expect("vectorize");
+        assert!(out.svg.matches("<path").count() > 5, "bands expected: {}", out.stats.path_count);
+        let lines: Vec<&guide::Guide> =
+            out.guides.iter().filter(|g| g.kind == guide::GuideKind::Line).collect();
+        assert!(!lines.is_empty(), "the square's sides are lines");
+        for g in &lines {
+            let on_square = (19.0..=51.0).contains(&g.x) && (24.0..=56.0).contains(&g.y);
+            assert!(on_square, "line guide on a band boundary at ({}, {})", g.x, g.y);
+        }
     }
 
     #[test]

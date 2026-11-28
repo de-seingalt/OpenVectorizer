@@ -19,6 +19,7 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::RgbaImage;
+use crate::edges::EdgeMap;
 use crate::fit::{
     CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, arc_tolerance, fit_prepared, prepare,
 };
@@ -364,7 +365,7 @@ pub fn to_svg(
 ) -> (String, CornerStats) {
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
-    let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
+    let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h, edges: image.map(|i| EdgeMap::new(i, q)) };
     let mut runs = Runs {
         index: HashMap::new(),
         prepared: Vec::new(),
@@ -542,6 +543,10 @@ fn split_frame_corners(prepared: &mut Prepared, (w, h): (f64, f64)) {
     (prepared.frame, prepared.corners) = (frame, corners);
 }
 
+/// Below this sharpness (see [`EdgeMap::sharpness`]), a boundary is soft: a band boundary
+/// inside a gradient rather than an edge of the drawing.
+const SOFT_EDGE: f64 = 0.45;
+
 /// Region outlines with fewer points (hatching strokes, specks) are not regularized.
 const MIN_REGULARIZED_POINTS: usize = 32;
 
@@ -569,7 +574,9 @@ fn regularize_regions(cycles: &[Vec<Cycle>], runs: &mut Runs, size: (f64, f64)) 
     let outlines: Vec<&Cycle> = cycles
         .iter()
         .flatten()
-        .filter(|c| c.runs.len() >= 2 && c.runs.iter().all(|&(i, _)| !runs.border[i]))
+        .filter(|c| {
+            c.runs.len() >= 2 && c.runs.iter().all(|&(i, _)| !runs.border[i] && !runs.prepared[i].soft)
+        })
         .filter(|c| {
             c.runs.iter().map(|&(i, _)| runs.prepared[i].pts().len()).sum::<usize>() >= MIN_REGULARIZED_POINTS
         })
@@ -674,7 +681,11 @@ fn finish_isolated(runs: &mut Runs) {
 /// lose their corner candidates.
 fn region_shapes(cycles: &[Vec<Cycle>], runs: &mut Runs) -> Vec<Option<Curve>> {
     let mut fits = Vec::new();
-    for cycle in cycles.iter().flatten().filter(|c| c.runs.len() >= 2) {
+    for cycle in cycles
+        .iter()
+        .flatten()
+        .filter(|c| c.runs.len() >= 2 && c.runs.iter().all(|&(i, _)| !runs.prepared[i].soft))
+    {
         let mut pts = Vec::new();
         for &(idx, reversed) in &cycle.runs {
             let mut p = runs.prepared[idx].pts().to_vec();
@@ -842,14 +853,20 @@ fn lookup_run(
     let count = if closed { n } else { n - 1 };
     let mids: Vec<P> = (0..count).map(|i| edge_point.at(vertices[i], vertices[(i + 1) % n])).collect();
     let ends = (edge_point.junction(grid, vertices[0]), edge_point.junction(grid, vertices[n - 1]));
+    let mut sharp: Vec<f64> =
+        (0..count).filter_map(|i| edge_point.sharpness(vertices[i], vertices[(i + 1) % n])).collect();
+    sharp.sort_by(f64::total_cmp);
+    let sharpness = sharp.get(sharp.len() / 2).copied().unwrap_or(1.0);
     let idx = runs.prepared.len();
     // Boundaries along the image frame keep their straight frame edges as they are; isolated
     // shapes are finished once all of them are known (see `finish_isolated`).
     let on_border = vertices.iter().any(|&(x, y)| x == 0 || y == 0 || x == grid.w || y == grid.h);
-    if closed && !on_border {
+    let soft = sharpness < SOFT_EDGE;
+    if closed && !on_border && !soft {
         runs.isolated.push((idx, vertices.clone(), mids.clone()));
     }
     let mut prepared = prepare(&vertices, &mids, ends, closed, None);
+    prepared.soft = soft;
     prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
     split_frame_corners(&mut prepared, (grid.w as f64, grid.h as f64));
     runs.prepared.push(prepared);
@@ -866,6 +883,8 @@ struct EdgePoint<'a> {
     image: Option<&'a RgbaImage>,
     w: i64,
     h: i64,
+    /// Image gradient, to tell real edges from band boundaries inside gradients.
+    edges: Option<EdgeMap>,
 }
 
 /// Largest sub-pixel shift: keeps neighboring boundaries from crossing.
@@ -894,6 +913,26 @@ impl EdgePoint<'_> {
             }
         }
         if n == 0.0 { vertex } else { sum * (1.0 / n) }
+    }
+
+    /// Sharpness of the crack edge from vertex `a` to vertex `b` (see [`EdgeMap::sharpness`]).
+    fn sharpness(&self, a: (i64, i64), b: (i64, i64)) -> Option<f64> {
+        let edges = self.edges.as_ref()?;
+        let d = match (b.0 - a.0, b.1 - a.1) {
+            (1, 0) => 0,
+            (0, 1) => 1,
+            (-1, 0) => 2,
+            _ => 3,
+        };
+        let (l, r) = Grid::side_pixels(a.0, a.1, d);
+        let label = |p: (i64, i64)| {
+            if p.0 < 0 || p.1 < 0 || p.0 >= self.w || p.1 >= self.h {
+                TRANSPARENT
+            } else {
+                self.q.labels[(p.1 * self.w + p.0) as usize]
+            }
+        };
+        edges.sharpness(l, r, label(l), label(r))
     }
 
     fn at(&self, a: (i64, i64), b: (i64, i64)) -> P {
@@ -1072,7 +1111,7 @@ mod tests {
     }
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, arc_tol: 0.5 }
+        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false }
     }
 
     fn svg(q: &Quantized, stacking: Stacking) -> String {

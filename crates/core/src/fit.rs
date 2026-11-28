@@ -123,6 +123,8 @@ pub struct FitParams {
     /// Max distance (px) between a tangent arc (fillet between two straight parts) and the
     /// points it replaces; 0 = no fillets.
     pub arc_tol: f64,
+    /// Plain tracing: no lines, arcs or fillets (soft boundaries).
+    pub plain: bool,
 }
 
 /// Fillet radii shared across the whole image: `found` collects every fitted radius, `snap`
@@ -220,11 +222,12 @@ pub struct Prepared {
     pub frame: Vec<Corner>,
     /// The exact circle or ellipse this closed boundary follows, if any.
     shape: Option<Curve>,
+    /// A soft boundary (a band boundary inside a gradient, not an edge of the drawing): traced
+    /// freely, no geometry is imposed on it.
+    pub soft: bool,
 }
 
 impl Prepared {
-    /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
-    /// has no corners).
     /// Move the end junctions of an open run (a junction placed onto a shape).
     pub fn set_ends(&mut self, start: P, end: P) {
         let n = self.pts.len();
@@ -243,7 +246,7 @@ impl Prepared {
     /// Corner candidates inside such a rounding are replaced by it.
     pub fn add_fillet_corners(&mut self, arc_tol: f64, guides: &Guides) {
         let n = self.pts.len();
-        if self.shape.is_some() || n < 8 {
+        if self.shape.is_some() || self.soft || n < 8 {
             return;
         }
         let mut work = self.pts.clone();
@@ -305,8 +308,10 @@ impl Prepared {
         self.shape.is_some()
     }
 
+    /// Replace a closed boundary that follows a circle or an ellipse by the exact shape (which
+    /// has no corners).
     pub fn detect_shape(&mut self, geometry: f64, guides: &mut Guides) {
-        if !self.closed {
+        if !self.closed || self.soft {
             return;
         }
         let strict = crate::shape::fit_round(&self.pts, geometry);
@@ -398,7 +403,7 @@ pub fn prepare(
     keep.dedup();
     let keep = merge_close_vertices(&keep, n, closed);
     let corners = find_corners(&pts, &keep, closed);
-    Prepared { pts, closed, corners, frame: Vec::new(), shape: None }
+    Prepared { pts, closed, corners, frame: Vec::new(), shape: None, soft: false }
 }
 
 /// A sharp tip a few pixels wide leaves 2 or 3 simplified-polygon vertices a couple of points
@@ -556,6 +561,7 @@ pub fn fit_prepared(
     if let Some(shape) = &run.shape {
         return shape.clone();
     }
+    let params = FitParams { plain: params.plain || run.soft, ..params };
     let n = run.pts.len();
     let mut anchors: Vec<Anchor> = Vec::new();
     let frame = run.frame.iter().map(|c| (c, CornerStyle::Sharp));
@@ -774,7 +780,7 @@ fn fit_span(
     segs: &mut Vec<Seg>,
 ) {
     let n = span.len();
-    let lines = enabled_lines(span, guides, true);
+    let lines = if params.plain { Vec::new() } else { enabled_lines(span, guides, true) };
     let mut starts: Vec<P> =
         lines.iter().map(|l| if l.from == 0 { span[0] } else { l.project(span[l.from]) }).collect();
     let mut ends: Vec<P> =
@@ -954,6 +960,12 @@ fn curve_piece(
     let mut pts = vec![a.1];
     pts.extend_from_slice(&span[a.0 + 1..b.0]);
     pts.push(b.1);
+    if params.plain {
+        let t1 = a.2.unwrap_or_else(|| end_tangent(pts.iter().copied()));
+        let t2 = b.2.unwrap_or_else(|| end_tangent(pts.iter().rev().copied()));
+        fit_cubic(&pts, t1, t2, params.tolerance, segs, 0);
+        return;
+    }
     let strict = free_arc(&pts, a.2, b.2, params.arc_tol);
     let within = strict.is_some();
     let found = strict.or_else(|| free_arc(&pts, a.2, b.2, CANDIDATE_ARC_TOL));
@@ -1281,7 +1293,7 @@ mod tests {
     use super::*;
 
     fn params() -> FitParams {
-        FitParams { tolerance: 0.7, arc_tol: 0.5 }
+        FitParams { tolerance: 0.7, arc_tol: 0.5, plain: false }
     }
 
     /// Midpoints of the crack edges of a run (no sub-pixel information).
