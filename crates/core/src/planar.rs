@@ -362,7 +362,6 @@ pub fn to_svg(
     options: &Options,
     params: &FitParams,
 ) -> (String, CornerStats) {
-    let stacking = options.stacking;
     let (comp, comp_labels) = components(q);
     let grid = Grid { w: i64::from(q.width), h: i64::from(q.height), comp: &comp };
     let edge_point = EdgePoint { q, image, w: grid.w, h: grid.h };
@@ -414,13 +413,42 @@ pub fn to_svg(
         g.kind != GuideKind::Line || (g.x > 0.01 && g.y > 0.01 && g.x < w - 0.01 && g.y < h - 0.01)
     });
 
+    let svg = write_svg(q, &grid, &cycles, &comp_labels, &curves, options);
+    (svg, corner_stats)
+}
+
+/// Write the SVG document: one path per region, largest outline first.
+fn write_svg(
+    q: &Quantized,
+    grid: &Grid,
+    cycles: &[Vec<Cycle>],
+    comp_labels: &[u16],
+    curves: &[Curve],
+    options: &Options,
+) -> String {
+    let stacking = options.stacking;
     // Draw order: largest outline first.
     let outer_area = |c: &[Cycle]| c.iter().map(|k| -k.area).fold(0.0, f64::max);
     let mut order: Vec<usize> = (0..cycles.len()).filter(|&c| !cycles[c].is_empty()).collect();
     order.sort_by(|&a, &b| outer_area(&cycles[b]).total_cmp(&outer_area(&cycles[a])));
 
+    // Gap filler: where a region meets one drawn after it, it gets a thin stroke of its own
+    // colour along that boundary. The later region hides it, except on the seam itself, where
+    // anti-aliasing would otherwise let the background show through (light or dark lines
+    // between two shapes).
+    let mut position = vec![usize::MAX; cycles.len()];
+    for (i, &c) in order.iter().enumerate() {
+        position[c] = i;
+    }
+    let mut sides: Vec<Vec<usize>> = vec![Vec::new(); curves.len()];
+    for (c, list) in cycles.iter().enumerate() {
+        for &(idx, _) in list.iter().flat_map(|cycle| &cycle.runs) {
+            sides[idx].push(c);
+        }
+    }
+
     let has_transparency = q.labels.contains(&TRANSPARENT);
-    let mut stamp = vec![u32::MAX; comp.len()];
+    let mut stamp = vec![u32::MAX; grid.comp.len()];
     let mut svg = String::new();
     let _ = write!(
         svg,
@@ -432,6 +460,7 @@ pub fn to_svg(
     for c in order {
         let [r, g, b] = q.palette[comp_labels[c] as usize];
         let mut d = String::new();
+        let mut seams = String::new();
         for cycle in &cycles[c] {
             let is_hole = cycle.area > 0.0;
             let keep = match stacking {
@@ -439,17 +468,30 @@ pub fn to_svg(
                 Stacking::Stacked => {
                     !is_hole
                         || (has_transparency
-                            && hole_has_transparency(&grid, c as u32, cycle.outside_pixel, &mut stamp))
+                            && hole_has_transparency(grid, c as u32, cycle.outside_pixel, &mut stamp))
                 }
             };
             if keep {
-                write_cycle(&mut d, cycle, &curves);
+                write_cycle(&mut d, cycle, curves);
+                if options.fill_gaps {
+                    for &(idx, _) in &cycle.runs {
+                        if sides[idx].iter().any(|&o| o != c && position[o] > position[c]) {
+                            write_run(&mut seams, &curves[idx]);
+                        }
+                    }
+                }
             }
         }
         let _ = writeln!(svg, r##"<path fill="#{r:02x}{g:02x}{b:02x}" d="{d}"/>"##);
+        if !seams.is_empty() {
+            let _ = writeln!(
+                svg,
+                r##"<path fill="none" stroke="#{r:02x}{g:02x}{b:02x}" stroke-width="{GAP_FILL_WIDTH}" stroke-linejoin="round" d="{seams}"/>"##
+            );
+        }
     }
     svg.push_str("</svg>\n");
-    (svg, corner_stats)
+    svg
 }
 
 /// Fit every run (or take the shape that replaces it), then refit those with fillets so that
@@ -905,6 +947,31 @@ fn write_point(out: &mut String, p: P) {
     fmt(p.y, out);
 }
 
+/// Width (px) of the gap filler strokes.
+const GAP_FILL_WIDTH: f64 = 1.0;
+
+/// One run as an open subpath.
+fn write_run(d: &mut String, curve: &Curve) {
+    d.push('M');
+    write_point(d, curve.start);
+    for seg in &curve.segs {
+        match *seg {
+            Seg::Line(e) => {
+                d.push('L');
+                write_point(d, e);
+            }
+            Seg::Cubic(c1, c2, e) => {
+                d.push('C');
+                write_point(d, c1);
+                d.push(' ');
+                write_point(d, c2);
+                d.push(' ');
+                write_point(d, e);
+            }
+        }
+    }
+}
+
 fn write_cycle(d: &mut String, cycle: &Cycle, curves: &[Curve]) {
     let mut first = true;
     for &(idx, reversed) in &cycle.runs {
@@ -979,7 +1046,7 @@ mod tests {
     }
 
     fn svg(q: &Quantized, stacking: Stacking) -> String {
-        to_svg(q, None, &Options { stacking, ..Options::default() }, &params()).0
+        to_svg(q, None, &Options { stacking, fill_gaps: false, ..Options::default() }, &params()).0
     }
 
     #[test]
@@ -1066,6 +1133,22 @@ mod tests {
         let (_, info) = to_svg(&q, None, &options, &params());
         let sym = info.guides.iter().find(|g| g.kind == GuideKind::Symmetry).expect("symmetry guide");
         assert_eq!(sym.status, crate::guide::GuideStatus::Followed, "{:?}", info.guides);
+    }
+
+    #[test]
+    fn seams_are_filled_under_the_later_shape() {
+        // Red and blue halves: the first drawn gets a stroke along their shared boundary only.
+        let q = quantized(20, 10, |x, _| if x < 10 { 1 } else { 2 });
+        let svg = to_svg(&q, None, &Options::default(), &params()).0;
+        let lines: Vec<&str> = svg.lines().filter(|l| l.starts_with("<path")).collect();
+        assert_eq!(lines.len(), 3, "{svg}");
+        assert!(lines[1].contains("stroke=") && lines[1].contains("M10 "), "{svg}");
+        // Same colour as the shape it belongs to (the one just before it).
+        let fill = &lines[0][lines[0].find("fill=").expect("fill")..][6..13];
+        assert!(lines[1].contains(&format!("stroke=\"{fill}")), "{svg}");
+        // Off: no stroke.
+        let plain = to_svg(&q, None, &Options { fill_gaps: false, ..Options::default() }, &params()).0;
+        assert!(!plain.contains("stroke="), "{plain}");
     }
 
     #[test]

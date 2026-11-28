@@ -31,6 +31,7 @@ export const DEFAULT_OPTIONS: Options = {
   geometry: 0.5,
   disabledGuides: [],
   forcedGuides: [],
+  fillGaps: true,
 };
 
 export type Result = { output: Output; ms: number };

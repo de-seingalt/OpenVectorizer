@@ -113,6 +113,9 @@ pub struct Options {
     pub disabled_guides: Vec<GuideKey>,
     /// Candidate guides the user asked the tracing to follow anyway.
     pub forced_guides: Vec<GuideKey>,
+    /// Hide the seams between neighbouring shapes (thin lines where anti-aliasing lets the
+    /// background show through) with a stroke under the later shape.
+    pub fill_gaps: bool,
 }
 
 impl Default for Options {
@@ -129,6 +132,7 @@ impl Default for Options {
             geometry: 0.5,
             disabled_guides: Vec::new(),
             forced_guides: Vec::new(),
+            fill_gaps: true,
         }
     }
 }

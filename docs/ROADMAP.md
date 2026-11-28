@@ -72,6 +72,15 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
       périmètre (petites taches) ; pré-test sur le profil radial (sans effet sur le résultat, temps inchangé)
 - [x] Alignement : droites et côtés de coins presque horizontaux/verticaux (dérive ≤ 0,3 px) rendus exacts
 
+## Retours de test (après M3)
+- [x] Zoom (molette, boutons) annulé aussitôt : corrigé
+- [x] Rendu net à tout zoom : le résultat est tracé dans la page (plus d'`<img>` agrandie)
+- [x] Liserés entre formes voisines : trait de la couleur de la forme du dessous sous chaque jointure (« Combler les
+      jointures », actif par défaut)
+- [ ] Nettoyage des artefacts de compression (JPEG), réglable
+- [ ] Dégradés : zones à variation de couleur régulière fusionnées en une forme à dégradé linéaire ou radial (opacité
+      comprise)
+
 ## M4 — Édition
 - [ ] Palette : opacité, exclure une couleur (transparence), sélection visible dans l'aperçu
 - [ ] Outil **Fond** : retrait automatique, bascule par région (masque) ou par couleur

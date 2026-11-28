@@ -89,6 +89,9 @@ struct OptArgs {
     /// ellipses and symmetries
     #[arg(long)]
     geometry: Option<f32>,
+    /// Do not hide the seams between neighbouring shapes
+    #[arg(long)]
+    no_gap_fill: bool,
 }
 
 #[derive(ValueEnum, Clone, Copy, Debug)]
@@ -144,6 +147,7 @@ impl OptArgs {
         if let Some(g) = self.geometry {
             o.geometry = g;
         }
+        o.fill_gaps = !self.no_gap_fill;
         o
     }
 }

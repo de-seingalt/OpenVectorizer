@@ -44,4 +44,9 @@ disabledGuides: Array<GuideKey>,
 /**
  * Candidate guides the user asked the tracing to follow anyway.
  */
-forcedGuides: Array<GuideKey>, };
+forcedGuides: Array<GuideKey>, 
+/**
+ * Hide the seams between neighbouring shapes (thin lines where anti-aliasing lets the
+ * background show through) with a stroke under the later shape.
+ */
+fillGaps: boolean, };

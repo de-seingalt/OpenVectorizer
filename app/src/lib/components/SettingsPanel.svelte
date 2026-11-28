@@ -405,6 +405,13 @@
           onCheckedChange={(c) => (options.stacking = c ? 'cutout' : 'stacked')}
         />
       </section>
+      <section class="flex items-start justify-between gap-3">
+        <div class="flex flex-col gap-1">
+          <Label for="fill-gaps">{t.fillGaps}</Label>
+          <p class="text-xs text-muted-foreground">{t.fillGapsHint}</p>
+        </div>
+        <Switch id="fill-gaps" bind:checked={options.fillGaps} />
+      </section>
       <Button variant="outline" size="sm" onclick={() => (options = { ...DEFAULT_OPTIONS })}>
         <RotateCcw />
         {t.reset}
