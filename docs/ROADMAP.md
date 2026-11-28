@@ -85,7 +85,8 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 ## M3bis — Géométrie fiable (détection hybride)
 - [x] Carte de netteté des bords (gradient de Scharr en Oklab) : indice 2·G/C par morceau de frontière (~1 vrai bord,
       ~2/B frontière de bandes d'un dégradé) ; sous 0,45 la frontière est molle : tracé libre, aucune géométrie
-- [ ] Vérification contre les points mesurés : un tracé géométrique qui s'en écarte plus que le tracé libre est refusé
+- [x] Vérification contre les points mesurés : un morceau qui a reçu de la géométrie et s'écarte des points de plus de
+      la tolérance + 0,6 px est retracé librement (sans ses guides) ; les pointes voulues vives sont excusées
 - [ ] Réglage « Échelle » : tolérance en partie proportionnelle à la taille des formes
 - [ ] Repères globaux : segments presque alignés (même interrompus) rangés sur une même droite ; cercles communs,
       parallèles, concentriques

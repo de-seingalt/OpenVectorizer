@@ -228,6 +228,65 @@ pub struct Prepared {
 }
 
 impl Prepared {
+    /// Largest distance (px) from a measured boundary point to `curve`, ignoring the
+    /// points around corners drawn sharp or with a chosen radius (they leave the rounded pixels on
+    /// purpose). Measures whether a geometric fit really follows the image.
+    pub fn deviation(&self, styles: &[CornerStyle], curve: &Curve) -> f64 {
+        // The curve as a fine polyline.
+        let mut poly = vec![curve.start];
+        let mut from = curve.start;
+        for seg in &curve.segs {
+            match *seg {
+                Seg::Line(e) => poly.push(e),
+                Seg::Cubic(c1, c2, e) => {
+                    let length = (c1 - from).len() + (c2 - c1).len() + (e - c2).len();
+                    let steps = length.ceil().clamp(2.0, 64.0) as usize;
+                    let b = [from, c1, c2, e];
+                    poly.extend((1..=steps).map(|k| bezier(&b, k as f64 / steps as f64)));
+                }
+            }
+            from = seg.end();
+        }
+        let m = poly.len().saturating_sub(1);
+        if m == 0 {
+            return 0.0;
+        }
+        let excused: Vec<(P, f64)> = self
+            .corners
+            .iter()
+            .zip(styles)
+            .filter(|(_, s)| !matches!(s, CornerStyle::Free))
+            .map(|(c, _)| (c.apex, c.gap + 1.5))
+            .chain(self.frame.iter().map(|c| (c.apex, c.gap + 1.5)))
+            .collect();
+        // Points and polyline run the same way: follow both, searching a window of segments
+        // around the last match (the whole polyline for the first point).
+        let seg_dist = |p: P, k: usize| dist_to_segment(p, poly[k], poly[k + 1]);
+        let nearest = |p: P, ks: &mut dyn Iterator<Item = usize>| {
+            ks.map(|k| (k, seg_dist(p, k))).min_by(|a, b| a.1.total_cmp(&b.1)).unwrap_or((0, f64::MAX))
+        };
+        let mut at = nearest(self.pts[0], &mut (0..m)).0;
+        let mut worst = 0.0f64;
+        for &p in &self.pts {
+            // A window of segments around the last match (wrapping on a loop).
+            let (lo, hi) = (at as i64 - 8, at as i64 + 48);
+            let closed = self.closed;
+            let mut window = (lo..hi).filter_map(|k| {
+                if closed {
+                    Some(k.rem_euclid(m as i64) as usize)
+                } else {
+                    usize::try_from(k).ok().filter(|&k| k < m)
+                }
+            });
+            let (k, d) = nearest(p, &mut window);
+            at = k;
+            if d > worst && !excused.iter().any(|&(apex, r)| (p - apex).len() <= r) {
+                worst = d;
+            }
+        }
+        worst
+    }
+
     /// Move the end junctions of an open run (a junction placed onto a shape).
     pub fn set_ends(&mut self, start: P, end: P) {
         let n = self.pts.len();
@@ -558,7 +617,7 @@ pub fn fit_prepared(
     fillets: &mut Fillets,
     guides: &mut Guides,
 ) -> Curve {
-    if let Some(shape) = &run.shape {
+    if let Some(shape) = run.shape.as_ref().filter(|_| !params.plain) {
         return shape.clone();
     }
     let params = FitParams { plain: params.plain || run.soft, ..params };

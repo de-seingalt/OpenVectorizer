@@ -23,7 +23,7 @@ use crate::edges::EdgeMap;
 use crate::fit::{
     CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, arc_tolerance, fit_prepared, prepare,
 };
-use crate::guide::{CANDIDATE_GEOMETRY, Guide, GuideKind, Guides};
+use crate::guide::{CANDIDATE_GEOMETRY, Guide, GuideKind, GuideStatus, Guides};
 use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
 use crate::{CornerEdit, CornerMode, Options, Stacking};
@@ -529,6 +529,24 @@ fn fit_runs(
             run_guides[i] = std::mem::take(&mut guides.found);
         }
     }
+    // Check every geometric fit against the measured boundary: one that strays from it (a
+    // shape imposed where the image does not have it) is replaced by the plain tracing, and
+    // its guides are dropped.
+    let limit = params.tolerance + VERIFY_SLACK;
+    let plain = FitParams { plain: true, ..params };
+    for (i, run) in prepared.iter().enumerate() {
+        // Only runs that got some geometry: a plain fit follows the points by construction.
+        let geometric = region_shapes[i].is_some()
+            || run.has_shape()
+            || run.corners.iter().any(crate::fit::Corner::is_fillet)
+            || run_guides[i].iter().any(|g| matches!(g.status, GuideStatus::Followed | GuideStatus::Forced));
+        if run.soft || !geometric || run.deviation(&styles[i], &curves[i]) <= limit {
+            continue;
+        }
+        let mut scratch = Guides::default();
+        curves[i] = fit_prepared(run, &styles[i], plain, &mut Fillets::default(), &mut scratch);
+        run_guides[i].clear();
+    }
     (curves, run_guides.into_iter().flatten().collect())
 }
 
@@ -542,6 +560,10 @@ fn split_frame_corners(prepared: &mut Prepared, (w, h): (f64, f64)) {
         prepared.corners.iter().partition(|c| on_frame(c.apex) && (!c.is_fillet() || passes_by(c.apex)));
     (prepared.frame, prepared.corners) = (frame, corners);
 }
+
+/// A geometric fit may stray this far (px) beyond the fit tolerance from the measured
+/// boundary (its points carry some noise); farther, it is not what the image shows.
+const VERIFY_SLACK: f64 = 0.6;
 
 /// Below this sharpness (see [`EdgeMap::sharpness`]), a boundary is soft: a band boundary
 /// inside a gradient rather than an edge of the drawing.
