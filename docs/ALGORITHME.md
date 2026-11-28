@@ -1,6 +1,6 @@
 # Algorithme de vectorisation sur mesure — document de conception
 
-**Version 4** : intègre trois tournées de relecture indépendante (rigueur mathématique, faisabilité Rust/WASM, couverture des objectifs et robustesse). Les synthèses de recherche qui alimentent ce document sont dans [`docs/recherche/`](recherche/) (en anglais) ; un renvoi `[R1 §2.3]` désigne la synthèse 01, section 2.3. Un glossaire (annexe A) et un exemple complet (annexe B) aident à la lecture.
+**Version 4** : intègre trois tournées de relecture indépendante (rigueur mathématique, faisabilité Rust/WASM, couverture des objectifs et robustesse). Les synthèses de recherche qui alimentent ce document sont dans [`docs/recherche/`](recherche/) (en anglais) ; un renvoi `[R1 §2.3]` désigne la synthèse 01, section 2.3. Un glossaire (annexe A) et un exemple complet (annexe B) aident à la lecture. Les pistes d'amélioration proposées après la dernière relecture (mathématiques et optimisation Rust) sont dans [`docs/recherche/06-pistes-amelioration.md`](recherche/06-pistes-amelioration.md) ; elles seront évaluées phase par phase.
 
 ---
 
