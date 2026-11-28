@@ -12,7 +12,7 @@
 
   let {
     rasterUrl,
-    svgUrl,
+    svg,
     width,
     height,
     corners = [],
@@ -25,7 +25,8 @@
     onToggleGuide,
   }: {
     rasterUrl: string;
-    svgUrl: string | null;
+    /** The SVG document of the result (drawn inline, as vectors, at screen resolution). */
+    svg: string | null;
     width: number;
     height: number;
     /** Corner markers drawn over the preview when `showCorners` is on. */
@@ -104,6 +105,9 @@
     if (dragging) onSetCornerRadius?.(dragging.k, dragging.r);
     dragging = null;
   }
+
+  // Content of the result document, without its own <svg> element.
+  const inner = $derived(svg ? svg.slice(svg.indexOf('>') + 1, svg.lastIndexOf('</svg>')) : '');
 
   const isSelected = (k: CornerInfo) => selectedCorner !== null && k.x === selectedCorner.x && k.y === selectedCorner.y;
   const inGroup = (k: CornerInfo) => selectedCorner?.group != null && k.group === selectedCorner.group;
@@ -199,7 +203,7 @@
     style:width="{width * scale}px"
     style:height="{height * scale}px"
   >
-    {#if mode !== 'vector' || !svgUrl}
+    {#if mode !== 'vector' || !svg}
       <img
         src={rasterUrl}
         alt={t.viewOriginal}
@@ -208,16 +212,27 @@
         style:image-rendering={pixelated ? 'pixelated' : 'auto'}
       />
     {/if}
-    {#if svgUrl && mode !== 'original'}
-      <img
-        src={svgUrl}
-        alt={t.viewVector}
-        draggable="false"
-        class="absolute inset-0 h-full w-full"
-        style:clip-path={mode === 'compare' ? `inset(0 0 0 ${split * 100}%)` : 'none'}
-      />
+    {#if svg && mode !== 'original'}
+      <!-- The result is drawn inline, covering the viewport only, with a viewBox on the visible
+           part of the image: the browser draws the curves at screen resolution at any zoom (an
+           <img> would be rasterized once, and blurred when enlarged). -->
+      <svg
+        class="pointer-events-none absolute"
+        style:left="{-tx}px"
+        style:top="{-ty}px"
+        width={boxW}
+        height={boxH}
+        viewBox="{-tx / scale} {-ty / scale} {boxW / scale} {boxH / scale}"
+        preserveAspectRatio="none"
+        role="img"
+        aria-label={t.viewVector}
+        style:clip-path={mode === 'compare' ? `inset(0 0 0 ${Math.max(0, tx + width * scale * split)}px)` : 'none'}
+      >
+        <!-- eslint-disable-next-line svelte/no-at-html-tags -- engine output: paths with fill colours only -->
+        {@html inner}
+      </svg>
     {/if}
-    {#if showGuides && svgUrl}
+    {#if showGuides && svg}
       <svg
         class="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
         viewBox="0 0 {width} {height}"
@@ -261,7 +276,7 @@
         {/each}
       </svg>
     {/if}
-    {#if showCorners && svgUrl}
+    {#if showCorners && svg}
       <svg
         class="pointer-events-none absolute inset-0 h-full w-full overflow-visible"
         viewBox="0 0 {width} {height}"
@@ -326,7 +341,7 @@
     {/if}
   </div>
 
-  {#if svgUrl && mode === 'compare'}
+  {#if svg && mode === 'compare'}
     <!-- Split handle -->
     <div
       class="absolute top-0 bottom-0 z-10 w-6 -translate-x-1/2 cursor-ew-resize"
@@ -371,7 +386,7 @@
     >
       <ToggleGroup.Item value="compare">{t.viewCompare}</ToggleGroup.Item>
       <ToggleGroup.Item value="original">{t.viewOriginal}</ToggleGroup.Item>
-      <ToggleGroup.Item value="vector" disabled={!svgUrl}>{t.viewVector}</ToggleGroup.Item>
+      <ToggleGroup.Item value="vector" disabled={!svg}>{t.viewVector}</ToggleGroup.Item>
     </ToggleGroup.Root>
     <div class="h-5 w-px bg-border"></div>
     <Button variant="ghost" size="icon-sm" aria-label={t.zoomOut} onclick={() => zoomAt(1 / 1.25)}><Minus /></Button>

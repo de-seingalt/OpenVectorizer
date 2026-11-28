@@ -38,6 +38,9 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(colors).toHaveCount(2);
   await page.screenshot({ path: 'test-results/screens/02b-two-colors.png' });
 
+  // The result is drawn inline as vectors (sharp at any zoom), not as an <img>.
+  await expect(page.locator('svg[aria-label="Vecteur"] path').first()).toBeAttached();
+
   // Zoom: the buttons and the wheel change the zoom level (and nothing resets it).
   const zoomLevel = page.locator('[role=toolbar] span.tabular-nums');
   const level = async () => Number((await zoomLevel.textContent())?.replace(/\D/g, ''));

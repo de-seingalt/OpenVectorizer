@@ -38,7 +38,6 @@
   let image = $state<LoadedImage | null>(null);
   let options = $state<Options>({ ...DEFAULT_OPTIONS });
   let svg = $state<string | null>(null);
-  let svgUrl = $state<string | null>(null);
   let stats = $state<Stats | null>(null);
   let palette = $state<Palette | null>(null);
   let corners = $state<CornerInfo[]>([]);
@@ -95,9 +94,7 @@
       working = true;
       try {
         const res = await engine.vectorize(img.pixels, opts);
-        if (svgUrl) URL.revokeObjectURL(svgUrl);
         svg = res.output.svg;
-        svgUrl = URL.createObjectURL(new Blob([svg], { type: 'image/svg+xml' }));
         stats = res.output.stats;
         palette = res.output.palette;
         corners = res.output.corners;
@@ -220,7 +217,7 @@
       {#if image}
         <Viewer
           rasterUrl={image.url}
-          {svgUrl}
+          {svg}
           width={image.pixels.width}
           height={image.pixels.height}
           {corners}
