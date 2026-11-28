@@ -405,9 +405,15 @@ pub fn to_svg(
     // Circles and ellipses on whole region outlines made of several runs.
     let region_shapes = region_shapes(&cycles, &mut runs);
     let (styles, mut corner_stats) = decide_corners(&runs.prepared, options);
-    let (curves, run_guides) = fit_runs(&runs.prepared, &styles, &region_shapes, options, *params);
+    let (mut curves, run_guides) = fit_runs(&runs.prepared, &styles, &region_shapes, options, *params);
     corner_stats.guides = std::mem::take(&mut runs.guides.found);
     corner_stats.guides.extend(run_guides);
+    // Long lines of the drawing: segments on one line, even far apart, are put exactly on it.
+    if params.arc_tol > 0.0 || !options.forced_guides.is_empty() {
+        let mut guides = Guides::new(&options.disabled_guides, &options.forced_guides);
+        crate::align::align_lines(&mut curves, (params.arc_tol, ALIGN_LOOSE, params.relative), &mut guides);
+        corner_stats.guides.extend(guides.found);
+    }
     // The image frame is not part of the drawing.
     let (w, h) = (
         f32::from(u16::try_from(q.width).unwrap_or(u16::MAX)),
@@ -566,6 +572,9 @@ fn split_frame_corners(prepared: &mut Prepared, (w, h): (f64, f64)) {
         prepared.corners.iter().partition(|c| on_frame(c.apex) && (!c.is_fillet() || passes_by(c.apex)));
     (prepared.frame, prepared.corners) = (frame, corners);
 }
+
+/// Segments up to this far (px) from a shared line are candidates to join it.
+const ALIGN_LOOSE: f64 = 1.2;
 
 /// A geometric fit may stray this far (px) beyond the fit tolerance from the measured
 /// boundary (its points carry some noise); farther, it is not what the image shows.

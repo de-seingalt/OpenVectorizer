@@ -582,7 +582,7 @@ const SNAP_DRIFT: f64 = 0.3;
 
 /// `dir`, made exactly horizontal or vertical when that moves the ends of a line of length
 /// `len` by less than [`SNAP_DRIFT`].
-fn snap_axis(dir: P, len: f64) -> P {
+pub(crate) fn snap_axis(dir: P, len: f64) -> P {
     if dir.y.abs() * len <= SNAP_DRIFT {
         P::new(dir.x.signum(), 0.0)
     } else if dir.x.abs() * len <= SNAP_DRIFT {
@@ -593,7 +593,7 @@ fn snap_axis(dir: P, len: f64) -> P {
 }
 
 /// Total least-squares line through `pts`: (centroid, unit direction).
-fn fit_line(pts: &[P]) -> Option<(P, P)> {
+pub(crate) fn fit_line(pts: &[P]) -> Option<(P, P)> {
     if pts.len() < 2 {
         return None;
     }
@@ -610,7 +610,7 @@ fn fit_line(pts: &[P]) -> Option<(P, P)> {
     Some((c, P::new(angle.cos(), angle.sin())))
 }
 
-fn intersect(p: P, d: P, q: P, e: P) -> Option<P> {
+pub(crate) fn intersect(p: P, d: P, q: P, e: P) -> Option<P> {
     let cross = d.x * e.y - d.y * e.x;
     if cross.abs() < 1e-3 {
         return None;

@@ -27,6 +27,8 @@ pub enum GuideKind {
     Symmetry,
     /// A shape made identical to another one it repeats (key: its topmost point).
     Repeat,
+    /// A line shared by straight segments of the whole image, even far apart (key: its middle).
+    Align,
 }
 
 /// A guide turned off by the user.

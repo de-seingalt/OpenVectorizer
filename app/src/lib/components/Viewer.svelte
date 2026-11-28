@@ -50,6 +50,7 @@
     ellipse: '#ea580c',
     symmetry: '#7c3aed',
     repeat: '#16a34a',
+    align: '#0284c7',
   };
 
   /** Path of a corner drawn as its two sides near the apex, joined by its arc when rounded. */

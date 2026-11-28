@@ -9,6 +9,7 @@
 //! Each future stage (palette, planar map, sub-pixel edges, corners, primitives,
 //! SVG writer) gets its own module and replaces part of the baseline.
 
+mod align;
 pub mod baseline;
 mod color;
 mod denoise;

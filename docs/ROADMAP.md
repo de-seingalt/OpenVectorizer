@@ -90,8 +90,10 @@ Les outils de référence sont décrits dans `docs/OUTILS-REFERENCE.md`.
 - [x] Réglage « Échelle » : tolérance + jusqu'à 2 % de la taille (droites, arrondis, arcs, cercles, symétries,
       répétitions, vérification) ; un contour fermé doit faire le tour de sa forme (périmètres à 15 %) ; un arc de forme
       prend le chemin de la longueur du morceau ; la vérification refuse aussi les détours (tracé trop long)
-- [ ] Repères globaux : segments presque alignés (même interrompus) rangés sur une même droite ; cercles communs,
-      parallèles, concentriques
+- [x] Repères globaux : segments presque alignés de toute l'image (même interrompus, extrémités à ≤ 0,5 px) placés
+      exactement sur une droite commune ; sommet de deux repères = leur intersection ; deux bords côte à côte (trait
+      fin) ne sont jamais fusionnés ; guide « Alignement »
+- [ ] Cercles communs (arcs dispersés d'un même cercle), parallèles, concentriques
 - [ ] Position sous le pixel au maximum du gradient (Devernay) pour les bords flous
 
 ## M4 — Édition
