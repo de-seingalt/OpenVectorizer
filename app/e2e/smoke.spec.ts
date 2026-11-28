@@ -38,6 +38,18 @@ test('example image is vectorized and can be compared', async ({ page }) => {
   await expect(colors).toHaveCount(2);
   await page.screenshot({ path: 'test-results/screens/02b-two-colors.png' });
 
+  // Zoom: the buttons and the wheel change the zoom level (and nothing resets it).
+  const zoomLevel = page.locator('[role=toolbar] span.tabular-nums');
+  const level = async () => Number((await zoomLevel.textContent())?.replace(/\D/g, ''));
+  const before = await level();
+  await page.getByRole('button', { name: 'Zoom avant' }).click();
+  await expect.poll(level).toBeGreaterThan(before);
+  await page.mouse.move(400, 400);
+  await page.mouse.wheel(0, 400);
+  await expect.poll(level).toBeLessThan(before);
+  await page.getByRole('button', { name: 'Ajuster' }).click();
+  await expect.poll(level).toBe(before);
+
   // Corners tool: all round → no sharp corner; all sharp → every corner is sharp.
   const cornerCount = page.locator('#corners-label');
   await page.getByRole('radio', { name: 'Tous ronds' }).click();

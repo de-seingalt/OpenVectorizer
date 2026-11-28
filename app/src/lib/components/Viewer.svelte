@@ -123,10 +123,12 @@
 
   function fit() {
     if (!boxW || !boxH) return;
-    const s = Math.min((boxW - 48) / width, (boxH - 96) / height);
-    scale = clamp(s, MIN, 8);
-    tx = (boxW - width * scale) / 2;
-    ty = (boxH - 40 - height * scale) / 2;
+    // Only writes `scale`: the refit effect below must not depend on it, or every zoom
+    // would trigger a refit that cancels it.
+    const s = clamp(Math.min((boxW - 48) / width, (boxH - 96) / height), MIN, 8);
+    scale = s;
+    tx = (boxW - width * s) / 2;
+    ty = (boxH - 40 - height * s) / 2;
   }
 
   function zoomAt(factor: number, mx = boxW / 2, my = boxH / 2) {
