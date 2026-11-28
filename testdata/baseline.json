@@ -1,149 +1,149 @@
 {
   "overall": {
     "cases": 515,
-    "mean_delta_e": 0.9552158935296289,
-    "mean_p95": 3.129607120722079,
-    "total_nodes": 1299237
+    "mean_delta_e": 0.9577491382509739,
+    "mean_p95": 3.1289079726709548,
+    "total_nodes": 1299274
   },
   "by_variant": {
     "blur": {
       "cases": 85,
-      "mean_delta_e": 1.0185126801442064,
-      "mean_p95": 3.7980062843082667,
-      "total_nodes": 108431
+      "mean_delta_e": 1.0188934494194697,
+      "mean_p95": 3.787379219671562,
+      "total_nodes": 108329
     },
     "clean": {
       "cases": 90,
-      "mean_delta_e": 0.9476691976975914,
-      "mean_p95": 3.3265493903140047,
-      "total_nodes": 857599
+      "mean_delta_e": 0.9487967745800503,
+      "mean_p95": 3.3251701117994705,
+      "total_nodes": 857826
     },
     "half": {
       "cases": 85,
-      "mean_delta_e": 1.2412271160303896,
-      "mean_p95": 4.691466187603411,
-      "total_nodes": 41679
+      "mean_delta_e": 1.2458171604399295,
+      "mean_p95": 4.699687381326261,
+      "total_nodes": 41706
     },
     "jpeg35": {
       "cases": 85,
-      "mean_delta_e": 0.8652557557567379,
-      "mean_p95": 2.5077045337239716,
-      "total_nodes": 124349
+      "mean_delta_e": 0.866811122770252,
+      "mean_p95": 2.5025273175170324,
+      "total_nodes": 124307
     },
     "jpeg75": {
       "cases": 85,
-      "mean_delta_e": 0.6981801317910032,
-      "mean_p95": 2.016596890961569,
-      "total_nodes": 84359
+      "mean_delta_e": 0.7045230411238104,
+      "mean_p95": 2.022174832063525,
+      "total_nodes": 84284
     },
     "noise": {
       "cases": 85,
-      "mean_delta_e": 0.9608944030420827,
-      "mean_p95": 2.425734598033494,
-      "total_nodes": 82820
+      "mean_delta_e": 0.9621798908000351,
+      "mean_p95": 2.4249641419344456,
+      "total_nodes": 82822
     }
   },
   "by_category": {
     "drawings": {
       "cases": 3,
-      "mean_delta_e": 9.94919459654681,
-      "mean_p95": 37.97267808512405,
-      "total_nodes": 443308
+      "mean_delta_e": 9.935343560487937,
+      "mean_p95": 37.97254522511492,
+      "total_nodes": 443563
     },
     "emblems": {
       "cases": 36,
-      "mean_delta_e": 2.509257276633429,
-      "mean_p95": 12.73834610490266,
-      "total_nodes": 347211
+      "mean_delta_e": 2.5103851633759033,
+      "mean_p95": 12.74301494560692,
+      "total_nodes": 347073
     },
     "flags": {
       "cases": 60,
-      "mean_delta_e": 0.4082305485730525,
+      "mean_delta_e": 0.4129140647742785,
       "mean_p95": 0.5332400412555105,
-      "total_nodes": 14739
+      "total_nodes": 14746
     },
     "icons": {
       "cases": 66,
-      "mean_delta_e": 1.0769675268159022,
-      "mean_p95": 2.5580695397936872,
-      "total_nodes": 8282
+      "mean_delta_e": 1.0800845015279543,
+      "mean_p95": 2.5417559064247213,
+      "total_nodes": 8265
     },
     "illustrations": {
       "cases": 108,
-      "mean_delta_e": 0.8697963997769261,
-      "mean_p95": 2.8229839192677506,
-      "total_nodes": 43872
+      "mean_delta_e": 0.8703393226736613,
+      "mean_p95": 2.828981745202691,
+      "total_nodes": 43849
     },
     "lettering": {
       "cases": 36,
-      "mean_delta_e": 0.7920198628470061,
-      "mean_p95": 2.3266444524663847,
-      "total_nodes": 26298
+      "mean_delta_e": 0.7925880800002852,
+      "mean_p95": 2.3338942713508066,
+      "total_nodes": 26239
     },
     "logos": {
       "cases": 90,
-      "mean_delta_e": 0.740390340720848,
-      "mean_p95": 1.911171574328601,
-      "total_nodes": 51549
+      "mean_delta_e": 0.7420975368343808,
+      "mean_p95": 1.9128903980295415,
+      "total_nodes": 51554
     },
     "photos": {
       "cases": 2,
-      "mean_delta_e": 4.731680863363422,
-      "mean_p95": 18.21703426531502,
-      "total_nodes": 343580
+      "mean_delta_e": 4.732636792782473,
+      "mean_p95": 18.216131790483324,
+      "total_nodes": 343530
     },
     "pictograms": {
       "cases": 30,
-      "mean_delta_e": 0.6034100431074461,
+      "mean_delta_e": 0.6159601707342939,
       "mean_p95": 0.3449424410890456,
-      "total_nodes": 3115
+      "total_nodes": 3101
     },
     "pixelart": {
       "cases": 18,
-      "mean_delta_e": 0.47653599192078855,
+      "mean_delta_e": 0.4822849906393768,
       "mean_p95": 1.319133490710755,
-      "total_nodes": 5367
+      "total_nodes": 5485
     },
     "signatures": {
       "cases": 24,
-      "mean_delta_e": 1.3179387809337675,
+      "mean_delta_e": 1.319087046240157,
       "mean_p95": 5.842119698987336,
-      "total_nodes": 8478
+      "total_nodes": 8477
     },
     "synthetic": {
       "cases": 42,
-      "mean_delta_e": 0.4600464574969252,
-      "mean_p95": 1.5961347239813621,
-      "total_nodes": 3438
+      "mean_delta_e": 0.4618713084816055,
+      "mean_p95": 1.583927843182872,
+      "total_nodes": 3392
     }
   },
   "cases": {
     "corpus/drawings/alice-par-john-tenniel-21.png@clean": {
-      "delta_e_mean": 9.429667866729496,
+      "delta_e_mean": 9.398783445738625,
       "delta_e_p95": 32.18367934281556,
-      "psnr": 16.023437932631563,
+      "psnr": 16.04046138622887,
       "paths": 4647,
-      "nodes": 35787,
-      "bytes": 960778,
-      "ms": 2095.26501
+      "nodes": 36024,
+      "bytes": 951650,
+      "ms": 1065.646996
     },
     "corpus/drawings/cheshire-cat-tenniel.png@clean": {
-      "delta_e_mean": 11.902182687358255,
+      "delta_e_mean": 11.891898391766553,
       "delta_e_p95": 45.89845015166622,
-      "psnr": 13.383245398874113,
+      "psnr": 13.383194020360536,
       "paths": 1474,
-      "nodes": 11562,
-      "bytes": 301014,
-      "ms": 471.046483
+      "nodes": 11587,
+      "bytes": 300519,
+      "ms": 128.504064
     },
     "corpus/drawings/d-rer-s-rhinoceros-1515.png@clean": {
-      "delta_e_mean": 8.515733235552682,
-      "delta_e_p95": 35.83590476089038,
-      "psnr": 15.324621610952638,
+      "delta_e_mean": 8.515348843958634,
+      "delta_e_p95": 35.835506180863,
+      "psnr": 15.325014089144545,
       "paths": 59719,
-      "nodes": 395959,
-      "bytes": 6561047,
-      "ms": 628.283868
+      "nodes": 395952,
+      "bytes": 6561562,
+      "ms": 1307.119943
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@blur": {
       "delta_e_mean": 1.7312396091403004,
@@ -152,7 +152,7 @@
       "paths": 7,
       "nodes": 293,
       "bytes": 8503,
-      "ms": 24.528211000000002
+      "ms": 10.299258
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@clean": {
       "delta_e_mean": 1.158956309870264,
@@ -161,7 +161,7 @@
       "paths": 7,
       "nodes": 290,
       "bytes": 8307,
-      "ms": 25.713807000000003
+      "ms": 11.161638
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@half": {
       "delta_e_mean": 3.33672092803663,
@@ -170,7 +170,7 @@
       "paths": 27,
       "nodes": 308,
       "bytes": 7849,
-      "ms": 7.37986
+      "ms": 3.200086
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@jpeg35": {
       "delta_e_mean": 2.2936272768057178,
@@ -179,7 +179,7 @@
       "paths": 9,
       "nodes": 624,
       "bytes": 13902,
-      "ms": 30.080537
+      "ms": 14.48487
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@jpeg75": {
       "delta_e_mean": 1.8738691753250238,
@@ -188,7 +188,7 @@
       "paths": 9,
       "nodes": 469,
       "bytes": 12269,
-      "ms": 29.758433
+      "ms": 14.132418000000001
     },
     "corpus/emblems/bundesadler-bundesorgane.svg@noise": {
       "delta_e_mean": 1.657084242836049,
@@ -197,34 +197,34 @@
       "paths": 7,
       "nodes": 281,
       "bytes": 8110,
-      "ms": 26.513611
+      "ms": 11.542786
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@blur": {
-      "delta_e_mean": 3.3967602736002145,
+      "delta_e_mean": 3.39658541617579,
       "delta_e_p95": 24.422184755452587,
-      "psnr": 20.562903513538018,
+      "psnr": 20.56302744308168,
       "paths": 189,
-      "nodes": 1668,
-      "bytes": 42484,
-      "ms": 64.207098
+      "nodes": 1672,
+      "bytes": 42509,
+      "ms": 48.843513
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@clean": {
-      "delta_e_mean": 0.8309536154842717,
+      "delta_e_mean": 0.8324293436534471,
       "delta_e_p95": 5.199809407342862,
-      "psnr": 27.45724108430292,
+      "psnr": 27.43736250611637,
       "paths": 22,
-      "nodes": 510,
-      "bytes": 11272,
-      "ms": 55.479722
+      "nodes": 508,
+      "bytes": 11333,
+      "ms": 30.662433999999998
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@half": {
-      "delta_e_mean": 2.9687648049899824,
-      "delta_e_p95": 21.50380014007065,
-      "psnr": 20.226993908526776,
+      "delta_e_mean": 2.9686419666371906,
+      "delta_e_p95": 21.535408182187386,
+      "psnr": 20.227309774308946,
       "paths": 130,
       "nodes": 1056,
       "bytes": 21594,
-      "ms": 10.407526
+      "ms": 13.639363
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@jpeg35": {
       "delta_e_mean": 1.0760686128528292,
@@ -233,295 +233,295 @@
       "paths": 156,
       "nodes": 1423,
       "bytes": 29169,
-      "ms": 78.197093
+      "ms": 66.39310499999999
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@jpeg75": {
-      "delta_e_mean": 0.8920018868572418,
+      "delta_e_mean": 0.910231490913331,
       "delta_e_p95": 2.565330538788958,
-      "psnr": 28.730104250025676,
+      "psnr": 28.626273302699737,
       "paths": 61,
-      "nodes": 748,
-      "bytes": 17193,
-      "ms": 84.32637
+      "nodes": 749,
+      "bytes": 17058,
+      "ms": 59.481384999999996
     },
     "corpus/emblems/coat-of-arms-of-germany.svg@noise": {
-      "delta_e_mean": 1.513429925873517,
-      "delta_e_p95": 5.320912137450875,
-      "psnr": 26.83943490200333,
+      "delta_e_mean": 1.5081228267423756,
+      "delta_e_p95": 5.280414428421726,
+      "psnr": 26.880423021799096,
       "paths": 62,
-      "nodes": 800,
-      "bytes": 17770,
-      "ms": 52.137106
+      "nodes": 798,
+      "bytes": 17788,
+      "ms": 40.558088
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@blur": {
-      "delta_e_mean": 2.5254029815057804,
+      "delta_e_mean": 2.525741032925887,
       "delta_e_p95": 13.916448278961365,
-      "psnr": 22.686932688363882,
+      "psnr": 22.685977067942478,
       "paths": 1580,
-      "nodes": 13558,
-      "bytes": 305073,
-      "ms": 145.53402
+      "nodes": 13554,
+      "bytes": 304926,
+      "ms": 100.926593
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@clean": {
-      "delta_e_mean": 1.8775455205742182,
-      "delta_e_p95": 11.23463774456494,
-      "psnr": 24.12745112855427,
+      "delta_e_mean": 1.8778455792971078,
+      "delta_e_p95": 11.237296269723831,
+      "psnr": 24.126874484675803,
       "paths": 1041,
-      "nodes": 9932,
-      "bytes": 236189,
-      "ms": 98.694648
+      "nodes": 9926,
+      "bytes": 236186,
+      "ms": 94.078722
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@half": {
-      "delta_e_mean": 3.263190482897045,
+      "delta_e_mean": 3.2631988413655653,
       "delta_e_p95": 17.2783800416753,
-      "psnr": 20.29657734710261,
+      "psnr": 20.296873942600477,
       "paths": 771,
       "nodes": 6276,
-      "bytes": 123033,
-      "ms": 43.770824
+      "bytes": 123142,
+      "ms": 35.669983
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@jpeg35": {
-      "delta_e_mean": 2.6518155905021277,
+      "delta_e_mean": 2.651937722906431,
       "delta_e_p95": 13.222094321012856,
-      "psnr": 22.31444467182277,
+      "psnr": 22.313981731986644,
       "paths": 1785,
-      "nodes": 16552,
-      "bytes": 371592,
-      "ms": 143.83446899999998
+      "nodes": 16548,
+      "bytes": 371807,
+      "ms": 108.974539
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@jpeg75": {
-      "delta_e_mean": 2.3469607398495373,
-      "delta_e_p95": 12.872927879787833,
-      "psnr": 22.805737635390134,
+      "delta_e_mean": 2.34680246947434,
+      "delta_e_p95": 12.876201078142174,
+      "psnr": 22.805367384571518,
       "paths": 1418,
       "nodes": 13493,
-      "bytes": 308111,
-      "ms": 134.830325
+      "bytes": 307860,
+      "ms": 106.785933
     },
     "corpus/emblems/coat-of-arms-of-mexico.svg@noise": {
-      "delta_e_mean": 1.9329760515140033,
-      "delta_e_p95": 11.325940617201569,
-      "psnr": 24.066797190440063,
+      "delta_e_mean": 1.9334539801996677,
+      "delta_e_p95": 11.326523360462042,
+      "psnr": 24.065038707750546,
       "paths": 1262,
       "nodes": 11131,
-      "bytes": 257132,
-      "ms": 120.291833
+      "bytes": 257230,
+      "ms": 93.36537
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@blur": {
-      "delta_e_mean": 3.712515404708984,
+      "delta_e_mean": 3.709576906710952,
       "delta_e_p95": 20.534518661587065,
-      "psnr": 19.752965006226667,
+      "psnr": 19.754331224697008,
       "paths": 2915,
-      "nodes": 22180,
-      "bytes": 447619,
-      "ms": 215.738958
+      "nodes": 22231,
+      "bytes": 448386,
+      "ms": 226.249282
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@clean": {
-      "delta_e_mean": 2.239416066215805,
-      "delta_e_p95": 14.500784918288279,
-      "psnr": 21.818912528422505,
+      "delta_e_mean": 2.2410554742335087,
+      "delta_e_p95": 14.498984373045776,
+      "psnr": 21.814616921817613,
       "paths": 1679,
-      "nodes": 13590,
-      "bytes": 293879,
-      "ms": 150.038518
+      "nodes": 13592,
+      "bytes": 293678,
+      "ms": 159.017269
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@half": {
-      "delta_e_mean": 4.369796870571723,
+      "delta_e_mean": 4.378844187603299,
       "delta_e_p95": 26.01735848689493,
-      "psnr": 17.892166424293258,
+      "psnr": 17.874901709537003,
       "paths": 1384,
-      "nodes": 10114,
-      "bytes": 170013,
-      "ms": 43.801277999999996
+      "nodes": 10124,
+      "bytes": 169863,
+      "ms": 72.431803
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@jpeg35": {
-      "delta_e_mean": 2.725666204188872,
-      "delta_e_p95": 15.619180214833012,
-      "psnr": 20.360194690269356,
+      "delta_e_mean": 2.724981923228101,
+      "delta_e_p95": 15.620922383317648,
+      "psnr": 20.3618860880413,
       "paths": 3061,
-      "nodes": 23668,
-      "bytes": 447987,
-      "ms": 166.633071
+      "nodes": 23658,
+      "bytes": 447950,
+      "ms": 190.490085
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@jpeg75": {
-      "delta_e_mean": 2.3882364651062575,
-      "delta_e_p95": 14.593887015055149,
-      "psnr": 20.6823819363524,
+      "delta_e_mean": 2.3875043667881073,
+      "delta_e_p95": 14.585456984149644,
+      "psnr": 20.683197539534227,
       "paths": 2204,
-      "nodes": 17155,
-      "bytes": 334057,
-      "ms": 133.261613
+      "nodes": 17157,
+      "bytes": 333992,
+      "ms": 164.45657799999998
     },
     "corpus/emblems/escudo-de-espa-a-mazonado.svg@noise": {
-      "delta_e_mean": 2.3582759675534755,
-      "delta_e_p95": 15.654132672068297,
-      "psnr": 21.327014482183486,
+      "delta_e_mean": 2.3581958106755754,
+      "delta_e_p95": 15.625914638183797,
+      "psnr": 21.327338835939926,
       "paths": 2126,
       "nodes": 16820,
-      "bytes": 342769,
-      "ms": 102.214656
+      "bytes": 342795,
+      "ms": 134.25671
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@blur": {
-      "delta_e_mean": 2.908864595536441,
+      "delta_e_mean": 2.908110612224366,
       "delta_e_p95": 13.20064962868093,
-      "psnr": 22.668196625799737,
+      "psnr": 22.674597249224824,
       "paths": 1582,
-      "nodes": 11308,
-      "bytes": 249411,
-      "ms": 197.154919
+      "nodes": 11188,
+      "bytes": 247015,
+      "ms": 184.889878
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@clean": {
-      "delta_e_mean": 2.327276827216264,
-      "delta_e_p95": 10.479086377501355,
-      "psnr": 23.800424765409826,
+      "delta_e_mean": 2.3328888633823697,
+      "delta_e_p95": 10.498076293272957,
+      "psnr": 23.784438019200014,
       "paths": 1872,
-      "nodes": 13305,
-      "bytes": 289222,
-      "ms": 181.644007
+      "nodes": 13254,
+      "bytes": 288823,
+      "ms": 205.88967599999998
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@half": {
-      "delta_e_mean": 3.691312559200349,
-      "delta_e_p95": 15.817683681273659,
-      "psnr": 20.150444439334755,
+      "delta_e_mean": 3.708491691178847,
+      "delta_e_p95": 16.02992858463417,
+      "psnr": 20.1202538445264,
       "paths": 340,
-      "nodes": 2877,
-      "bytes": 73056,
-      "ms": 63.224004
+      "nodes": 2889,
+      "bytes": 73040,
+      "ms": 64.478809
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@jpeg35": {
-      "delta_e_mean": 2.6243934333681302,
-      "delta_e_p95": 10.866791572454966,
-      "psnr": 23.431613520549448,
+      "delta_e_mean": 2.6249699105561164,
+      "delta_e_p95": 10.871518204597908,
+      "psnr": 23.424723313508984,
       "paths": 1942,
-      "nodes": 15826,
-      "bytes": 361939,
-      "ms": 181.009508
+      "nodes": 15869,
+      "bytes": 362775,
+      "ms": 174.614478
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@jpeg75": {
-      "delta_e_mean": 2.667152150881347,
-      "delta_e_p95": 11.486337562658983,
-      "psnr": 23.06557093089555,
+      "delta_e_mean": 2.665621671187307,
+      "delta_e_p95": 11.48321796708512,
+      "psnr": 23.07156524407079,
       "paths": 2166,
-      "nodes": 17639,
-      "bytes": 395402,
-      "ms": 204.617995
+      "nodes": 17576,
+      "bytes": 393512,
+      "ms": 208.61594399999998
     },
     "corpus/emblems/great-seal-of-the-united-states-obverse.svg@noise": {
-      "delta_e_mean": 2.8947222340713576,
+      "delta_e_mean": 2.893743800308884,
       "delta_e_p95": 10.365680452909306,
-      "psnr": 23.570579038573154,
+      "psnr": 23.579314668031497,
       "paths": 1393,
-      "nodes": 11181,
-      "bytes": 270919,
-      "ms": 189.421034
+      "nodes": 11179,
+      "bytes": 270818,
+      "ms": 159.663889
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@blur": {
-      "delta_e_mean": 3.1601517870939833,
-      "delta_e_p95": 13.440904959303666,
-      "psnr": 20.539272979454417,
+      "delta_e_mean": 3.1599905335065976,
+      "delta_e_p95": 13.441127021423252,
+      "psnr": 20.53812909887812,
       "paths": 2383,
-      "nodes": 18627,
-      "bytes": 385752,
-      "ms": 132.01861300000002
+      "nodes": 18621,
+      "bytes": 385580,
+      "ms": 123.207862
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@clean": {
-      "delta_e_mean": 2.4486770847018327,
-      "delta_e_p95": 9.879684834178702,
-      "psnr": 21.995617683127755,
+      "delta_e_mean": 2.448314777150024,
+      "delta_e_p95": 9.87001402775115,
+      "psnr": 21.997906141223957,
       "paths": 1730,
-      "nodes": 15322,
-      "bytes": 331640,
-      "ms": 152.39112599999999
+      "nodes": 15327,
+      "bytes": 331627,
+      "ms": 119.825639
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@half": {
-      "delta_e_mean": 3.7620253850345766,
-      "delta_e_p95": 16.722183698701322,
-      "psnr": 18.722187854922243,
+      "delta_e_mean": 3.7622079220732307,
+      "delta_e_p95": 16.714994200186233,
+      "psnr": 18.722358304233435,
       "paths": 604,
-      "nodes": 5224,
-      "bytes": 109838,
-      "ms": 44.135635
+      "nodes": 5227,
+      "bytes": 109823,
+      "ms": 35.090967
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@jpeg35": {
-      "delta_e_mean": 2.965869208441587,
-      "delta_e_p95": 10.50036303118644,
-      "psnr": 21.317188615029274,
+      "delta_e_mean": 2.9661397697798826,
+      "delta_e_p95": 10.494942629786324,
+      "psnr": 21.315583454155767,
       "paths": 2537,
-      "nodes": 21368,
-      "bytes": 456241,
-      "ms": 189.746997
+      "nodes": 21370,
+      "bytes": 456193,
+      "ms": 145.39660700000002
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@jpeg75": {
-      "delta_e_mean": 3.0246435529251396,
-      "delta_e_p95": 10.927770879287037,
-      "psnr": 21.22071835385495,
+      "delta_e_mean": 3.024483383937735,
+      "delta_e_p95": 10.927998892322336,
+      "psnr": 21.219649682532623,
       "paths": 1618,
-      "nodes": 14318,
-      "bytes": 328278,
-      "ms": 251.857948
+      "nodes": 14306,
+      "bytes": 327998,
+      "ms": 129.635028
     },
     "corpus/emblems/uk-royal-coat-of-arms.svg@noise": {
-      "delta_e_mean": 2.736898133472558,
-      "delta_e_p95": 10.896865500420617,
-      "psnr": 21.49504062778626,
+      "delta_e_mean": 2.7361874518496636,
+      "delta_e_p95": 10.893014182947214,
+      "psnr": 21.496842349624817,
       "paths": 2046,
-      "nodes": 17277,
-      "bytes": 369418,
-      "ms": 196.933391
+      "nodes": 17286,
+      "bytes": 369040,
+      "ms": 115.47072999999999
     },
     "corpus/flags/br.svg@blur": {
-      "delta_e_mean": 0.5072777967457209,
+      "delta_e_mean": 0.5059923632762626,
       "delta_e_p95": 0.2999507994025575,
-      "psnr": 27.813699820080927,
+      "psnr": 27.8330065080595,
       "paths": 67,
-      "nodes": 610,
-      "bytes": 14498,
-      "ms": 32.914398
+      "nodes": 620,
+      "bytes": 14797,
+      "ms": 22.778767
     },
     "corpus/flags/br.svg@clean": {
-      "delta_e_mean": 0.22645741563743174,
+      "delta_e_mean": 0.22386391400243544,
       "delta_e_p95": 0.0,
-      "psnr": 32.147701034584244,
+      "psnr": 32.262160369181416,
       "paths": 59,
-      "nodes": 414,
-      "bytes": 11039,
-      "ms": 53.893781000000004
+      "nodes": 420,
+      "bytes": 10751,
+      "ms": 29.796514
     },
     "corpus/flags/br.svg@half": {
-      "delta_e_mean": 0.6583277354062264,
+      "delta_e_mean": 0.6581277479904628,
       "delta_e_p95": 0.2999507994025575,
-      "psnr": 26.264027648241232,
+      "psnr": 26.265928779377816,
       "paths": 16,
       "nodes": 106,
-      "bytes": 2380,
-      "ms": 9.261692
+      "bytes": 2377,
+      "ms": 7.091302
     },
     "corpus/flags/br.svg@jpeg35": {
-      "delta_e_mean": 0.5244553202257897,
+      "delta_e_mean": 0.5264893981335848,
       "delta_e_p95": 0.5041303939023212,
-      "psnr": 31.22092097612355,
+      "psnr": 31.139168772083956,
       "paths": 58,
-      "nodes": 466,
-      "bytes": 11085,
-      "ms": 52.573983
+      "nodes": 454,
+      "bytes": 10758,
+      "ms": 26.109476
     },
     "corpus/flags/br.svg@jpeg75": {
-      "delta_e_mean": 0.5233936670573746,
+      "delta_e_mean": 0.5206147449554185,
       "delta_e_p95": 0.34583404720438443,
-      "psnr": 31.121366364908386,
+      "psnr": 31.235965326488795,
       "paths": 62,
-      "nodes": 454,
-      "bytes": 11262,
-      "ms": 52.868825
+      "nodes": 455,
+      "bytes": 11229,
+      "ms": 27.719114
     },
     "corpus/flags/br.svg@noise": {
-      "delta_e_mean": 0.41815194097178715,
+      "delta_e_mean": 0.41443165112516317,
       "delta_e_p95": 0.2999507994025575,
-      "psnr": 31.600236750235716,
+      "psnr": 31.751209848709188,
       "paths": 60,
-      "nodes": 424,
-      "bytes": 11422,
-      "ms": 56.383036999999995
+      "nodes": 433,
+      "bytes": 11143,
+      "ms": 30.416235999999998
     },
     "corpus/flags/ca.svg@blur": {
       "delta_e_mean": 0.23209095500687157,
@@ -530,7 +530,7 @@
       "paths": 4,
       "nodes": 100,
       "bytes": 2302,
-      "ms": 18.348749
+      "ms": 11.632795
     },
     "corpus/flags/ca.svg@clean": {
       "delta_e_mean": 0.01808209117692221,
@@ -539,7 +539,7 @@
       "paths": 4,
       "nodes": 83,
       "bytes": 2001,
-      "ms": 18.438246
+      "ms": 11.638592999999998
     },
     "corpus/flags/ca.svg@half": {
       "delta_e_mean": 0.041245604701533725,
@@ -548,7 +548,7 @@
       "paths": 4,
       "nodes": 53,
       "bytes": 1036,
-      "ms": 6.388085
+      "ms": 3.8351029999999997
     },
     "corpus/flags/ca.svg@jpeg35": {
       "delta_e_mean": 0.18673107893195326,
@@ -557,7 +557,7 @@
       "paths": 4,
       "nodes": 101,
       "bytes": 2214,
-      "ms": 20.797334
+      "ms": 12.416083
     },
     "corpus/flags/ca.svg@jpeg75": {
       "delta_e_mean": 0.07590078991017733,
@@ -566,7 +566,7 @@
       "paths": 4,
       "nodes": 90,
       "bytes": 2081,
-      "ms": 18.274572
+      "ms": 12.042422
     },
     "corpus/flags/ca.svg@noise": {
       "delta_e_mean": 0.5944500396318625,
@@ -575,7 +575,7 @@
       "paths": 4,
       "nodes": 87,
       "bytes": 2058,
-      "ms": 18.329302
+      "ms": 11.858868
     },
     "corpus/flags/ch.svg@blur": {
       "delta_e_mean": 0.09680731958233835,
@@ -583,8 +583,8 @@
       "psnr": 37.41026087951938,
       "paths": 2,
       "nodes": 33,
-      "bytes": 771,
-      "ms": 12.605394
+      "bytes": 773,
+      "ms": 12.135895000000001
     },
     "corpus/flags/ch.svg@clean": {
       "delta_e_mean": 0.028854315278781434,
@@ -592,26 +592,26 @@
       "psnr": 43.107173289385784,
       "paths": 2,
       "nodes": 33,
-      "bytes": 719,
-      "ms": 16.897202
+      "bytes": 717,
+      "ms": 12.166962
     },
     "corpus/flags/ch.svg@half": {
-      "delta_e_mean": 0.05199499689285906,
+      "delta_e_mean": 0.05193524449066377,
       "delta_e_p95": 0.030587939808778095,
-      "psnr": 35.30477089246136,
+      "psnr": 35.31426354927404,
       "paths": 2,
       "nodes": 33,
-      "bytes": 817,
-      "ms": 4.046033
+      "bytes": 815,
+      "ms": 3.8435
     },
     "corpus/flags/ch.svg@jpeg35": {
-      "delta_e_mean": 0.40259631408550284,
+      "delta_e_mean": 0.4024168433298602,
       "delta_e_p95": 0.4054312506322862,
-      "psnr": 38.41118718808717,
+      "psnr": 38.41949751402111,
       "paths": 27,
       "nodes": 182,
-      "bytes": 3734,
-      "ms": 21.741414
+      "bytes": 3680,
+      "ms": 20.69646
     },
     "corpus/flags/ch.svg@jpeg75": {
       "delta_e_mean": 0.17726519868299603,
@@ -619,17 +619,17 @@
       "psnr": 42.64896935833175,
       "paths": 2,
       "nodes": 33,
-      "bytes": 723,
-      "ms": 17.30489
+      "bytes": 725,
+      "ms": 12.327072999999999
     },
     "corpus/flags/ch.svg@noise": {
-      "delta_e_mean": 0.8413304980502565,
+      "delta_e_mean": 0.8413623294105939,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 35.390491687721955,
+      "psnr": 35.374099682073556,
       "paths": 2,
       "nodes": 33,
-      "bytes": 801,
-      "ms": 12.478318
+      "bytes": 813,
+      "ms": 12.194854
     },
     "corpus/flags/fr.svg@blur": {
       "delta_e_mean": 0.011180529707485329,
@@ -638,7 +638,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 282,
-      "ms": 10.117806999999999
+      "ms": 9.908411000000001
     },
     "corpus/flags/fr.svg@clean": {
       "delta_e_mean": 0.0,
@@ -647,7 +647,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 282,
-      "ms": 9.997050999999999
+      "ms": 9.933202
     },
     "corpus/flags/fr.svg@half": {
       "delta_e_mean": 0.0,
@@ -656,7 +656,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 276,
-      "ms": 2.696662
+      "ms": 2.73391
     },
     "corpus/flags/fr.svg@jpeg35": {
       "delta_e_mean": 0.12948317085815703,
@@ -665,7 +665,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 282,
-      "ms": 10.066825999999999
+      "ms": 9.992499
     },
     "corpus/flags/fr.svg@jpeg75": {
       "delta_e_mean": 0.04349646771960431,
@@ -674,7 +674,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 282,
-      "ms": 10.038746
+      "ms": 9.898411
     },
     "corpus/flags/fr.svg@noise": {
       "delta_e_mean": 0.6480942355362168,
@@ -683,7 +683,7 @@
       "paths": 3,
       "nodes": 18,
       "bytes": 282,
-      "ms": 10.151851
+      "ms": 10.010611
     },
     "corpus/flags/gb.svg@blur": {
       "delta_e_mean": 0.7228655333930598,
@@ -692,7 +692,7 @@
       "paths": 21,
       "nodes": 380,
       "bytes": 6750,
-      "ms": 14.134062
+      "ms": 13.858538
     },
     "corpus/flags/gb.svg@clean": {
       "delta_e_mean": 0.23365474945603426,
@@ -701,7 +701,7 @@
       "paths": 17,
       "nodes": 242,
       "bytes": 3913,
-      "ms": 14.51
+      "ms": 14.390237
     },
     "corpus/flags/gb.svg@half": {
       "delta_e_mean": 0.579156577528788,
@@ -710,7 +710,7 @@
       "paths": 17,
       "nodes": 222,
       "bytes": 3434,
-      "ms": 4.694069000000001
+      "ms": 4.675274
     },
     "corpus/flags/gb.svg@jpeg35": {
       "delta_e_mean": 0.6068968399248261,
@@ -719,7 +719,7 @@
       "paths": 26,
       "nodes": 512,
       "bytes": 8049,
-      "ms": 17.147757
+      "ms": 17.233093
     },
     "corpus/flags/gb.svg@jpeg75": {
       "delta_e_mean": 0.3303569017068246,
@@ -728,16 +728,16 @@
       "paths": 27,
       "nodes": 336,
       "bytes": 4610,
-      "ms": 15.034367
+      "ms": 14.842899999999998
     },
     "corpus/flags/gb.svg@noise": {
-      "delta_e_mean": 0.7040748689819831,
+      "delta_e_mean": 0.7042980542715304,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 34.37773588866942,
+      "psnr": 34.36904778481125,
       "paths": 29,
       "nodes": 360,
-      "bytes": 4980,
-      "ms": 15.614599
+      "bytes": 5042,
+      "ms": 16.11406
     },
     "corpus/flags/jp.svg@blur": {
       "delta_e_mean": 0.045797121440998824,
@@ -746,7 +746,7 @@
       "paths": 2,
       "nodes": 12,
       "bytes": 358,
-      "ms": 12.521315999999999
+      "ms": 13.48967
     },
     "corpus/flags/jp.svg@clean": {
       "delta_e_mean": 0.01222664336935467,
@@ -755,7 +755,7 @@
       "paths": 2,
       "nodes": 12,
       "bytes": 357,
-      "ms": 12.653184
+      "ms": 13.592417000000001
     },
     "corpus/flags/jp.svg@half": {
       "delta_e_mean": 0.032178472326250575,
@@ -764,7 +764,7 @@
       "paths": 2,
       "nodes": 12,
       "bytes": 339,
-      "ms": 4.017062
+      "ms": 4.851229
     },
     "corpus/flags/jp.svg@jpeg35": {
       "delta_e_mean": 0.06496732423717873,
@@ -773,7 +773,7 @@
       "paths": 10,
       "nodes": 80,
       "bytes": 1822,
-      "ms": 12.24512
+      "ms": 14.47473
     },
     "corpus/flags/jp.svg@jpeg75": {
       "delta_e_mean": 0.04863372397905755,
@@ -782,7 +782,7 @@
       "paths": 2,
       "nodes": 12,
       "bytes": 360,
-      "ms": 12.984165
+      "ms": 13.951436
     },
     "corpus/flags/jp.svg@noise": {
       "delta_e_mean": 0.9683445975134535,
@@ -791,61 +791,61 @@
       "paths": 2,
       "nodes": 12,
       "bytes": 357,
-      "ms": 13.271731
+      "ms": 14.139456
     },
     "corpus/flags/kr.svg@blur": {
-      "delta_e_mean": 0.8614118497678388,
+      "delta_e_mean": 0.8548976979176673,
       "delta_e_p95": 0.9454303388336422,
-      "psnr": 26.736164350366987,
+      "psnr": 26.787338872309814,
       "paths": 21,
-      "nodes": 154,
-      "bytes": 3768,
-      "ms": 27.884428
+      "nodes": 159,
+      "bytes": 3927,
+      "ms": 25.685910999999997
     },
     "corpus/flags/kr.svg@clean": {
-      "delta_e_mean": 0.1752575230859537,
+      "delta_e_mean": 0.18754449744129154,
       "delta_e_p95": 0.2603884625914213,
-      "psnr": 34.12543433250001,
+      "psnr": 33.331002142086795,
       "paths": 21,
-      "nodes": 237,
-      "bytes": 6133,
-      "ms": 28.743637
+      "nodes": 261,
+      "bytes": 7081,
+      "ms": 27.159105999999998
     },
     "corpus/flags/kr.svg@half": {
-      "delta_e_mean": 0.40247625405432963,
+      "delta_e_mean": 0.5312418097884142,
       "delta_e_p95": 1.1817879235420583,
-      "psnr": 32.580137850196216,
+      "psnr": 28.194533507778683,
       "paths": 21,
-      "nodes": 133,
-      "bytes": 2412,
-      "ms": 15.387362999999999
+      "nodes": 153,
+      "bytes": 3229,
+      "ms": 13.671465000000001
     },
     "corpus/flags/kr.svg@jpeg35": {
-      "delta_e_mean": 0.5022525021449366,
+      "delta_e_mean": 0.5070153282457464,
       "delta_e_p95": 1.164386684140902,
-      "psnr": 32.60903065774323,
+      "psnr": 32.23107655816995,
       "paths": 25,
-      "nodes": 294,
-      "bytes": 7554,
-      "ms": 28.596256
+      "nodes": 288,
+      "bytes": 7339,
+      "ms": 28.906092
     },
     "corpus/flags/kr.svg@jpeg75": {
-      "delta_e_mean": 0.2409226952361846,
+      "delta_e_mean": 0.2487136065010675,
       "delta_e_p95": 0.6948740351815983,
-      "psnr": 33.33966761384216,
+      "psnr": 32.9225387550464,
       "paths": 21,
-      "nodes": 245,
-      "bytes": 6474,
-      "ms": 29.281132000000003
+      "nodes": 257,
+      "bytes": 6940,
+      "ms": 27.427498
     },
     "corpus/flags/kr.svg@noise": {
-      "delta_e_mean": 1.189124510923509,
+      "delta_e_mean": 1.1953734543686583,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 32.122495886509384,
+      "psnr": 31.801010766153553,
       "paths": 21,
-      "nodes": 252,
-      "bytes": 6698,
-      "ms": 29.846366999999997
+      "nodes": 257,
+      "bytes": 6891,
+      "ms": 27.87337
     },
     "corpus/flags/np.svg@blur": {
       "delta_e_mean": 0.4524440506176131,
@@ -854,7 +854,7 @@
       "paths": 4,
       "nodes": 139,
       "bytes": 3061,
-      "ms": 14.606406
+      "ms": 11.028447
     },
     "corpus/flags/np.svg@clean": {
       "delta_e_mean": 0.16613931478985197,
@@ -863,7 +863,7 @@
       "paths": 4,
       "nodes": 148,
       "bytes": 3134,
-      "ms": 15.370276
+      "ms": 11.658785
     },
     "corpus/flags/np.svg@half": {
       "delta_e_mean": 0.5608866512053713,
@@ -872,7 +872,7 @@
       "paths": 8,
       "nodes": 118,
       "bytes": 1939,
-      "ms": 5.581453
+      "ms": 5.298679
     },
     "corpus/flags/np.svg@jpeg35": {
       "delta_e_mean": 0.26883584811016575,
@@ -881,7 +881,7 @@
       "paths": 14,
       "nodes": 276,
       "bytes": 5081,
-      "ms": 22.70589
+      "ms": 21.63748
     },
     "corpus/flags/np.svg@jpeg75": {
       "delta_e_mean": 0.24649631917523251,
@@ -890,7 +890,7 @@
       "paths": 6,
       "nodes": 216,
       "bytes": 3924,
-      "ms": 21.473765
+      "ms": 17.755702000000003
     },
     "corpus/flags/np.svg@noise": {
       "delta_e_mean": 0.3068255163184582,
@@ -899,61 +899,61 @@
       "paths": 4,
       "nodes": 162,
       "bytes": 3201,
-      "ms": 16.791221
+      "ms": 13.006513
     },
     "corpus/flags/us.svg@blur": {
-      "delta_e_mean": 1.787578376548259,
+      "delta_e_mean": 1.7995677316935403,
       "delta_e_p95": 0.8069177333883061,
-      "psnr": 22.14912785053712,
+      "psnr": 22.078372100593754,
       "paths": 64,
-      "nodes": 464,
-      "bytes": 7698,
-      "ms": 68.439425
+      "nodes": 457,
+      "bytes": 7831,
+      "ms": 58.952919
     },
     "corpus/flags/us.svg@clean": {
-      "delta_e_mean": 0.31268857709305764,
+      "delta_e_mean": 0.31647492531784627,
       "delta_e_p95": 0.17707137444377977,
-      "psnr": 34.18071103244425,
+      "psnr": 33.636409354362954,
       "paths": 64,
-      "nodes": 719,
-      "bytes": 9825,
-      "ms": 49.013906000000006
+      "nodes": 709,
+      "bytes": 9973,
+      "ms": 40.088907999999996
     },
     "corpus/flags/us.svg@half": {
-      "delta_e_mean": 1.797340041046151,
+      "delta_e_mean": 1.8765812614223076,
       "delta_e_p95": 0.8069177333883061,
-      "psnr": 21.922343391455264,
+      "psnr": 21.451574337939444,
       "paths": 64,
-      "nodes": 482,
-      "bytes": 6857,
-      "ms": 33.238803
+      "nodes": 442,
+      "bytes": 7500,
+      "ms": 25.593946
     },
     "corpus/flags/us.svg@jpeg35": {
-      "delta_e_mean": 1.0619633965686281,
+      "delta_e_mean": 1.0634277755954553,
       "delta_e_p95": 0.697430483953864,
-      "psnr": 26.66055794131556,
+      "psnr": 26.642113489903455,
       "paths": 407,
       "nodes": 2729,
-      "bytes": 63086,
-      "ms": 32.824753
+      "bytes": 63102,
+      "ms": 70.298773
     },
     "corpus/flags/us.svg@jpeg75": {
-      "delta_e_mean": 0.48184071740617,
+      "delta_e_mean": 0.5046166874147048,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 33.50718964662328,
+      "psnr": 33.07447379074237,
       "paths": 64,
       "nodes": 704,
-      "bytes": 10106,
-      "ms": 52.251647
+      "bytes": 10108,
+      "ms": 40.631519999999995
     },
     "corpus/flags/us.svg@noise": {
-      "delta_e_mean": 0.9205558368881951,
+      "delta_e_mean": 0.9374967401990321,
       "delta_e_p95": 1.4175164974135317,
-      "psnr": 33.46138940690998,
+      "psnr": 32.797597488048844,
       "paths": 64,
-      "nodes": 718,
-      "bytes": 10107,
-      "ms": 51.713091000000006
+      "nodes": 708,
+      "bytes": 10236,
+      "ms": 41.974408
     },
     "corpus/flags/za.svg@blur": {
       "delta_e_mean": 0.233494946783889,
@@ -962,7 +962,7 @@
       "paths": 7,
       "nodes": 182,
       "bytes": 2959,
-      "ms": 12.286846
+      "ms": 12.085697
     },
     "corpus/flags/za.svg@clean": {
       "delta_e_mean": 0.10787184036362298,
@@ -971,7 +971,7 @@
       "paths": 7,
       "nodes": 84,
       "bytes": 1477,
-      "ms": 13.716189
+      "ms": 13.647063
     },
     "corpus/flags/za.svg@half": {
       "delta_e_mean": 0.21818094801280435,
@@ -980,7 +980,7 @@
       "paths": 7,
       "nodes": 90,
       "bytes": 1477,
-      "ms": 4.130698000000001
+      "ms": 4.098714
     },
     "corpus/flags/za.svg@jpeg35": {
       "delta_e_mean": 0.529244125256182,
@@ -989,7 +989,7 @@
       "paths": 7,
       "nodes": 288,
       "bytes": 4273,
-      "ms": 14.603800999999999
+      "ms": 14.458706999999999
     },
     "corpus/flags/za.svg@jpeg75": {
       "delta_e_mean": 0.34635461388938676,
@@ -998,7 +998,7 @@
       "paths": 7,
       "nodes": 164,
       "bytes": 2563,
-      "ms": 13.483134000000002
+      "ms": 13.257181
     },
     "corpus/flags/za.svg@noise": {
       "delta_e_mean": 0.5368256234417067,
@@ -1007,7 +1007,7 @@
       "paths": 7,
       "nodes": 106,
       "bytes": 1773,
-      "ms": 15.084131000000001
+      "ms": 14.859217
     },
     "corpus/icons/lucide-anchor.svg@blur": {
       "delta_e_mean": 1.1064654050552998,
@@ -1016,7 +1016,7 @@
       "paths": 3,
       "nodes": 61,
       "bytes": 1705,
-      "ms": 4.895484000000001
+      "ms": 4.616575
     },
     "corpus/icons/lucide-anchor.svg@clean": {
       "delta_e_mean": 0.47468563483426973,
@@ -1025,7 +1025,7 @@
       "paths": 3,
       "nodes": 55,
       "bytes": 1491,
-      "ms": 4.97147
+      "ms": 4.691965000000001
     },
     "corpus/icons/lucide-anchor.svg@half": {
       "delta_e_mean": 2.215180460439385,
@@ -1034,16 +1034,16 @@
       "paths": 3,
       "nodes": 38,
       "bytes": 1095,
-      "ms": 2.330765
+      "ms": 1.952747
     },
     "corpus/icons/lucide-anchor.svg@jpeg35": {
-      "delta_e_mean": 0.6995152983990431,
+      "delta_e_mean": 0.6996990266694363,
       "delta_e_p95": 3.1757550624303623,
-      "psnr": 29.491482619489126,
+      "psnr": 29.48899949391745,
       "paths": 80,
       "nodes": 505,
-      "bytes": 11028,
-      "ms": 3.489805
+      "bytes": 11030,
+      "ms": 6.003126999999999
     },
     "corpus/icons/lucide-anchor.svg@jpeg75": {
       "delta_e_mean": 0.5277265365817188,
@@ -1052,43 +1052,43 @@
       "paths": 28,
       "nodes": 201,
       "bytes": 4085,
-      "ms": 3.518602
+      "ms": 5.311586
     },
     "corpus/icons/lucide-anchor.svg@noise": {
-      "delta_e_mean": 1.4071483074374416,
+      "delta_e_mean": 1.4092691217958784,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 28.62145855906651,
+      "psnr": 28.64121732837761,
       "paths": 3,
       "nodes": 56,
-      "bytes": 1549,
-      "ms": 5.284694
+      "bytes": 1571,
+      "ms": 4.976399000000001
     },
     "corpus/icons/lucide-bike.svg@blur": {
-      "delta_e_mean": 1.3578660005059096,
+      "delta_e_mean": 1.363340387426281,
       "delta_e_p95": 2.370634592926167,
-      "psnr": 29.94509848871356,
+      "psnr": 29.90356783462943,
       "paths": 7,
       "nodes": 56,
-      "bytes": 1573,
-      "ms": 7.33683
+      "bytes": 1561,
+      "ms": 8.870733000000001
     },
     "corpus/icons/lucide-bike.svg@clean": {
-      "delta_e_mean": 0.24949063719789843,
+      "delta_e_mean": 0.2557986514278411,
       "delta_e_p95": 0.404907738909221,
-      "psnr": 36.992246951786704,
+      "psnr": 36.80340132077121,
       "paths": 7,
       "nodes": 63,
-      "bytes": 1784,
-      "ms": 7.3322639999999994
+      "bytes": 1791,
+      "ms": 9.004572000000001
     },
     "corpus/icons/lucide-bike.svg@half": {
-      "delta_e_mean": 1.47049690093154,
+      "delta_e_mean": 1.494626602437651,
       "delta_e_p95": 3.5577602201328022,
-      "psnr": 28.580776614153894,
+      "psnr": 28.40931840276893,
       "paths": 7,
       "nodes": 52,
-      "bytes": 1442,
-      "ms": 5.147826
+      "bytes": 1438,
+      "ms": 5.078526
     },
     "corpus/icons/lucide-bike.svg@jpeg35": {
       "delta_e_mean": 1.0343435048872411,
@@ -1097,25 +1097,25 @@
       "paths": 87,
       "nodes": 504,
       "bytes": 11335,
-      "ms": 3.553441
+      "ms": 12.636167
     },
     "corpus/icons/lucide-bike.svg@jpeg75": {
-      "delta_e_mean": 0.6785121307916763,
+      "delta_e_mean": 0.6874549409127589,
       "delta_e_p95": 0.5056373895338435,
-      "psnr": 31.473907209672415,
+      "psnr": 31.407990589994156,
       "paths": 17,
-      "nodes": 115,
-      "bytes": 2894,
-      "ms": 2.758496
+      "nodes": 114,
+      "bytes": 2811,
+      "ms": 15.774860000000002
     },
     "corpus/icons/lucide-bike.svg@noise": {
-      "delta_e_mean": 1.375029300162118,
+      "delta_e_mean": 1.3782462050201623,
       "delta_e_p95": 1.4676078255340268,
-      "psnr": 33.06542353948064,
+      "psnr": 33.03553963819956,
       "paths": 7,
       "nodes": 62,
-      "bytes": 1757,
-      "ms": 7.76608
+      "bytes": 1758,
+      "ms": 9.417451
     },
     "corpus/icons/lucide-camera.svg@blur": {
       "delta_e_mean": 1.392458671225753,
@@ -1124,7 +1124,7 @@
       "paths": 5,
       "nodes": 50,
       "bytes": 1261,
-      "ms": 5.982125
+      "ms": 6.513414
     },
     "corpus/icons/lucide-camera.svg@clean": {
       "delta_e_mean": 0.2704946832579862,
@@ -1133,7 +1133,7 @@
       "paths": 5,
       "nodes": 54,
       "bytes": 1319,
-      "ms": 5.904994
+      "ms": 6.421403
     },
     "corpus/icons/lucide-camera.svg@half": {
       "delta_e_mean": 1.7294930858814286,
@@ -1142,7 +1142,7 @@
       "paths": 5,
       "nodes": 45,
       "bytes": 1110,
-      "ms": 3.811339
+      "ms": 3.716338
     },
     "corpus/icons/lucide-camera.svg@jpeg35": {
       "delta_e_mean": 0.5926055642295763,
@@ -1151,16 +1151,16 @@
       "paths": 11,
       "nodes": 81,
       "bytes": 2168,
-      "ms": 5.157547
+      "ms": 6.884648
     },
     "corpus/icons/lucide-camera.svg@jpeg75": {
-      "delta_e_mean": 0.6362787034520014,
+      "delta_e_mean": 0.6713199548706402,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 30.981368995672813,
+      "psnr": 30.319218453860685,
       "paths": 13,
-      "nodes": 98,
-      "bytes": 2177,
-      "ms": 2.79686
+      "nodes": 95,
+      "bytes": 2213,
+      "ms": 11.751897000000001
     },
     "corpus/icons/lucide-camera.svg@noise": {
       "delta_e_mean": 1.2323405943729713,
@@ -1169,7 +1169,7 @@
       "paths": 5,
       "nodes": 54,
       "bytes": 1330,
-      "ms": 6.291235
+      "ms": 6.858167
     },
     "corpus/icons/lucide-heart.svg@blur": {
       "delta_e_mean": 1.076004993379095,
@@ -1178,7 +1178,7 @@
       "paths": 3,
       "nodes": 38,
       "bytes": 967,
-      "ms": 5.0290289999999995
+      "ms": 4.466607
     },
     "corpus/icons/lucide-heart.svg@clean": {
       "delta_e_mean": 0.36722559041712355,
@@ -1187,7 +1187,7 @@
       "paths": 3,
       "nodes": 40,
       "bytes": 930,
-      "ms": 4.811222000000001
+      "ms": 4.218109999999999
     },
     "corpus/icons/lucide-heart.svg@half": {
       "delta_e_mean": 1.7103030933094727,
@@ -1196,7 +1196,7 @@
       "paths": 3,
       "nodes": 28,
       "bytes": 711,
-      "ms": 2.441979
+      "ms": 1.933008
     },
     "corpus/icons/lucide-heart.svg@jpeg35": {
       "delta_e_mean": 0.9773512634532492,
@@ -1205,7 +1205,7 @@
       "paths": 77,
       "nodes": 439,
       "bytes": 9361,
-      "ms": 3.351722
+      "ms": 3.9761270000000004
     },
     "corpus/icons/lucide-heart.svg@jpeg75": {
       "delta_e_mean": 0.7476453296212502,
@@ -1214,7 +1214,7 @@
       "paths": 33,
       "nodes": 199,
       "bytes": 3631,
-      "ms": 2.922389
+      "ms": 3.7668179999999998
     },
     "corpus/icons/lucide-heart.svg@noise": {
       "delta_e_mean": 1.3593114434386189,
@@ -1223,7 +1223,7 @@
       "paths": 3,
       "nodes": 45,
       "bytes": 992,
-      "ms": 5.331784
+      "ms": 4.792417
     },
     "corpus/icons/lucide-house.svg@blur": {
       "delta_e_mean": 1.2497052467646317,
@@ -1232,7 +1232,7 @@
       "paths": 4,
       "nodes": 77,
       "bytes": 1502,
-      "ms": 5.468254
+      "ms": 4.72093
     },
     "corpus/icons/lucide-house.svg@clean": {
       "delta_e_mean": 0.32238225352370264,
@@ -1241,7 +1241,7 @@
       "paths": 4,
       "nodes": 54,
       "bytes": 1242,
-      "ms": 5.360634
+      "ms": 4.598421999999999
     },
     "corpus/icons/lucide-house.svg@half": {
       "delta_e_mean": 2.9813277548042927,
@@ -1250,16 +1250,16 @@
       "paths": 4,
       "nodes": 53,
       "bytes": 1076,
-      "ms": 3.302489
+      "ms": 2.6025050000000003
     },
     "corpus/icons/lucide-house.svg@jpeg35": {
-      "delta_e_mean": 0.7540260414635817,
+      "delta_e_mean": 0.7760948846704883,
       "delta_e_p95": 0.5192846205451394,
-      "psnr": 31.82263101405595,
+      "psnr": 31.67095008119887,
       "paths": 5,
       "nodes": 71,
-      "bytes": 1564,
-      "ms": 5.450048
+      "bytes": 1552,
+      "ms": 5.226023
     },
     "corpus/icons/lucide-house.svg@jpeg75": {
       "delta_e_mean": 0.4483109402103131,
@@ -1268,7 +1268,7 @@
       "paths": 4,
       "nodes": 53,
       "bytes": 1236,
-      "ms": 5.516135
+      "ms": 4.734071999999999
     },
     "corpus/icons/lucide-house.svg@noise": {
       "delta_e_mean": 1.3075720950344003,
@@ -1277,61 +1277,61 @@
       "paths": 4,
       "nodes": 55,
       "bytes": 1248,
-      "ms": 5.675951
+      "ms": 4.926606
     },
     "corpus/icons/lucide-settings.svg@blur": {
-      "delta_e_mean": 1.8553719968367728,
-      "delta_e_p95": 6.911159973651068,
-      "psnr": 26.498813749232607,
+      "delta_e_mean": 1.8407299110532709,
+      "delta_e_p95": 5.914978721757644,
+      "psnr": 26.63657196740018,
       "paths": 5,
-      "nodes": 76,
-      "bytes": 2143,
-      "ms": 6.333311999999999
+      "nodes": 75,
+      "bytes": 2106,
+      "ms": 7.208086
     },
     "corpus/icons/lucide-settings.svg@clean": {
-      "delta_e_mean": 0.757452462835374,
+      "delta_e_mean": 0.7595602679780932,
       "delta_e_p95": 0.404907738909221,
-      "psnr": 30.352565982366375,
+      "psnr": 30.332079356941616,
       "paths": 5,
       "nodes": 65,
-      "bytes": 2018,
-      "ms": 5.941506
+      "bytes": 2015,
+      "ms": 6.885456
     },
     "corpus/icons/lucide-settings.svg@half": {
-      "delta_e_mean": 3.0863209913626135,
+      "delta_e_mean": 3.0880357743647657,
       "delta_e_p95": 12.467695722911069,
-      "psnr": 19.65784936353,
+      "psnr": 19.633206605797213,
       "paths": 5,
       "nodes": 46,
-      "bytes": 1396,
-      "ms": 3.6594409999999997
+      "bytes": 1397,
+      "ms": 3.8582780000000003
     },
     "corpus/icons/lucide-settings.svg@jpeg35": {
-      "delta_e_mean": 1.3150310863565504,
+      "delta_e_mean": 1.3160152310840467,
       "delta_e_p95": 4.236953468647137,
-      "psnr": 26.54104647226808,
+      "psnr": 26.53898084630237,
       "paths": 78,
       "nodes": 462,
       "bytes": 10002,
-      "ms": 4.339395000000001
+      "ms": 8.980659000000001
     },
     "corpus/icons/lucide-settings.svg@jpeg75": {
-      "delta_e_mean": 0.984569300724974,
+      "delta_e_mean": 0.9842547363821866,
       "delta_e_p95": 3.8619473137989586,
-      "psnr": 26.900530195757916,
+      "psnr": 26.901558675359986,
       "paths": 10,
       "nodes": 90,
-      "bytes": 2641,
-      "ms": 5.191450000000001
+      "bytes": 2647,
+      "ms": 6.822226
     },
     "corpus/icons/lucide-settings.svg@noise": {
-      "delta_e_mean": 1.610994267936848,
+      "delta_e_mean": 1.6344789748956743,
       "delta_e_p95": 1.4896348172306795,
-      "psnr": 29.05063998273914,
+      "psnr": 28.70101663480773,
       "paths": 5,
-      "nodes": 75,
-      "bytes": 2248,
-      "ms": 6.687467
+      "nodes": 71,
+      "bytes": 2093,
+      "ms": 7.611539
     },
     "corpus/icons/phosphor-airplane-fill.svg@blur": {
       "delta_e_mean": 0.6664157733121201,
@@ -1340,7 +1340,7 @@
       "paths": 2,
       "nodes": 45,
       "bytes": 1129,
-      "ms": 3.35871
+      "ms": 3.0060059999999997
     },
     "corpus/icons/phosphor-airplane-fill.svg@clean": {
       "delta_e_mean": 0.10043219648083465,
@@ -1349,7 +1349,7 @@
       "paths": 2,
       "nodes": 47,
       "bytes": 1192,
-      "ms": 3.297485
+      "ms": 2.975684
     },
     "corpus/icons/phosphor-airplane-fill.svg@half": {
       "delta_e_mean": 0.7424269668737007,
@@ -1358,16 +1358,16 @@
       "paths": 2,
       "nodes": 30,
       "bytes": 734,
-      "ms": 1.688639
+      "ms": 1.398937
     },
     "corpus/icons/phosphor-airplane-fill.svg@jpeg35": {
-      "delta_e_mean": 0.49157096883195,
+      "delta_e_mean": 0.4917714434601181,
       "delta_e_p95": 0.401085876100854,
-      "psnr": 30.56271935647318,
+      "psnr": 30.56214707748336,
       "paths": 45,
       "nodes": 272,
-      "bytes": 5955,
-      "ms": 3.79015
+      "bytes": 5954,
+      "ms": 3.3035170000000003
     },
     "corpus/icons/phosphor-airplane-fill.svg@jpeg75": {
       "delta_e_mean": 0.21495363139852414,
@@ -1376,7 +1376,7 @@
       "paths": 2,
       "nodes": 49,
       "bytes": 1220,
-      "ms": 3.437748
+      "ms": 3.105597
     },
     "corpus/icons/phosphor-airplane-fill.svg@noise": {
       "delta_e_mean": 1.0051114731477306,
@@ -1385,16 +1385,16 @@
       "paths": 2,
       "nodes": 51,
       "bytes": 1243,
-      "ms": 3.5553619999999997
+      "ms": 3.235086
     },
     "corpus/icons/phosphor-camera-duotone.svg@blur": {
-      "delta_e_mean": 2.045410471705992,
+      "delta_e_mean": 2.0541481964855657,
       "delta_e_p95": 7.53322144361234,
-      "psnr": 24.334287821983214,
+      "psnr": 24.25707337252287,
       "paths": 24,
-      "nodes": 194,
-      "bytes": 4296,
-      "ms": 4.970198
+      "nodes": 190,
+      "bytes": 4145,
+      "ms": 10.662223000000001
     },
     "corpus/icons/phosphor-camera-duotone.svg@clean": {
       "delta_e_mean": 0.12738588234120812,
@@ -1403,16 +1403,16 @@
       "paths": 5,
       "nodes": 54,
       "bytes": 1224,
-      "ms": 6.417476
+      "ms": 6.529856
     },
     "corpus/icons/phosphor-camera-duotone.svg@half": {
-      "delta_e_mean": 1.9344603403231797,
+      "delta_e_mean": 1.9333210469797584,
       "delta_e_p95": 5.515659463449281,
-      "psnr": 25.500680089822318,
+      "psnr": 25.512938120121383,
       "paths": 9,
       "nodes": 65,
-      "bytes": 1650,
-      "ms": 3.235256
+      "bytes": 1648,
+      "ms": 4.65682
     },
     "corpus/icons/phosphor-camera-duotone.svg@jpeg35": {
       "delta_e_mean": 0.6235648750705087,
@@ -1421,7 +1421,7 @@
       "paths": 8,
       "nodes": 70,
       "bytes": 1731,
-      "ms": 5.470883000000001
+      "ms": 8.385818
     },
     "corpus/icons/phosphor-camera-duotone.svg@jpeg75": {
       "delta_e_mean": 0.365250251995168,
@@ -1430,16 +1430,16 @@
       "paths": 5,
       "nodes": 56,
       "bytes": 1322,
-      "ms": 7.25454
+      "ms": 6.52229
     },
     "corpus/icons/phosphor-camera-duotone.svg@noise": {
-      "delta_e_mean": 0.7716014075809652,
+      "delta_e_mean": 0.7726357535482875,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 36.021389189150604,
+      "psnr": 36.013231565545645,
       "paths": 5,
       "nodes": 54,
-      "bytes": 1332,
-      "ms": 6.835831
+      "bytes": 1341,
+      "ms": 6.699886
     },
     "corpus/icons/phosphor-coffee-fill.svg@blur": {
       "delta_e_mean": 1.0752714199232751,
@@ -1448,88 +1448,88 @@
       "paths": 6,
       "nodes": 60,
       "bytes": 1425,
-      "ms": 6.733289
+      "ms": 4.505923
     },
     "corpus/icons/phosphor-coffee-fill.svg@clean": {
-      "delta_e_mean": 0.24305831822988008,
+      "delta_e_mean": 0.2857021580785127,
       "delta_e_p95": 0.0,
-      "psnr": 31.900863301681667,
-      "paths": 6,
-      "nodes": 53,
-      "bytes": 1216,
-      "ms": 6.349146
-    },
-    "corpus/icons/phosphor-coffee-fill.svg@half": {
-      "delta_e_mean": 0.9709880440648472,
-      "delta_e_p95": 0.404907738909221,
-      "psnr": 25.173648904936513,
-      "paths": 6,
-      "nodes": 43,
-      "bytes": 1065,
-      "ms": 4.411675000000001
-    },
-    "corpus/icons/phosphor-coffee-fill.svg@jpeg35": {
-      "delta_e_mean": 0.5046040480781792,
-      "delta_e_p95": 0.3502104784180355,
-      "psnr": 29.92546879219166,
-      "paths": 32,
-      "nodes": 208,
-      "bytes": 4329,
-      "ms": 2.683368
-    },
-    "corpus/icons/phosphor-coffee-fill.svg@jpeg75": {
-      "delta_e_mean": 0.3649355546484518,
-      "delta_e_p95": 0.2561663555451146,
-      "psnr": 31.541163320226943,
+      "psnr": 30.868933466375022,
       "paths": 6,
       "nodes": 50,
-      "bytes": 1157,
-      "ms": 6.516274
+      "bytes": 1081,
+      "ms": 4.124141
+    },
+    "corpus/icons/phosphor-coffee-fill.svg@half": {
+      "delta_e_mean": 0.9700928086977777,
+      "delta_e_p95": 0.404907738909221,
+      "psnr": 25.161626667005088,
+      "paths": 6,
+      "nodes": 43,
+      "bytes": 1074,
+      "ms": 2.3547450000000003
+    },
+    "corpus/icons/phosphor-coffee-fill.svg@jpeg35": {
+      "delta_e_mean": 0.4926391779635815,
+      "delta_e_p95": 0.3502104784180355,
+      "psnr": 30.121109220741168,
+      "paths": 32,
+      "nodes": 208,
+      "bytes": 4404,
+      "ms": 5.418311
+    },
+    "corpus/icons/phosphor-coffee-fill.svg@jpeg75": {
+      "delta_e_mean": 0.41583396880427576,
+      "delta_e_p95": 0.2561663555451146,
+      "psnr": 30.078336980568807,
+      "paths": 6,
+      "nodes": 50,
+      "bytes": 1226,
+      "ms": 4.297781
     },
     "corpus/icons/phosphor-coffee-fill.svg@noise": {
-      "delta_e_mean": 1.0668719627990189,
+      "delta_e_mean": 1.070614479227557,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 30.738077626020797,
+      "psnr": 30.71590569728585,
       "paths": 6,
       "nodes": 54,
-      "bytes": 1316,
-      "ms": 6.640313
+      "bytes": 1324,
+      "ms": 4.4108860000000005
     },
     "corpus/icons/phosphor-rocket-duotone.svg@blur": {
-      "delta_e_mean": 2.1681435679143286,
+      "delta_e_mean": 2.1651766470944427,
       "delta_e_p95": 14.31608982185164,
-      "psnr": 22.984964831365893,
+      "psnr": 23.000513608558567,
       "paths": 64,
       "nodes": 442,
-      "bytes": 11195,
-      "ms": 5.957786
+      "bytes": 11201,
+      "ms": 9.503435
     },
     "corpus/icons/phosphor-rocket-duotone.svg@clean": {
-      "delta_e_mean": 1.504069041440359,
-      "delta_e_p95": 11.861196891857105,
-      "psnr": 26.42586649770806,
+      "delta_e_mean": 1.5040660376168402,
+      "delta_e_p95": 11.780678341398785,
+      "psnr": 26.43211894660377,
       "paths": 7,
       "nodes": 66,
-      "bytes": 1611,
-      "ms": 9.019561000000001
+      "bytes": 1603,
+      "ms": 5.993757
     },
     "corpus/icons/phosphor-rocket-duotone.svg@half": {
-      "delta_e_mean": 3.0610201207805336,
+      "delta_e_mean": 3.0614185307163226,
       "delta_e_p95": 12.487913178577703,
-      "psnr": 22.46683128921342,
+      "psnr": 22.466636577454953,
       "paths": 7,
       "nodes": 61,
       "bytes": 1490,
-      "ms": 6.03717
+      "ms": 3.1458720000000002
     },
     "corpus/icons/phosphor-rocket-duotone.svg@jpeg35": {
-      "delta_e_mean": 2.1940529228892545,
+      "delta_e_mean": 2.197110311058798,
       "delta_e_p95": 12.956361280161028,
-      "psnr": 24.06839798154005,
+      "psnr": 24.054786946517307,
       "paths": 179,
-      "nodes": 1390,
-      "bytes": 28215,
-      "ms": 9.83265
+      "nodes": 1389,
+      "bytes": 28172,
+      "ms": 12.400122
     },
     "corpus/icons/phosphor-rocket-duotone.svg@jpeg75": {
       "delta_e_mean": 0.6654272680412944,
@@ -1538,25 +1538,25 @@
       "paths": 11,
       "nodes": 102,
       "bytes": 2478,
-      "ms": 9.039572
+      "ms": 6.209232
     },
     "corpus/icons/phosphor-rocket-duotone.svg@noise": {
-      "delta_e_mean": 2.3631248336958817,
+      "delta_e_mean": 2.3648427402078207,
       "delta_e_p95": 11.295782547963356,
-      "psnr": 25.98364003299618,
+      "psnr": 25.965873638484425,
       "paths": 7,
       "nodes": 71,
-      "bytes": 1736,
-      "ms": 9.505085999999999
+      "bytes": 1731,
+      "ms": 6.449669
     },
     "corpus/icons/phosphor-tree-fill.svg@blur": {
-      "delta_e_mean": 1.016716830274432,
+      "delta_e_mean": 1.0044622108476624,
       "delta_e_p95": 0.8085047224979531,
-      "psnr": 29.237581371188664,
+      "psnr": 29.425010145860302,
       "paths": 3,
-      "nodes": 52,
-      "bytes": 1294,
-      "ms": 5.604179
+      "nodes": 51,
+      "bytes": 1259,
+      "ms": 3.9745960000000005
     },
     "corpus/icons/phosphor-tree-fill.svg@clean": {
       "delta_e_mean": 0.1845389612243486,
@@ -1565,7 +1565,7 @@
       "paths": 3,
       "nodes": 43,
       "bytes": 1124,
-      "ms": 4.9750000000000005
+      "ms": 3.373736
     },
     "corpus/icons/phosphor-tree-fill.svg@half": {
       "delta_e_mean": 1.0999158308362331,
@@ -1574,16 +1574,16 @@
       "paths": 3,
       "nodes": 40,
       "bytes": 928,
-      "ms": 2.933798
+      "ms": 1.441703
     },
     "corpus/icons/phosphor-tree-fill.svg@jpeg35": {
-      "delta_e_mean": 0.583771681743437,
+      "delta_e_mean": 0.5854636906139832,
       "delta_e_p95": 0.3502104784180355,
-      "psnr": 29.36674143598792,
+      "psnr": 29.36055293863179,
       "paths": 59,
-      "nodes": 354,
-      "bytes": 7747,
-      "ms": 4.109697
+      "nodes": 355,
+      "bytes": 7732,
+      "ms": 3.632901
     },
     "corpus/icons/phosphor-tree-fill.svg@jpeg75": {
       "delta_e_mean": 0.5461164320053362,
@@ -1592,7 +1592,7 @@
       "paths": 3,
       "nodes": 45,
       "bytes": 1194,
-      "ms": 5.150893
+      "ms": 3.5219
     },
     "corpus/icons/phosphor-tree-fill.svg@noise": {
       "delta_e_mean": 1.0176081210824595,
@@ -1601,61 +1601,61 @@
       "paths": 3,
       "nodes": 45,
       "bytes": 1192,
-      "ms": 5.540879
+      "ms": 3.923036
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@blur": {
-      "delta_e_mean": 0.6909737415755196,
+      "delta_e_mean": 0.6915173082002678,
       "delta_e_p95": 3.3912110577317156,
-      "psnr": 28.944944847905386,
+      "psnr": 28.93566245110707,
       "paths": 62,
       "nodes": 550,
-      "bytes": 14093,
-      "ms": 6.458016
+      "bytes": 14094,
+      "ms": 9.389662999999999
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@clean": {
-      "delta_e_mean": 0.27323538181236773,
+      "delta_e_mean": 0.27363445684843385,
       "delta_e_p95": 0.2546288249696094,
-      "psnr": 32.14758833913474,
+      "psnr": 32.140130469961505,
       "paths": 14,
-      "nodes": 195,
-      "bytes": 5248,
-      "ms": 5.733234
+      "nodes": 193,
+      "bytes": 5229,
+      "ms": 8.947915
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@half": {
-      "delta_e_mean": 0.8252276395833483,
+      "delta_e_mean": 0.825563896407113,
       "delta_e_p95": 4.116309711928572,
-      "psnr": 27.094820721617094,
+      "psnr": 27.086541011855182,
       "paths": 15,
       "nodes": 155,
       "bytes": 4051,
-      "ms": 2.605963
+      "ms": 5.143499
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@jpeg35": {
-      "delta_e_mean": 0.8130087570694656,
+      "delta_e_mean": 0.8130304140759566,
       "delta_e_p95": 4.357524546107252,
-      "psnr": 31.18220050318786,
+      "psnr": 31.183589976911485,
       "paths": 47,
       "nodes": 456,
-      "bytes": 11264,
-      "ms": 11.404797
+      "bytes": 11266,
+      "ms": 13.613424
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@jpeg75": {
-      "delta_e_mean": 0.7823099205684233,
+      "delta_e_mean": 0.7918906809979273,
       "delta_e_p95": 4.3459368426715645,
-      "psnr": 30.929453537278757,
+      "psnr": 30.789450967139828,
       "paths": 22,
-      "nodes": 252,
-      "bytes": 5968,
-      "ms": 10.893972999999999
+      "nodes": 250,
+      "bytes": 5880,
+      "ms": 13.572859
     },
     "corpus/illustrations/fluent-bicycle-flat.svg@noise": {
-      "delta_e_mean": 0.380471897212633,
+      "delta_e_mean": 0.38050144657572077,
       "delta_e_p95": 1.0004801785202004,
-      "psnr": 31.96254257740302,
+      "psnr": 31.960357417360402,
       "paths": 14,
-      "nodes": 193,
-      "bytes": 5097,
-      "ms": 6.535482
+      "nodes": 191,
+      "bytes": 5077,
+      "ms": 9.82848
     },
     "corpus/illustrations/fluent-butterfly-color.svg@blur": {
       "delta_e_mean": 2.5591827991528744,
@@ -1664,223 +1664,223 @@
       "paths": 87,
       "nodes": 690,
       "bytes": 17016,
-      "ms": 14.343739
+      "ms": 22.140171
     },
     "corpus/illustrations/fluent-butterfly-color.svg@clean": {
-      "delta_e_mean": 2.3986047888790183,
-      "delta_e_p95": 7.374333745844512,
-      "psnr": 25.121482351686417,
+      "delta_e_mean": 2.3987749599364636,
+      "delta_e_p95": 7.38530050944175,
+      "psnr": 25.12114531563666,
       "paths": 13,
       "nodes": 194,
-      "bytes": 5085,
-      "ms": 26.406735
+      "bytes": 5088,
+      "ms": 15.654285
     },
     "corpus/illustrations/fluent-butterfly-color.svg@half": {
-      "delta_e_mean": 2.3229824490529354,
-      "delta_e_p95": 7.517006751664082,
-      "psnr": 25.718519113306524,
+      "delta_e_mean": 2.3246234760035556,
+      "delta_e_p95": 7.517955705300682,
+      "psnr": 25.71427512378944,
       "paths": 13,
       "nodes": 156,
-      "bytes": 3857,
-      "ms": 17.867241999999997
+      "bytes": 3851,
+      "ms": 8.003297
     },
     "corpus/illustrations/fluent-butterfly-color.svg@jpeg35": {
-      "delta_e_mean": 2.417111258362609,
+      "delta_e_mean": 2.417112711758664,
       "delta_e_p95": 7.775149682311869,
-      "psnr": 24.6624958744699,
+      "psnr": 24.662442600571453,
       "paths": 141,
       "nodes": 1432,
-      "bytes": 36931,
-      "ms": 22.988985
+      "bytes": 36908,
+      "ms": 23.35353
     },
     "corpus/illustrations/fluent-butterfly-color.svg@jpeg75": {
-      "delta_e_mean": 2.485234020941591,
+      "delta_e_mean": 2.483798664893548,
       "delta_e_p95": 7.382190382638567,
-      "psnr": 25.000690121838996,
+      "psnr": 25.00657265435981,
       "paths": 14,
       "nodes": 240,
-      "bytes": 5396,
-      "ms": 31.42707
+      "bytes": 5386,
+      "ms": 20.568838
     },
     "corpus/illustrations/fluent-butterfly-color.svg@noise": {
-      "delta_e_mean": 2.4055653137556106,
-      "delta_e_p95": 7.341962009201715,
-      "psnr": 25.089831056759575,
+      "delta_e_mean": 2.4048456825118203,
+      "delta_e_p95": 7.342258787887506,
+      "psnr": 25.089974506837084,
       "paths": 13,
       "nodes": 227,
-      "bytes": 5447,
-      "ms": 29.442066999999998
+      "bytes": 5444,
+      "ms": 18.751785
     },
     "corpus/illustrations/fluent-cat_face-flat.svg@blur": {
-      "delta_e_mean": 0.5637711921812234,
-      "delta_e_p95": 2.6131962653410903,
-      "psnr": 30.681197483305947,
+      "delta_e_mean": 0.562438534107426,
+      "delta_e_p95": 2.543624161179193,
+      "psnr": 30.695609855688474,
       "paths": 63,
-      "nodes": 525,
-      "bytes": 12255,
-      "ms": 7.896807000000001
+      "nodes": 524,
+      "bytes": 12189,
+      "ms": 16.263519000000002
     },
     "corpus/illustrations/fluent-cat_face-flat.svg@clean": {
-      "delta_e_mean": 0.2393989176153099,
+      "delta_e_mean": 0.22668859454160273,
       "delta_e_p95": 1.4529882934021323,
-      "psnr": 35.59036407504278,
-      "paths": 11,
-      "nodes": 135,
-      "bytes": 3057,
-      "ms": 9.785919
-    },
-    "corpus/illustrations/fluent-cat_face-flat.svg@half": {
-      "delta_e_mean": 0.33504681471395054,
-      "delta_e_p95": 0.590770567345556,
-      "psnr": 30.620435802830475,
+      "psnr": 36.05530541164856,
       "paths": 11,
       "nodes": 138,
-      "bytes": 3215,
-      "ms": 5.664497999999999
+      "bytes": 3140,
+      "ms": 10.766345
+    },
+    "corpus/illustrations/fluent-cat_face-flat.svg@half": {
+      "delta_e_mean": 0.3391940166279074,
+      "delta_e_p95": 0.590770567345556,
+      "psnr": 30.584921576546495,
+      "paths": 11,
+      "nodes": 138,
+      "bytes": 3217,
+      "ms": 4.90729
     },
     "corpus/illustrations/fluent-cat_face-flat.svg@jpeg35": {
-      "delta_e_mean": 0.2779339557045532,
+      "delta_e_mean": 0.2798606213596272,
       "delta_e_p95": 1.1647160681185385,
-      "psnr": 36.232332478367056,
+      "psnr": 36.15732265724402,
       "paths": 33,
       "nodes": 276,
-      "bytes": 6336,
-      "ms": 12.512858
+      "bytes": 6324,
+      "ms": 15.603947
     },
     "corpus/illustrations/fluent-cat_face-flat.svg@jpeg75": {
-      "delta_e_mean": 0.2553307162803307,
+      "delta_e_mean": 0.2557031873778776,
       "delta_e_p95": 1.0940611416781436,
-      "psnr": 35.596915043560216,
+      "psnr": 35.59086880950963,
       "paths": 13,
       "nodes": 170,
-      "bytes": 4313,
-      "ms": 14.727574
+      "bytes": 4315,
+      "ms": 15.529743
     },
     "corpus/illustrations/fluent-cat_face-flat.svg@noise": {
-      "delta_e_mean": 0.4949138850776202,
+      "delta_e_mean": 0.49631140268512447,
       "delta_e_p95": 1.7419299380236988,
-      "psnr": 35.876645621123004,
+      "psnr": 35.81622676388138,
       "paths": 12,
       "nodes": 151,
-      "bytes": 3740,
-      "ms": 11.074073
+      "bytes": 3737,
+      "ms": 11.206525000000001
     },
     "corpus/illustrations/fluent-fox-flat.svg@blur": {
-      "delta_e_mean": 0.6519988154774472,
+      "delta_e_mean": 0.6577422139128546,
       "delta_e_p95": 4.4416690732785415,
-      "psnr": 31.615638237211392,
+      "psnr": 31.55180140048971,
       "paths": 7,
-      "nodes": 107,
-      "bytes": 2785,
-      "ms": 6.771614
+      "nodes": 103,
+      "bytes": 2707,
+      "ms": 8.302605
     },
     "corpus/illustrations/fluent-fox-flat.svg@clean": {
-      "delta_e_mean": 0.5570976349622657,
+      "delta_e_mean": 0.5583153802672151,
       "delta_e_p95": 4.121446953586246,
-      "psnr": 32.028438184935865,
+      "psnr": 32.01074975464906,
       "paths": 7,
       "nodes": 112,
-      "bytes": 3028,
-      "ms": 6.651777
+      "bytes": 3022,
+      "ms": 7.641097
     },
     "corpus/illustrations/fluent-fox-flat.svg@half": {
-      "delta_e_mean": 0.6747463019070021,
+      "delta_e_mean": 0.6751769703659373,
       "delta_e_p95": 4.4416690732785415,
-      "psnr": 29.757263953612267,
+      "psnr": 29.755135315893256,
       "paths": 7,
       "nodes": 88,
-      "bytes": 2144,
-      "ms": 2.816789
+      "bytes": 2152,
+      "ms": 3.849308
     },
     "corpus/illustrations/fluent-fox-flat.svg@jpeg35": {
-      "delta_e_mean": 0.6454782145006611,
+      "delta_e_mean": 0.6472481313888303,
       "delta_e_p95": 4.4416690732785415,
-      "psnr": 31.46082818025063,
+      "psnr": 31.44128573973259,
       "paths": 51,
       "nodes": 419,
       "bytes": 9826,
-      "ms": 9.378165000000001
+      "ms": 12.459358
     },
     "corpus/illustrations/fluent-fox-flat.svg@jpeg75": {
-      "delta_e_mean": 0.49414683487358035,
-      "delta_e_p95": 2.841810528465925,
-      "psnr": 33.62635787973573,
+      "delta_e_mean": 0.5067813858898284,
+      "delta_e_p95": 3.17382356538178,
+      "psnr": 33.25708208604048,
       "paths": 12,
       "nodes": 138,
-      "bytes": 3571,
-      "ms": 10.465221
+      "bytes": 3614,
+      "ms": 12.638945
     },
     "corpus/illustrations/fluent-fox-flat.svg@noise": {
-      "delta_e_mean": 0.7178740498900502,
+      "delta_e_mean": 0.7187119439216038,
       "delta_e_p95": 4.248951651522267,
-      "psnr": 31.79515946531829,
+      "psnr": 31.783935037028378,
       "paths": 7,
       "nodes": 138,
-      "bytes": 3357,
-      "ms": 7.869075
+      "bytes": 3363,
+      "ms": 8.84924
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@blur": {
-      "delta_e_mean": 0.3537703329419968,
+      "delta_e_mean": 0.3495141383172192,
       "delta_e_p95": 0.0,
-      "psnr": 29.891056550105446,
+      "psnr": 29.93661800959762,
       "paths": 3,
       "nodes": 89,
-      "bytes": 2684,
-      "ms": 10.486991
+      "bytes": 2678,
+      "ms": 6.52933
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@clean": {
-      "delta_e_mean": 0.35320541567226543,
+      "delta_e_mean": 0.3471859405375814,
       "delta_e_p95": 0.0,
-      "psnr": 30.231404425583804,
+      "psnr": 30.308592918569076,
       "paths": 3,
-      "nodes": 81,
-      "bytes": 2440,
-      "ms": 10.123471
+      "nodes": 88,
+      "bytes": 2693,
+      "ms": 6.583234
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@half": {
-      "delta_e_mean": 0.710360844324003,
+      "delta_e_mean": 0.7141830497155048,
       "delta_e_p95": 0.0,
-      "psnr": 24.454117335086952,
+      "psnr": 24.419375430355757,
       "paths": 3,
-      "nodes": 66,
-      "bytes": 1709,
-      "ms": 6.3274680000000005
+      "nodes": 68,
+      "bytes": 1541,
+      "ms": 3.113489
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@jpeg35": {
-      "delta_e_mean": 0.5552189129380625,
+      "delta_e_mean": 0.560956849777485,
       "delta_e_p95": 0.8466332301516671,
-      "psnr": 29.551640532704923,
+      "psnr": 29.45512458950011,
       "paths": 328,
-      "nodes": 1852,
-      "bytes": 37559,
-      "ms": 10.500284
+      "nodes": 1840,
+      "bytes": 37963,
+      "ms": 11.914839
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@jpeg75": {
-      "delta_e_mean": 0.2529704868253541,
+      "delta_e_mean": 0.25405251718745403,
       "delta_e_p95": 0.42060397222861173,
-      "psnr": 33.36971673162806,
+      "psnr": 33.30153692295294,
       "paths": 6,
-      "nodes": 101,
-      "bytes": 2849,
-      "ms": 15.769076
+      "nodes": 102,
+      "bytes": 2891,
+      "ms": 12.1595
     },
     "corpus/illustrations/fluent-guitar-high-contrast.svg@noise": {
-      "delta_e_mean": 0.40042698478823857,
+      "delta_e_mean": 0.3944308985545878,
       "delta_e_p95": 0.27985099005669145,
-      "psnr": 30.234098728448906,
+      "psnr": 30.310668789144266,
       "paths": 3,
-      "nodes": 81,
-      "bytes": 2440,
-      "ms": 10.288077
+      "nodes": 88,
+      "bytes": 2693,
+      "ms": 6.746885
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@blur": {
-      "delta_e_mean": 0.6169360983244784,
+      "delta_e_mean": 0.6154771790784483,
       "delta_e_p95": 2.7083182539182866,
-      "psnr": 32.70213787990069,
+      "psnr": 32.742054034937176,
       "paths": 123,
-      "nodes": 829,
-      "bytes": 17057,
-      "ms": 6.695957
+      "nodes": 825,
+      "bytes": 17005,
+      "ms": 10.371729
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@clean": {
       "delta_e_mean": 0.4753494490494523,
@@ -1889,34 +1889,34 @@
       "paths": 14,
       "nodes": 169,
       "bytes": 4356,
-      "ms": 6.834238
+      "ms": 9.220806999999999
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@half": {
-      "delta_e_mean": 0.6590839667137682,
+      "delta_e_mean": 0.6590407678218698,
       "delta_e_p95": 2.7083182539182866,
-      "psnr": 31.50821517808498,
+      "psnr": 31.518596029154065,
       "paths": 24,
       "nodes": 183,
-      "bytes": 4191,
-      "ms": 2.273669
+      "bytes": 4192,
+      "ms": 4.895565
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@jpeg35": {
-      "delta_e_mean": 1.1555512862021984,
+      "delta_e_mean": 1.1553817423554344,
       "delta_e_p95": 3.068379506482246,
-      "psnr": 31.974001827587955,
+      "psnr": 31.974597527995012,
       "paths": 97,
       "nodes": 682,
-      "bytes": 16510,
-      "ms": 17.920626
+      "bytes": 16505,
+      "ms": 13.47611
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@jpeg75": {
-      "delta_e_mean": 1.0751907764638566,
+      "delta_e_mean": 1.0751863257739331,
       "delta_e_p95": 3.068379506482246,
-      "psnr": 32.09757021288519,
+      "psnr": 32.09782626333417,
       "paths": 65,
       "nodes": 436,
       "bytes": 10640,
-      "ms": 12.516334
+      "ms": 10.914057
     },
     "corpus/illustrations/fluent-hot_beverage-flat.svg@noise": {
       "delta_e_mean": 0.6822556493276836,
@@ -1925,61 +1925,61 @@
       "paths": 139,
       "nodes": 1682,
       "bytes": 42395,
-      "ms": 16.611132
+      "ms": 13.769881
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@blur": {
-      "delta_e_mean": 0.2935493373273036,
+      "delta_e_mean": 0.2951536975181435,
       "delta_e_p95": 0.0,
-      "psnr": 31.18331486512616,
+      "psnr": 31.171717547656858,
       "paths": 3,
       "nodes": 107,
       "bytes": 2789,
-      "ms": 14.925548000000001
+      "ms": 14.048202
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@clean": {
-      "delta_e_mean": 0.27259454166004354,
+      "delta_e_mean": 0.27331214474466287,
       "delta_e_p95": 0.0,
-      "psnr": 31.483782267549646,
+      "psnr": 31.514467983361754,
       "paths": 3,
       "nodes": 97,
-      "bytes": 2600,
-      "ms": 13.816517000000001
+      "bytes": 2602,
+      "ms": 13.473801
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@half": {
-      "delta_e_mean": 0.5787215807820195,
+      "delta_e_mean": 0.5849064946842956,
       "delta_e_p95": 0.0,
-      "psnr": 25.768517288111372,
+      "psnr": 25.74130005605827,
       "paths": 3,
       "nodes": 81,
-      "bytes": 2155,
-      "ms": 9.589687
+      "bytes": 2147,
+      "ms": 7.322206
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@jpeg35": {
-      "delta_e_mean": 0.5065707965171758,
+      "delta_e_mean": 0.5066084115256476,
       "delta_e_p95": 0.42239678326012914,
-      "psnr": 30.211545695421535,
+      "psnr": 30.211470796962196,
       "paths": 190,
-      "nodes": 1128,
-      "bytes": 25213,
-      "ms": 11.952175
+      "nodes": 1129,
+      "bytes": 25187,
+      "ms": 20.462412999999998
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@jpeg75": {
-      "delta_e_mean": 0.4077489273301579,
+      "delta_e_mean": 0.4100326061807006,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 33.007909519457975,
+      "psnr": 32.98970958526788,
       "paths": 9,
       "nodes": 90,
-      "bytes": 2462,
-      "ms": 18.70658
+      "bytes": 2464,
+      "ms": 19.022989
     },
     "corpus/illustrations/fluent-owl-high-contrast.svg@noise": {
-      "delta_e_mean": 0.3568104445984287,
+      "delta_e_mean": 0.3575341162047561,
       "delta_e_p95": 0.27985099005669145,
-      "psnr": 31.49615164429192,
+      "psnr": 31.526556646043975,
       "paths": 3,
       "nodes": 97,
-      "bytes": 2600,
-      "ms": 14.100209000000001
+      "bytes": 2602,
+      "ms": 13.69295
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@blur": {
       "delta_e_mean": 1.7031832273753174,
@@ -1988,25 +1988,25 @@
       "paths": 75,
       "nodes": 579,
       "bytes": 13584,
-      "ms": 10.829649999999999
+      "ms": 12.770685
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@clean": {
-      "delta_e_mean": 1.6385428563639735,
+      "delta_e_mean": 1.638721522692867,
       "delta_e_p95": 4.707650692927897,
-      "psnr": 28.775765823835528,
+      "psnr": 28.774278750469122,
       "paths": 18,
       "nodes": 266,
-      "bytes": 7355,
-      "ms": 10.183555
+      "bytes": 7351,
+      "ms": 10.801997
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@half": {
-      "delta_e_mean": 1.8678069376177941,
-      "delta_e_p95": 5.126005320864205,
-      "psnr": 25.829007167848943,
+      "delta_e_mean": 1.8773004241844122,
+      "delta_e_p95": 5.141955752449948,
+      "psnr": 25.752821253295195,
       "paths": 33,
-      "nodes": 292,
-      "bytes": 6771,
-      "ms": 3.949426
+      "nodes": 290,
+      "bytes": 6707,
+      "ms": 5.962744
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@jpeg35": {
       "delta_e_mean": 2.067899164512877,
@@ -2015,7 +2015,7 @@
       "paths": 15,
       "nodes": 199,
       "bytes": 5851,
-      "ms": 21.574547
+      "ms": 17.878121
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@jpeg75": {
       "delta_e_mean": 1.5502231668497524,
@@ -2024,34 +2024,34 @@
       "paths": 37,
       "nodes": 423,
       "bytes": 11525,
-      "ms": 13.92735
+      "ms": 15.773388999999998
     },
     "corpus/illustrations/fluent-sun_with_face-color.svg@noise": {
-      "delta_e_mean": 1.6244473488821842,
+      "delta_e_mean": 1.6242621426871882,
       "delta_e_p95": 5.329144180835618,
-      "psnr": 27.901516521275965,
+      "psnr": 27.90204273323477,
       "paths": 292,
-      "nodes": 2568,
-      "bytes": 59099,
-      "ms": 37.168863
+      "nodes": 2567,
+      "bytes": 59087,
+      "ms": 17.975544
     },
     "corpus/illustrations/noto-1f30d.svg@blur": {
-      "delta_e_mean": 1.7304915876279618,
+      "delta_e_mean": 1.7305439758497114,
       "delta_e_p95": 5.385153869251368,
-      "psnr": 27.47369855128405,
+      "psnr": 27.47317989903458,
       "paths": 62,
       "nodes": 716,
-      "bytes": 19001,
-      "ms": 11.753632999999999
+      "bytes": 18999,
+      "ms": 11.570822
     },
     "corpus/illustrations/noto-1f30d.svg@clean": {
-      "delta_e_mean": 1.582423471342119,
+      "delta_e_mean": 1.5824596683380279,
       "delta_e_p95": 5.350255268305272,
-      "psnr": 28.531788675715752,
+      "psnr": 28.531122754155632,
       "paths": 16,
       "nodes": 412,
-      "bytes": 12120,
-      "ms": 12.241489
+      "bytes": 12121,
+      "ms": 9.954473
     },
     "corpus/illustrations/noto-1f30d.svg@half": {
       "delta_e_mean": 2.0118454274893782,
@@ -2060,34 +2060,34 @@
       "paths": 34,
       "nodes": 376,
       "bytes": 8980,
-      "ms": 3.310686
+      "ms": 4.422009
     },
     "corpus/illustrations/noto-1f30d.svg@jpeg35": {
-      "delta_e_mean": 1.67242841625602,
+      "delta_e_mean": 1.6707976235405217,
       "delta_e_p95": 5.165336123822399,
-      "psnr": 28.11894058927377,
+      "psnr": 28.136322364335573,
       "paths": 47,
-      "nodes": 657,
-      "bytes": 19162,
-      "ms": 17.732599
+      "nodes": 659,
+      "bytes": 19244,
+      "ms": 15.118889
     },
     "corpus/illustrations/noto-1f30d.svg@jpeg75": {
-      "delta_e_mean": 1.6806518593320843,
+      "delta_e_mean": 1.6813185048083243,
       "delta_e_p95": 5.170339586648558,
-      "psnr": 28.23549830209447,
+      "psnr": 28.232122109507177,
       "paths": 31,
-      "nodes": 542,
-      "bytes": 15689,
-      "ms": 15.439269
+      "nodes": 540,
+      "bytes": 15607,
+      "ms": 13.837912000000001
     },
     "corpus/illustrations/noto-1f30d.svg@noise": {
-      "delta_e_mean": 1.5584155552645784,
+      "delta_e_mean": 1.557952974654253,
       "delta_e_p95": 5.455547756257413,
-      "psnr": 28.222156080735658,
+      "psnr": 28.228368738045056,
       "paths": 98,
-      "nodes": 1193,
-      "bytes": 30138,
-      "ms": 14.716655000000001
+      "nodes": 1194,
+      "bytes": 30124,
+      "ms": 12.738093000000001
     },
     "corpus/illustrations/noto-1f34e.svg@blur": {
       "delta_e_mean": 0.291094375182606,
@@ -2096,7 +2096,7 @@
       "paths": 26,
       "nodes": 260,
       "bytes": 6373,
-      "ms": 8.474196999999998
+      "ms": 8.163845
     },
     "corpus/illustrations/noto-1f34e.svg@clean": {
       "delta_e_mean": 0.20736376705829015,
@@ -2105,7 +2105,7 @@
       "paths": 8,
       "nodes": 140,
       "bytes": 3661,
-      "ms": 8.589914
+      "ms": 7.765033
     },
     "corpus/illustrations/noto-1f34e.svg@half": {
       "delta_e_mean": 0.36396074131515643,
@@ -2114,7 +2114,7 @@
       "paths": 9,
       "nodes": 105,
       "bytes": 2550,
-      "ms": 3.800878
+      "ms": 3.379379
     },
     "corpus/illustrations/noto-1f34e.svg@jpeg35": {
       "delta_e_mean": 0.5512570334291961,
@@ -2123,7 +2123,7 @@
       "paths": 15,
       "nodes": 179,
       "bytes": 4540,
-      "ms": 12.751785
+      "ms": 11.904895999999999
     },
     "corpus/illustrations/noto-1f34e.svg@jpeg75": {
       "delta_e_mean": 0.2983229534429242,
@@ -2132,7 +2132,7 @@
       "paths": 14,
       "nodes": 185,
       "bytes": 4370,
-      "ms": 12.528759
+      "ms": 12.184929
     },
     "corpus/illustrations/noto-1f34e.svg@noise": {
       "delta_e_mean": 0.546031879075412,
@@ -2141,88 +2141,88 @@
       "paths": 8,
       "nodes": 159,
       "bytes": 4060,
-      "ms": 9.646105
+      "ms": 8.751916
     },
     "corpus/illustrations/noto-1f3e0.svg@blur": {
-      "delta_e_mean": 1.1282232357383373,
+      "delta_e_mean": 1.1302678490566955,
       "delta_e_p95": 4.402042402217001,
-      "psnr": 27.916420074050553,
+      "psnr": 27.89900704901614,
       "paths": 51,
       "nodes": 634,
-      "bytes": 13088,
-      "ms": 20.264302
+      "bytes": 13113,
+      "ms": 19.277709
     },
     "corpus/illustrations/noto-1f3e0.svg@clean": {
-      "delta_e_mean": 0.7660134536344341,
+      "delta_e_mean": 0.7669228390789563,
       "delta_e_p95": 3.3077479430069707,
-      "psnr": 30.068994056589844,
+      "psnr": 30.07445173657015,
       "paths": 28,
       "nodes": 532,
-      "bytes": 9898,
-      "ms": 17.972990000000003
+      "bytes": 9899,
+      "ms": 13.354671
     },
     "corpus/illustrations/noto-1f3e0.svg@half": {
-      "delta_e_mean": 1.1487315247172711,
-      "delta_e_p95": 4.0039580662941585,
-      "psnr": 26.448690775765474,
+      "delta_e_mean": 1.143262265518971,
+      "delta_e_p95": 4.174762334591605,
+      "psnr": 26.442698990249376,
       "paths": 31,
       "nodes": 335,
-      "bytes": 6596,
-      "ms": 11.783503000000001
+      "bytes": 6548,
+      "ms": 8.10675
     },
     "corpus/illustrations/noto-1f3e0.svg@jpeg35": {
-      "delta_e_mean": 1.7571311234375189,
+      "delta_e_mean": 1.7569855885116543,
       "delta_e_p95": 3.2668028251053034,
-      "psnr": 28.19232343528443,
+      "psnr": 28.191957715356782,
       "paths": 40,
       "nodes": 604,
-      "bytes": 12231,
-      "ms": 25.177535000000002
+      "bytes": 12223,
+      "ms": 20.529967
     },
     "corpus/illustrations/noto-1f3e0.svg@jpeg75": {
-      "delta_e_mean": 1.6458407158316424,
+      "delta_e_mean": 1.64603650458458,
       "delta_e_p95": 3.2668028251053034,
-      "psnr": 28.59262597230984,
+      "psnr": 28.59015752848919,
       "paths": 37,
-      "nodes": 582,
-      "bytes": 11125,
-      "ms": 23.622761
+      "nodes": 583,
+      "bytes": 11159,
+      "ms": 19.584192
     },
     "corpus/illustrations/noto-1f3e0.svg@noise": {
-      "delta_e_mean": 0.8269950347340987,
+      "delta_e_mean": 0.8266229819493756,
       "delta_e_p95": 3.573691952407839,
-      "psnr": 30.02322700862795,
+      "psnr": 30.02284656384375,
       "paths": 64,
-      "nodes": 835,
-      "bytes": 16949,
-      "ms": 24.535645
+      "nodes": 830,
+      "bytes": 16801,
+      "ms": 16.689529
     },
     "corpus/illustrations/noto-1f437.svg@blur": {
-      "delta_e_mean": 0.4084771224413134,
+      "delta_e_mean": 0.4092725655826563,
       "delta_e_p95": 1.52061769031005,
-      "psnr": 36.20452836730747,
+      "psnr": 36.1779137248869,
       "paths": 17,
       "nodes": 206,
-      "bytes": 5630,
-      "ms": 9.357578
+      "bytes": 5627,
+      "ms": 9.783878
     },
     "corpus/illustrations/noto-1f437.svg@clean": {
-      "delta_e_mean": 0.17410365367113337,
+      "delta_e_mean": 0.17489655683156116,
       "delta_e_p95": 0.5103096846702426,
-      "psnr": 36.88107958789309,
+      "psnr": 36.854654964558236,
       "paths": 12,
       "nodes": 167,
-      "bytes": 4466,
-      "ms": 9.084643999999999
+      "bytes": 4472,
+      "ms": 9.947859
     },
     "corpus/illustrations/noto-1f437.svg@half": {
-      "delta_e_mean": 0.3552587316482424,
+      "delta_e_mean": 0.35831837202257594,
       "delta_e_p95": 1.6642168706004827,
-      "psnr": 33.38056827245058,
+      "psnr": 33.312801686272806,
       "paths": 13,
       "nodes": 132,
-      "bytes": 3733,
-      "ms": 4.772161
+      "bytes": 3738,
+      "ms": 5.588437
     },
     "corpus/illustrations/noto-1f437.svg@jpeg35": {
       "delta_e_mean": 0.3357687817474885,
@@ -2230,53 +2230,53 @@
       "psnr": 35.9749549035366,
       "paths": 45,
       "nodes": 343,
-      "bytes": 9437,
-      "ms": 13.878675999999999
+      "bytes": 9451,
+      "ms": 13.833395999999999
     },
     "corpus/illustrations/noto-1f437.svg@jpeg75": {
-      "delta_e_mean": 0.18293624388566057,
+      "delta_e_mean": 0.18339951220452547,
       "delta_e_p95": 0.3743920245374513,
-      "psnr": 36.8847751529166,
+      "psnr": 36.85677604141324,
       "paths": 15,
       "nodes": 172,
-      "bytes": 4763,
-      "ms": 12.425257
+      "bytes": 4765,
+      "ms": 13.368201999999998
     },
     "corpus/illustrations/noto-1f437.svg@noise": {
-      "delta_e_mean": 0.505739042023581,
+      "delta_e_mean": 0.5064159868265453,
       "delta_e_p95": 0.7143252341043235,
-      "psnr": 36.76614959689503,
+      "psnr": 36.739290552837474,
       "paths": 11,
       "nodes": 159,
-      "bytes": 4706,
-      "ms": 9.949250999999999
+      "bytes": 4702,
+      "ms": 10.53019
     },
     "corpus/illustrations/noto-1f4a1.svg@blur": {
-      "delta_e_mean": 0.453508566574821,
+      "delta_e_mean": 0.45320739372644314,
       "delta_e_p95": 3.8443371588248163,
-      "psnr": 29.46126578747839,
+      "psnr": 29.463441512111356,
       "paths": 80,
       "nodes": 739,
       "bytes": 18342,
-      "ms": 10.038161
+      "ms": 12.204987000000001
     },
     "corpus/illustrations/noto-1f4a1.svg@clean": {
-      "delta_e_mean": 0.22218651055802213,
-      "delta_e_p95": 0.4729294348977311,
-      "psnr": 32.42736282815442,
+      "delta_e_mean": 0.22362721866397658,
+      "delta_e_p95": 0.4742841173501493,
+      "psnr": 32.38598636433737,
       "paths": 31,
-      "nodes": 409,
-      "bytes": 10760,
-      "ms": 12.556751
+      "nodes": 405,
+      "bytes": 10707,
+      "ms": 11.70449
     },
     "corpus/illustrations/noto-1f4a1.svg@half": {
-      "delta_e_mean": 0.5846447984087136,
+      "delta_e_mean": 0.5876061124012301,
       "delta_e_p95": 2.75573604325537,
-      "psnr": 26.518963815432286,
+      "psnr": 26.473396424264187,
       "paths": 42,
-      "nodes": 389,
-      "bytes": 8166,
-      "ms": 5.07949
+      "nodes": 386,
+      "bytes": 8141,
+      "ms": 7.045468
     },
     "corpus/illustrations/noto-1f4a1.svg@jpeg35": {
       "delta_e_mean": 0.30609786544575945,
@@ -2285,7 +2285,7 @@
       "paths": 47,
       "nodes": 522,
       "bytes": 13187,
-      "ms": 14.764313
+      "ms": 15.881859000000002
     },
     "corpus/illustrations/noto-1f4a1.svg@jpeg75": {
       "delta_e_mean": 0.28319216614321907,
@@ -2294,25 +2294,25 @@
       "paths": 39,
       "nodes": 447,
       "bytes": 11267,
-      "ms": 15.225729000000001
+      "ms": 16.297849
     },
     "corpus/illustrations/noto-1f4a1.svg@noise": {
-      "delta_e_mean": 0.41056846090130905,
+      "delta_e_mean": 0.4107953706042014,
       "delta_e_p95": 1.3341820073068722,
-      "psnr": 32.32785101188056,
+      "psnr": 32.328411802867556,
       "paths": 33,
       "nodes": 440,
-      "bytes": 11083,
-      "ms": 10.830262
+      "bytes": 11084,
+      "ms": 12.546766000000002
     },
     "corpus/illustrations/noto-1f525.svg@blur": {
-      "delta_e_mean": 1.1138273897171098,
+      "delta_e_mean": 1.113790800558139,
       "delta_e_p95": 4.019866630594785,
-      "psnr": 28.48673829994048,
+      "psnr": 28.487280241204815,
       "paths": 90,
       "nodes": 680,
-      "bytes": 15502,
-      "ms": 6.523644
+      "bytes": 15520,
+      "ms": 9.247036999999999
     },
     "corpus/illustrations/noto-1f525.svg@clean": {
       "delta_e_mean": 1.0435755538963885,
@@ -2321,7 +2321,7 @@
       "paths": 10,
       "nodes": 164,
       "bytes": 5034,
-      "ms": 5.825952
+      "ms": 6.024881000000001
     },
     "corpus/illustrations/noto-1f525.svg@half": {
       "delta_e_mean": 1.2414229022977132,
@@ -2330,7 +2330,7 @@
       "paths": 7,
       "nodes": 76,
       "bytes": 2092,
-      "ms": 1.9146079999999999
+      "ms": 2.144524
     },
     "corpus/illustrations/noto-1f525.svg@jpeg35": {
       "delta_e_mean": 1.4011330813899845,
@@ -2339,88 +2339,88 @@
       "paths": 58,
       "nodes": 536,
       "bytes": 13195,
-      "ms": 10.70862
+      "ms": 11.242538
     },
     "corpus/illustrations/noto-1f525.svg@jpeg75": {
-      "delta_e_mean": 1.2115057272511935,
-      "delta_e_p95": 4.906057547952419,
-      "psnr": 28.64595763577684,
+      "delta_e_mean": 1.2112253602098633,
+      "delta_e_p95": 4.881595372155495,
+      "psnr": 28.647409577367412,
       "paths": 46,
       "nodes": 414,
-      "bytes": 10435,
-      "ms": 10.875378
+      "bytes": 10437,
+      "ms": 10.941489
     },
     "corpus/illustrations/noto-1f525.svg@noise": {
-      "delta_e_mean": 1.2111402051778106,
+      "delta_e_mean": 1.2111013647540378,
       "delta_e_p95": 4.647016399705597,
-      "psnr": 27.4970457068371,
+      "psnr": 27.497220193507662,
       "paths": 178,
-      "nodes": 1556,
-      "bytes": 37298,
-      "ms": 22.769281
+      "nodes": 1554,
+      "bytes": 37269,
+      "ms": 10.883156
     },
     "corpus/illustrations/noto-1f600.svg@blur": {
-      "delta_e_mean": 1.8226320234350673,
+      "delta_e_mean": 1.8226221541054828,
       "delta_e_p95": 4.760920714159381,
-      "psnr": 28.224886912585685,
+      "psnr": 28.225557611560752,
       "paths": 81,
       "nodes": 571,
-      "bytes": 13204,
-      "ms": 14.800098
+      "bytes": 13203,
+      "ms": 19.289975000000002
     },
     "corpus/illustrations/noto-1f600.svg@clean": {
-      "delta_e_mean": 1.6276552754502605,
+      "delta_e_mean": 1.6283047226024558,
       "delta_e_p95": 4.514053412215045,
-      "psnr": 28.95417922838686,
+      "psnr": 28.94287637478472,
       "paths": 23,
       "nodes": 191,
-      "bytes": 5225,
-      "ms": 18.338751000000002
+      "bytes": 5231,
+      "ms": 20.484486
     },
     "corpus/illustrations/noto-1f600.svg@half": {
-      "delta_e_mean": 1.790454221268861,
+      "delta_e_mean": 1.7918658559877771,
       "delta_e_p95": 4.267219184304602,
-      "psnr": 26.21457291946605,
+      "psnr": 26.21260621871098,
       "paths": 24,
       "nodes": 187,
-      "bytes": 4765,
-      "ms": 6.13279
+      "bytes": 4719,
+      "ms": 7.518302
     },
     "corpus/illustrations/noto-1f600.svg@jpeg35": {
-      "delta_e_mean": 1.6702569055180727,
+      "delta_e_mean": 1.6730588656500096,
       "delta_e_p95": 4.48282327214464,
-      "psnr": 29.20486144653424,
+      "psnr": 29.17332883785308,
       "paths": 30,
-      "nodes": 285,
-      "bytes": 8056,
-      "ms": 13.262314
+      "nodes": 284,
+      "bytes": 8123,
+      "ms": 19.051875
     },
     "corpus/illustrations/noto-1f600.svg@jpeg75": {
-      "delta_e_mean": 1.560611947889682,
-      "delta_e_p95": 4.48282327214464,
-      "psnr": 29.479623984370164,
+      "delta_e_mean": 1.569561691018229,
+      "delta_e_p95": 4.6574458197817075,
+      "psnr": 29.254173836158003,
       "paths": 29,
       "nodes": 260,
-      "bytes": 7275,
-      "ms": 13.385444
+      "bytes": 7257,
+      "ms": 20.622117
     },
     "corpus/illustrations/noto-1f600.svg@noise": {
-      "delta_e_mean": 1.6971349609492046,
+      "delta_e_mean": 1.6971715572472157,
       "delta_e_p95": 5.234062095642978,
-      "psnr": 28.832044402453093,
+      "psnr": 28.8321035919995,
       "paths": 67,
       "nodes": 735,
-      "bytes": 17598,
-      "ms": 12.292869
+      "bytes": 17606,
+      "ms": 14.436212000000001
     },
     "corpus/illustrations/noto-1f680.svg@blur": {
-      "delta_e_mean": 0.8240557478847763,
+      "delta_e_mean": 0.8241150630110593,
       "delta_e_p95": 4.48138030576634,
-      "psnr": 28.415812763635845,
+      "psnr": 28.414747991486593,
       "paths": 111,
-      "nodes": 937,
-      "bytes": 20613,
-      "ms": 12.440399
+      "nodes": 935,
+      "bytes": 20534,
+      "ms": 15.952996
     },
     "corpus/illustrations/noto-1f680.svg@clean": {
       "delta_e_mean": 0.590003229715278,
@@ -2428,26 +2428,26 @@
       "psnr": 29.524717095536815,
       "paths": 42,
       "nodes": 513,
-      "bytes": 12130,
-      "ms": 14.445108999999999
+      "bytes": 12129,
+      "ms": 15.794327000000001
     },
     "corpus/illustrations/noto-1f680.svg@half": {
-      "delta_e_mean": 0.999330128498307,
+      "delta_e_mean": 0.9992933784800289,
       "delta_e_p95": 6.0624976217944555,
-      "psnr": 25.93291401860279,
+      "psnr": 25.932769242856324,
       "paths": 37,
       "nodes": 348,
-      "bytes": 7694,
-      "ms": 7.405814
+      "bytes": 7625,
+      "ms": 8.763178
     },
     "corpus/illustrations/noto-1f680.svg@jpeg35": {
-      "delta_e_mean": 0.7663610434514477,
-      "delta_e_p95": 3.3540308104368437,
-      "psnr": 28.959513837464343,
+      "delta_e_mean": 0.7656800816684902,
+      "delta_e_p95": 3.388872828561071,
+      "psnr": 28.973645622336267,
       "paths": 86,
-      "nodes": 831,
-      "bytes": 19959,
-      "ms": 17.042564
+      "nodes": 832,
+      "bytes": 19997,
+      "ms": 18.555526
     },
     "corpus/illustrations/noto-1f680.svg@jpeg75": {
       "delta_e_mean": 0.6953470286588695,
@@ -2456,52 +2456,52 @@
       "paths": 50,
       "nodes": 549,
       "bytes": 12846,
-      "ms": 16.11332
+      "ms": 18.349254
     },
     "corpus/illustrations/noto-1f680.svg@noise": {
-      "delta_e_mean": 0.7049544587871563,
+      "delta_e_mean": 0.7049663753360899,
       "delta_e_p95": 3.120606161697716,
-      "psnr": 29.349837821570258,
+      "psnr": 29.3498223005176,
       "paths": 53,
       "nodes": 630,
-      "bytes": 14743,
-      "ms": 15.697527999999998
+      "bytes": 14742,
+      "ms": 17.581932000000002
     },
     "corpus/illustrations/noto-1f981.svg@blur": {
-      "delta_e_mean": 0.4409478292518362,
+      "delta_e_mean": 0.4412096048686869,
       "delta_e_p95": 0.8912239829262272,
-      "psnr": 30.095814538828158,
+      "psnr": 30.091701871179595,
       "paths": 43,
-      "nodes": 388,
-      "bytes": 10715,
-      "ms": 12.387236
+      "nodes": 390,
+      "bytes": 10759,
+      "ms": 13.95672
     },
     "corpus/illustrations/noto-1f981.svg@clean": {
-      "delta_e_mean": 0.2656986167505238,
+      "delta_e_mean": 0.2657950868914583,
       "delta_e_p95": 0.0,
-      "psnr": 33.025314032178585,
+      "psnr": 33.023597689214206,
       "paths": 11,
-      "nodes": 193,
-      "bytes": 5231,
-      "ms": 11.3455
+      "nodes": 191,
+      "bytes": 5209,
+      "ms": 11.160181
     },
     "corpus/illustrations/noto-1f981.svg@half": {
-      "delta_e_mean": 0.7179217269601054,
+      "delta_e_mean": 0.7175781250091704,
       "delta_e_p95": 2.032747939743127,
-      "psnr": 26.369834256343722,
+      "psnr": 26.36970142942843,
       "paths": 10,
       "nodes": 119,
       "bytes": 3234,
-      "ms": 7.060411
+      "ms": 5.2930269999999995
     },
     "corpus/illustrations/noto-1f981.svg@jpeg35": {
-      "delta_e_mean": 0.5119723065619683,
+      "delta_e_mean": 0.5120085081672704,
       "delta_e_p95": 0.5297474805572024,
-      "psnr": 31.759349691740518,
+      "psnr": 31.75926564565783,
       "paths": 14,
-      "nodes": 221,
-      "bytes": 6031,
-      "ms": 15.578435
+      "nodes": 219,
+      "bytes": 6003,
+      "ms": 14.898603
     },
     "corpus/illustrations/noto-1f981.svg@jpeg75": {
       "delta_e_mean": 0.3690318627341062,
@@ -2510,7 +2510,7 @@
       "paths": 14,
       "nodes": 200,
       "bytes": 5620,
-      "ms": 14.469858
+      "ms": 13.549835
     },
     "corpus/illustrations/noto-1f981.svg@noise": {
       "delta_e_mean": 0.3994132984662043,
@@ -2519,7 +2519,7 @@
       "paths": 11,
       "nodes": 201,
       "bytes": 5681,
-      "ms": 12.239211999999998
+      "ms": 11.635907
     },
     "corpus/illustrations/noto-2b50.svg@blur": {
       "delta_e_mean": 0.09513004609053864,
@@ -2528,7 +2528,7 @@
       "paths": 88,
       "nodes": 565,
       "bytes": 9086,
-      "ms": 6.7476389999999995
+      "ms": 5.569311000000001
     },
     "corpus/illustrations/noto-2b50.svg@clean": {
       "delta_e_mean": 0.052526763180032035,
@@ -2537,7 +2537,7 @@
       "paths": 3,
       "nodes": 109,
       "bytes": 2278,
-      "ms": 8.386510999999999
+      "ms": 5.980526
     },
     "corpus/illustrations/noto-2b50.svg@half": {
       "delta_e_mean": 0.1321310066237855,
@@ -2546,7 +2546,7 @@
       "paths": 15,
       "nodes": 127,
       "bytes": 2578,
-      "ms": 3.253529
+      "ms": 2.6105009999999997
     },
     "corpus/illustrations/noto-2b50.svg@jpeg35": {
       "delta_e_mean": 0.22173832256023476,
@@ -2555,7 +2555,7 @@
       "paths": 14,
       "nodes": 157,
       "bytes": 3951,
-      "ms": 11.263571
+      "ms": 10.028799
     },
     "corpus/illustrations/noto-2b50.svg@jpeg75": {
       "delta_e_mean": 0.12274139854043814,
@@ -2564,88 +2564,88 @@
       "paths": 4,
       "nodes": 123,
       "bytes": 2357,
-      "ms": 13.522127
+      "ms": 10.181917
     },
     "corpus/illustrations/noto-2b50.svg@noise": {
-      "delta_e_mean": 0.22758823405396358,
+      "delta_e_mean": 0.22665839748670377,
       "delta_e_p95": 0.43909036560320097,
-      "psnr": 37.69699453484545,
+      "psnr": 37.78082894687632,
       "paths": 3,
-      "nodes": 120,
-      "bytes": 2509,
-      "ms": 8.748709999999999
+      "nodes": 122,
+      "bytes": 2582,
+      "ms": 6.310931
     },
     "corpus/lettering/condensed-sign.svg@blur": {
-      "delta_e_mean": 1.4332633517292255,
+      "delta_e_mean": 1.428121424074498,
       "delta_e_p95": 2.783542186452271,
-      "psnr": 26.05827670709811,
+      "psnr": 26.0843624727168,
       "paths": 24,
-      "nodes": 302,
+      "nodes": 301,
       "bytes": 6831,
-      "ms": 61.798185
+      "ms": 53.233627999999996
     },
     "corpus/lettering/condensed-sign.svg@clean": {
-      "delta_e_mean": 0.1440217254965558,
+      "delta_e_mean": 0.14533896757355616,
       "delta_e_p95": 0.4058923612431147,
-      "psnr": 37.96634111603257,
+      "psnr": 37.954696294712946,
       "paths": 20,
-      "nodes": 222,
-      "bytes": 4923,
-      "ms": 63.490080000000006
+      "nodes": 225,
+      "bytes": 4988,
+      "ms": 49.998828
     },
     "corpus/lettering/condensed-sign.svg@half": {
-      "delta_e_mean": 1.0906229687924114,
+      "delta_e_mean": 1.0823337816971887,
       "delta_e_p95": 2.792506584290581,
-      "psnr": 29.171735785640234,
+      "psnr": 29.3817605996069,
       "paths": 20,
-      "nodes": 208,
-      "bytes": 4465,
-      "ms": 30.165228999999997
+      "nodes": 215,
+      "bytes": 4556,
+      "ms": 19.084377999999997
     },
     "corpus/lettering/condensed-sign.svg@jpeg35": {
-      "delta_e_mean": 0.5384131592100396,
+      "delta_e_mean": 0.5569664121855044,
       "delta_e_p95": 0.46865821608722513,
-      "psnr": 35.29933961994041,
+      "psnr": 34.73386021931742,
       "paths": 70,
-      "nodes": 569,
-      "bytes": 12523,
-      "ms": 41.718810000000005
+      "nodes": 575,
+      "bytes": 12258,
+      "ms": 54.528801
     },
     "corpus/lettering/condensed-sign.svg@jpeg75": {
-      "delta_e_mean": 0.3020528405631011,
+      "delta_e_mean": 0.3016216375900168,
       "delta_e_p95": 0.5245605019482429,
-      "psnr": 37.13492599117581,
+      "psnr": 37.20013344734369,
       "paths": 20,
-      "nodes": 236,
-      "bytes": 5447,
-      "ms": 64.141492
+      "nodes": 239,
+      "bytes": 5489,
+      "ms": 50.559509000000006
     },
     "corpus/lettering/condensed-sign.svg@noise": {
-      "delta_e_mean": 0.5008691834908578,
+      "delta_e_mean": 0.5001276623418206,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 35.794558566423085,
+      "psnr": 35.8409011677929,
       "paths": 20,
-      "nodes": 261,
-      "bytes": 5923,
-      "ms": 66.211365
+      "nodes": 257,
+      "bytes": 5733,
+      "ms": 52.424897
     },
     "corpus/lettering/emblem-badge.svg@blur": {
-      "delta_e_mean": 0.8211476459457175,
+      "delta_e_mean": 0.8195775770157265,
       "delta_e_p95": 4.031413252725293,
-      "psnr": 27.9891461307665,
+      "psnr": 27.98767296787052,
       "paths": 34,
-      "nodes": 390,
-      "bytes": 9541,
-      "ms": 31.599783
+      "nodes": 391,
+      "bytes": 9561,
+      "ms": 31.811181
     },
     "corpus/lettering/emblem-badge.svg@clean": {
-      "delta_e_mean": 0.20857316276407672,
+      "delta_e_mean": 0.2084751670383022,
       "delta_e_p95": 1.0293408615174426,
-      "psnr": 34.76412202346746,
+      "psnr": 34.701168243835816,
       "paths": 23,
       "nodes": 299,
-      "bytes": 6632,
-      "ms": 41.050852
+      "bytes": 6614,
+      "ms": 34.819225
     },
     "corpus/lettering/emblem-badge.svg@half": {
       "delta_e_mean": 0.8522905794471202,
@@ -2654,88 +2654,88 @@
       "paths": 26,
       "nodes": 250,
       "bytes": 5188,
-      "ms": 13.572165
+      "ms": 13.829647000000001
     },
     "corpus/lettering/emblem-badge.svg@jpeg35": {
-      "delta_e_mean": 0.5825242780552542,
+      "delta_e_mean": 0.5374577453095173,
       "delta_e_p95": 1.3905695712821933,
-      "psnr": 29.819352090253393,
+      "psnr": 30.88886104077296,
       "paths": 115,
-      "nodes": 958,
-      "bytes": 23854,
-      "ms": 29.031219
+      "nodes": 933,
+      "bytes": 23642,
+      "ms": 30.818638
     },
     "corpus/lettering/emblem-badge.svg@jpeg75": {
-      "delta_e_mean": 0.27784049678687817,
+      "delta_e_mean": 0.2766884991926767,
       "delta_e_p95": 1.2167342253371387,
-      "psnr": 33.94577840743666,
+      "psnr": 33.91282734756716,
       "paths": 24,
       "nodes": 331,
-      "bytes": 7130,
-      "ms": 42.568722
+      "bytes": 7065,
+      "ms": 36.121677
     },
     "corpus/lettering/emblem-badge.svg@noise": {
-      "delta_e_mean": 0.7441790097930465,
+      "delta_e_mean": 0.7451866032482715,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 32.55510134323182,
+      "psnr": 32.4959320214203,
       "paths": 56,
-      "nodes": 514,
-      "bytes": 12114,
-      "ms": 28.247685
+      "nodes": 513,
+      "bytes": 12089,
+      "ms": 35.827537
     },
     "corpus/lettering/handwritten-note.svg@blur": {
-      "delta_e_mean": 0.8935432564466539,
-      "delta_e_p95": 2.703226572883252,
-      "psnr": 26.164617772101963,
+      "delta_e_mean": 0.8995763714247661,
+      "delta_e_p95": 2.749456451427772,
+      "psnr": 26.092801741475753,
       "paths": 54,
-      "nodes": 475,
-      "bytes": 13527,
-      "ms": 71.748256
+      "nodes": 460,
+      "bytes": 13224,
+      "ms": 31.075242
     },
     "corpus/lettering/handwritten-note.svg@clean": {
-      "delta_e_mean": 0.37610415705396993,
+      "delta_e_mean": 0.37688850503748306,
       "delta_e_p95": 0.0,
-      "psnr": 31.31951248127099,
+      "psnr": 31.277021433190555,
       "paths": 53,
       "nodes": 462,
-      "bytes": 12921,
-      "ms": 73.829522
+      "bytes": 13034,
+      "ms": 30.574422000000002
     },
     "corpus/lettering/handwritten-note.svg@half": {
-      "delta_e_mean": 0.9816699163943622,
-      "delta_e_p95": 2.789601692550283,
-      "psnr": 24.65658252664148,
+      "delta_e_mean": 1.0019640514523944,
+      "delta_e_p95": 3.0420923645461424,
+      "psnr": 24.467836928076842,
       "paths": 53,
-      "nodes": 333,
-      "bytes": 8818,
-      "ms": 47.997446
+      "nodes": 326,
+      "bytes": 8409,
+      "ms": 10.982153
     },
     "corpus/lettering/handwritten-note.svg@jpeg35": {
-      "delta_e_mean": 0.43921787091442377,
+      "delta_e_mean": 0.4396044073672088,
       "delta_e_p95": 0.0,
-      "psnr": 29.37395987438231,
+      "psnr": 29.353356294545968,
       "paths": 404,
       "nodes": 2580,
-      "bytes": 55821,
-      "ms": 25.263644
+      "bytes": 55874,
+      "ms": 32.994267
     },
     "corpus/lettering/handwritten-note.svg@jpeg75": {
-      "delta_e_mean": 0.3668927436295175,
+      "delta_e_mean": 0.3751130752894278,
       "delta_e_p95": 0.0,
-      "psnr": 31.620834120497783,
+      "psnr": 31.390847104042557,
       "paths": 53,
-      "nodes": 469,
-      "bytes": 13105,
-      "ms": 74.429496
+      "nodes": 471,
+      "bytes": 13146,
+      "ms": 30.651846
     },
     "corpus/lettering/handwritten-note.svg@noise": {
-      "delta_e_mean": 1.491722861232793,
+      "delta_e_mean": 1.497207821871558,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 30.309356317506868,
+      "psnr": 30.173640551414984,
       "paths": 53,
-      "nodes": 452,
-      "bytes": 13053,
-      "ms": 74.605757
+      "nodes": 453,
+      "bytes": 13009,
+      "ms": 30.785244
     },
     "corpus/lettering/script-cafe.svg@blur": {
       "delta_e_mean": 0.6387019741994153,
@@ -2744,124 +2744,124 @@
       "paths": 279,
       "nodes": 1764,
       "bytes": 53017,
-      "ms": 24.283668000000002
+      "ms": 27.534983999999998
     },
     "corpus/lettering/script-cafe.svg@clean": {
-      "delta_e_mean": 0.23601484861501856,
+      "delta_e_mean": 0.2414339527723575,
       "delta_e_p95": 0.0,
-      "psnr": 32.72677972889638,
+      "psnr": 32.60981778570919,
       "paths": 21,
-      "nodes": 294,
-      "bytes": 8065,
-      "ms": 29.890456
+      "nodes": 283,
+      "bytes": 7870,
+      "ms": 26.411239
     },
     "corpus/lettering/script-cafe.svg@half": {
-      "delta_e_mean": 0.7523079151227468,
+      "delta_e_mean": 0.7469939023238056,
       "delta_e_p95": 1.346422398034421,
-      "psnr": 25.605618229600253,
+      "psnr": 25.635991345970663,
       "paths": 42,
-      "nodes": 342,
-      "bytes": 9037,
-      "ms": 11.94327
+      "nodes": 344,
+      "bytes": 9008,
+      "ms": 9.212938000000001
     },
     "corpus/lettering/script-cafe.svg@jpeg35": {
-      "delta_e_mean": 0.6276022812214526,
+      "delta_e_mean": 0.6278496242504507,
       "delta_e_p95": 0.36766336139425976,
-      "psnr": 31.465492404588286,
+      "psnr": 31.46113656707425,
       "paths": 30,
-      "nodes": 361,
-      "bytes": 9928,
-      "ms": 26.679312
+      "nodes": 364,
+      "bytes": 10031,
+      "ms": 24.869379000000002
     },
     "corpus/lettering/script-cafe.svg@jpeg75": {
-      "delta_e_mean": 0.3585528308115243,
+      "delta_e_mean": 0.3606845037226349,
       "delta_e_p95": 0.14374673276356956,
-      "psnr": 32.99363728054934,
+      "psnr": 32.93290699554783,
       "paths": 28,
-      "nodes": 368,
-      "bytes": 10014,
-      "ms": 27.157272
+      "nodes": 360,
+      "bytes": 9889,
+      "ms": 23.777587
     },
     "corpus/lettering/script-cafe.svg@noise": {
-      "delta_e_mean": 0.3799616989223866,
+      "delta_e_mean": 0.3800346733223318,
       "delta_e_p95": 0.36766336139425976,
-      "psnr": 32.884411755545685,
+      "psnr": 32.880142545746594,
       "paths": 22,
-      "nodes": 316,
-      "bytes": 8634,
-      "ms": 29.97057
+      "nodes": 315,
+      "bytes": 8619,
+      "ms": 26.607585999999998
     },
     "corpus/lettering/serif-headline.svg@blur": {
-      "delta_e_mean": 1.7457415370362501,
+      "delta_e_mean": 1.7457218809157076,
       "delta_e_p95": 9.517935818568041,
-      "psnr": 22.711917147778486,
+      "psnr": 22.712207710721493,
       "paths": 140,
       "nodes": 1170,
-      "bytes": 29904,
-      "ms": 23.387239
+      "bytes": 29898,
+      "ms": 28.661934
     },
     "corpus/lettering/serif-headline.svg@clean": {
-      "delta_e_mean": 0.35160348256404883,
+      "delta_e_mean": 0.3535564425571719,
       "delta_e_p95": 0.34530945723575984,
-      "psnr": 29.052211334988428,
+      "psnr": 29.01399580808625,
       "paths": 21,
       "nodes": 245,
-      "bytes": 6018,
-      "ms": 31.299955999999998
+      "bytes": 6092,
+      "ms": 20.315883
     },
     "corpus/lettering/serif-headline.svg@half": {
-      "delta_e_mean": 1.3878723390785017,
+      "delta_e_mean": 1.4099628904584882,
       "delta_e_p95": 2.7455659670659958,
-      "psnr": 22.597728700132475,
+      "psnr": 22.413970197047174,
       "paths": 23,
-      "nodes": 175,
-      "bytes": 3912,
-      "ms": 30.496457
+      "nodes": 171,
+      "bytes": 3852,
+      "ms": 8.498377999999999
     },
     "corpus/lettering/serif-headline.svg@jpeg35": {
-      "delta_e_mean": 0.3503584343774808,
+      "delta_e_mean": 0.351271315693457,
       "delta_e_p95": 0.0,
-      "psnr": 28.77866127831606,
+      "psnr": 28.773626079819948,
       "paths": 109,
-      "nodes": 791,
-      "bytes": 18161,
-      "ms": 18.475129
+      "nodes": 783,
+      "bytes": 18063,
+      "ms": 26.165476
     },
     "corpus/lettering/serif-headline.svg@jpeg75": {
-      "delta_e_mean": 0.3791295087689163,
+      "delta_e_mean": 0.3797105194729902,
       "delta_e_p95": 0.7060499959263672,
-      "psnr": 29.42873684319511,
+      "psnr": 29.45025276118715,
       "paths": 21,
-      "nodes": 253,
-      "bytes": 6207,
-      "ms": 32.680734
+      "nodes": 246,
+      "bytes": 6141,
+      "ms": 20.344382
     },
     "corpus/lettering/serif-headline.svg@noise": {
-      "delta_e_mean": 1.4606582559799968,
+      "delta_e_mean": 1.4559478721783428,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 28.377159772787177,
+      "psnr": 28.426721773539285,
       "paths": 20,
-      "nodes": 233,
-      "bytes": 5921,
-      "ms": 33.951846
+      "nodes": 235,
+      "bytes": 5937,
+      "ms": 21.495464
     },
     "corpus/lettering/small-text.svg@blur": {
-      "delta_e_mean": 1.5359589551066346,
-      "delta_e_p95": 11.234927830393534,
-      "psnr": 23.025705263457557,
+      "delta_e_mean": 1.5365532460899198,
+      "delta_e_p95": 11.262931303260373,
+      "psnr": 23.02409728190103,
       "paths": 561,
-      "nodes": 4013,
-      "bytes": 73635,
-      "ms": 19.330090000000002
+      "nodes": 4011,
+      "bytes": 73522,
+      "ms": 37.985316
     },
     "corpus/lettering/small-text.svg@clean": {
-      "delta_e_mean": 0.7963097094023337,
-      "delta_e_p95": 3.195650258773671,
-      "psnr": 25.61335423686469,
+      "delta_e_mean": 0.7918208916231104,
+      "delta_e_p95": 3.1299197152056273,
+      "psnr": 25.64487630038409,
       "paths": 144,
-      "nodes": 897,
-      "bytes": 20240,
-      "ms": 53.424357
+      "nodes": 908,
+      "bytes": 20394,
+      "ms": 30.606327999999998
     },
     "corpus/lettering/small-text.svg@half": {
       "delta_e_mean": 1.7678708376184777,
@@ -2870,43 +2870,43 @@
       "paths": 224,
       "nodes": 1346,
       "bytes": 23413,
-      "ms": 4.625483
+      "ms": 7.16012
     },
     "corpus/lettering/small-text.svg@jpeg35": {
-      "delta_e_mean": 0.8996396633443008,
+      "delta_e_mean": 0.8975633730591251,
       "delta_e_p95": 2.9681272243617953,
-      "psnr": 24.16016753958127,
+      "psnr": 24.160909963764944,
       "paths": 425,
-      "nodes": 2540,
-      "bytes": 46413,
-      "ms": 17.308205
+      "nodes": 2537,
+      "bytes": 46481,
+      "ms": 31.228682
     },
     "corpus/lettering/small-text.svg@jpeg75": {
-      "delta_e_mean": 0.9178892907066195,
+      "delta_e_mean": 0.9184951539628098,
       "delta_e_p95": 3.297676905996516,
-      "psnr": 24.19947895334401,
+      "psnr": 24.199653998463685,
       "paths": 156,
       "nodes": 937,
-      "bytes": 19698,
-      "ms": 53.060519
+      "bytes": 19896,
+      "ms": 27.025525000000002
     },
     "corpus/lettering/small-text.svg@noise": {
-      "delta_e_mean": 1.8815922918701131,
+      "delta_e_mean": 1.884457536632639,
       "delta_e_p95": 2.5873887159281455,
-      "psnr": 25.473968018094713,
+      "psnr": 25.45896874555212,
       "paths": 144,
-      "nodes": 942,
-      "bytes": 20845,
-      "ms": 59.672977
+      "nodes": 939,
+      "bytes": 20914,
+      "ms": 28.507540000000002
     },
     "corpus/logos/coca-cola-logo.svg@blur": {
-      "delta_e_mean": 0.7963530519988411,
+      "delta_e_mean": 0.7967835443295592,
       "delta_e_p95": 3.546712224617927,
-      "psnr": 26.63261195664078,
+      "psnr": 26.627861536312718,
       "paths": 136,
-      "nodes": 1044,
-      "bytes": 25644,
-      "ms": 10.364033
+      "nodes": 1038,
+      "bytes": 25656,
+      "ms": 13.897415
     },
     "corpus/logos/coca-cola-logo.svg@clean": {
       "delta_e_mean": 0.5458846662928639,
@@ -2915,16 +2915,16 @@
       "paths": 8,
       "nodes": 320,
       "bytes": 8478,
-      "ms": 25.265594999999998
+      "ms": 16.203515000000003
     },
     "corpus/logos/coca-cola-logo.svg@half": {
-      "delta_e_mean": 1.2247563663409675,
+      "delta_e_mean": 1.2157938930888494,
       "delta_e_p95": 6.905600913752709,
-      "psnr": 22.178852218793033,
+      "psnr": 22.245182409541798,
       "paths": 7,
-      "nodes": 203,
-      "bytes": 5239,
-      "ms": 16.308149
+      "nodes": 204,
+      "bytes": 5265,
+      "ms": 6.5440819999999995
     },
     "corpus/logos/coca-cola-logo.svg@jpeg35": {
       "delta_e_mean": 1.0039079330234402,
@@ -2933,7 +2933,7 @@
       "paths": 57,
       "nodes": 572,
       "bytes": 15013,
-      "ms": 22.206284
+      "ms": 21.638686
     },
     "corpus/logos/coca-cola-logo.svg@jpeg75": {
       "delta_e_mean": 0.8890159643535523,
@@ -2942,7 +2942,7 @@
       "paths": 15,
       "nodes": 268,
       "bytes": 7843,
-      "ms": 44.344007999999995
+      "ms": 30.772651000000003
     },
     "corpus/logos/coca-cola-logo.svg@noise": {
       "delta_e_mean": 0.5889369222144342,
@@ -2951,16 +2951,16 @@
       "paths": 8,
       "nodes": 320,
       "bytes": 8478,
-      "ms": 25.397280000000002
+      "ms": 16.27456
     },
     "corpus/logos/fedex-express.svg@blur": {
-      "delta_e_mean": 0.6406106566209493,
+      "delta_e_mean": 0.6406308102914525,
       "delta_e_p95": 0.18845128036921677,
-      "psnr": 27.044517248605615,
+      "psnr": 27.04369624556358,
       "paths": 14,
       "nodes": 284,
-      "bytes": 6190,
-      "ms": 22.88106
+      "bytes": 6188,
+      "ms": 14.284587
     },
     "corpus/logos/fedex-express.svg@clean": {
       "delta_e_mean": 0.4555766854958574,
@@ -2969,34 +2969,34 @@
       "paths": 10,
       "nodes": 243,
       "bytes": 5215,
-      "ms": 23.437611
+      "ms": 12.523392
     },
     "corpus/logos/fedex-express.svg@half": {
-      "delta_e_mean": 0.9037986057342282,
+      "delta_e_mean": 0.9039919885341146,
       "delta_e_p95": 0.1872916548225779,
-      "psnr": 23.66582520321414,
+      "psnr": 23.662991704574136,
       "paths": 15,
       "nodes": 219,
-      "bytes": 4798,
-      "ms": 11.600077
+      "bytes": 4799,
+      "ms": 5.7541459999999995
     },
     "corpus/logos/fedex-express.svg@jpeg35": {
-      "delta_e_mean": 0.6267256568449627,
+      "delta_e_mean": 0.6277793884232045,
       "delta_e_p95": 0.5337762735079454,
-      "psnr": 30.85274849929874,
+      "psnr": 30.853616737382644,
       "paths": 17,
       "nodes": 359,
       "bytes": 8458,
-      "ms": 26.88439
+      "ms": 19.257120999999998
     },
     "corpus/logos/fedex-express.svg@jpeg75": {
-      "delta_e_mean": 0.49985765560682954,
+      "delta_e_mean": 0.5039195834319687,
       "delta_e_p95": 0.39695983720568234,
-      "psnr": 31.479836604930146,
+      "psnr": 31.35230271990175,
       "paths": 16,
       "nodes": 338,
-      "bytes": 7994,
-      "ms": 27.50193
+      "bytes": 8042,
+      "ms": 18.566513999999998
     },
     "corpus/logos/fedex-express.svg@noise": {
       "delta_e_mean": 0.6696513189701532,
@@ -3005,7 +3005,7 @@
       "paths": 10,
       "nodes": 243,
       "bytes": 5224,
-      "ms": 23.53388
+      "ms": 12.560284
     },
     "corpus/logos/ford-logo-vector.svg@blur": {
       "delta_e_mean": 0.6146683477296165,
@@ -3014,7 +3014,7 @@
       "paths": 4,
       "nodes": 368,
       "bytes": 8836,
-      "ms": 31.731044999999998
+      "ms": 23.833446000000002
     },
     "corpus/logos/ford-logo-vector.svg@clean": {
       "delta_e_mean": 0.6162041504092077,
@@ -3023,34 +3023,34 @@
       "paths": 4,
       "nodes": 355,
       "bytes": 8440,
-      "ms": 32.319722
+      "ms": 24.130735
     },
     "corpus/logos/ford-logo-vector.svg@half": {
-      "delta_e_mean": 1.2543213798504695,
+      "delta_e_mean": 1.2532916219198733,
       "delta_e_p95": 0.0,
-      "psnr": 21.38249221598951,
+      "psnr": 21.389107267794657,
       "paths": 4,
       "nodes": 185,
       "bytes": 4758,
-      "ms": 16.504071
+      "ms": 9.456626
     },
     "corpus/logos/ford-logo-vector.svg@jpeg35": {
-      "delta_e_mean": 0.723577494244783,
+      "delta_e_mean": 0.7233861375358359,
       "delta_e_p95": 0.4727151694168211,
-      "psnr": 29.83503529422216,
+      "psnr": 29.8377562810775,
       "paths": 8,
       "nodes": 140,
       "bytes": 4350,
-      "ms": 38.426247
+      "ms": 32.474588999999995
     },
     "corpus/logos/ford-logo-vector.svg@jpeg75": {
-      "delta_e_mean": 0.7114874095234155,
+      "delta_e_mean": 0.7113831022678223,
       "delta_e_p95": 0.4727151694168211,
-      "psnr": 30.110159757158307,
+      "psnr": 30.10990657020646,
       "paths": 8,
       "nodes": 135,
-      "bytes": 4229,
-      "ms": 36.355865
+      "bytes": 4236,
+      "ms": 31.379593999999997
     },
     "corpus/logos/ford-logo-vector.svg@noise": {
       "delta_e_mean": 0.949878951861276,
@@ -3059,16 +3059,16 @@
       "paths": 4,
       "nodes": 355,
       "bytes": 8440,
-      "ms": 32.321664
+      "ms": 24.05695
     },
     "corpus/logos/google-2015-logo.svg@blur": {
-      "delta_e_mean": 0.39003728930511816,
+      "delta_e_mean": 0.3884544607362603,
       "delta_e_p95": 0.19410683102177698,
-      "psnr": 29.848810963222302,
+      "psnr": 29.867425830282485,
       "paths": 75,
-      "nodes": 562,
-      "bytes": 10678,
-      "ms": 8.743117999999999
+      "nodes": 561,
+      "bytes": 10696,
+      "ms": 16.322324
     },
     "corpus/logos/google-2015-logo.svg@clean": {
       "delta_e_mean": 0.29578610121348664,
@@ -3077,34 +3077,34 @@
       "paths": 6,
       "nodes": 118,
       "bytes": 3034,
-      "ms": 23.863599
+      "ms": 16.625747
     },
     "corpus/logos/google-2015-logo.svg@half": {
-      "delta_e_mean": 0.5991634992870295,
+      "delta_e_mean": 0.5791308484341403,
       "delta_e_p95": 0.29907917179392035,
-      "psnr": 26.040033607842048,
+      "psnr": 26.199613740219235,
       "paths": 28,
-      "nodes": 208,
-      "bytes": 4560,
-      "ms": 3.8124029999999998
+      "nodes": 212,
+      "bytes": 4729,
+      "ms": 9.033483
     },
     "corpus/logos/google-2015-logo.svg@jpeg35": {
-      "delta_e_mean": 0.48305151521950485,
-      "delta_e_p95": 0.581411500056354,
-      "psnr": 33.55054078298076,
+      "delta_e_mean": 0.483526880087933,
+      "delta_e_p95": 0.5945833642361427,
+      "psnr": 33.54345046346388,
       "paths": 11,
       "nodes": 118,
-      "bytes": 3259,
-      "ms": 28.356244
+      "bytes": 3261,
+      "ms": 25.49895
     },
     "corpus/logos/google-2015-logo.svg@jpeg75": {
-      "delta_e_mean": 0.4595671777773721,
+      "delta_e_mean": 0.4595187462930789,
       "delta_e_p95": 0.4662070470993849,
-      "psnr": 33.17816830815224,
+      "psnr": 33.17954791211227,
       "paths": 11,
       "nodes": 107,
-      "bytes": 2985,
-      "ms": 27.735799
+      "bytes": 2980,
+      "ms": 24.810842
     },
     "corpus/logos/google-2015-logo.svg@noise": {
       "delta_e_mean": 0.33122149531569306,
@@ -3113,70 +3113,70 @@
       "paths": 6,
       "nodes": 118,
       "bytes": 3034,
-      "ms": 24.269031
+      "ms": 17.055361
     },
     "corpus/logos/ibm-logo.svg@blur": {
-      "delta_e_mean": 1.4749530438872351,
+      "delta_e_mean": 1.4854316882569705,
       "delta_e_p95": 11.970856619550533,
-      "psnr": 23.352028175537384,
+      "psnr": 23.30073760753747,
       "paths": 104,
-      "nodes": 1007,
-      "bytes": 17893,
-      "ms": 12.105367000000001
+      "nodes": 999,
+      "bytes": 17845,
+      "ms": 34.593781
     },
     "corpus/logos/ibm-logo.svg@clean": {
-      "delta_e_mean": 0.7316112750676145,
+      "delta_e_mean": 0.7327476917766012,
       "delta_e_p95": 5.831736558922449,
-      "psnr": 26.973682828339687,
+      "psnr": 26.955938563240593,
       "paths": 39,
-      "nodes": 339,
-      "bytes": 6737,
-      "ms": 38.882661999999996
+      "nodes": 338,
+      "bytes": 6816,
+      "ms": 20.787271
     },
     "corpus/logos/ibm-logo.svg@half": {
-      "delta_e_mean": 1.9320872867852035,
+      "delta_e_mean": 1.936621628497836,
       "delta_e_p95": 13.37766072206037,
-      "psnr": 20.927822261994958,
+      "psnr": 20.918157112653617,
       "paths": 96,
-      "nodes": 576,
-      "bytes": 8836,
-      "ms": 9.270006
+      "nodes": 588,
+      "bytes": 9346,
+      "ms": 21.193825999999998
     },
     "corpus/logos/ibm-logo.svg@jpeg35": {
-      "delta_e_mean": 0.5304775846616541,
+      "delta_e_mean": 0.5432185298705011,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 32.25723798795664,
+      "psnr": 31.983624660403763,
       "paths": 108,
-      "nodes": 896,
-      "bytes": 17368,
-      "ms": 23.124227
+      "nodes": 895,
+      "bytes": 17441,
+      "ms": 41.511654
     },
     "corpus/logos/ibm-logo.svg@jpeg75": {
-      "delta_e_mean": 0.38523888036792475,
+      "delta_e_mean": 0.38951791358652227,
       "delta_e_p95": 0.34785782209575616,
-      "psnr": 36.245886982731285,
+      "psnr": 35.92588763182073,
       "paths": 42,
       "nodes": 476,
-      "bytes": 10336,
-      "ms": 43.799357
+      "bytes": 10368,
+      "ms": 26.994246
     },
     "corpus/logos/ibm-logo.svg@noise": {
-      "delta_e_mean": 0.7472869553979165,
+      "delta_e_mean": 0.7484207781914851,
       "delta_e_p95": 5.823443828569909,
-      "psnr": 27.014285944879482,
+      "psnr": 26.99658195485114,
       "paths": 39,
-      "nodes": 339,
-      "bytes": 6737,
-      "ms": 39.303529
+      "nodes": 338,
+      "bytes": 6816,
+      "ms": 21.173958
     },
     "corpus/logos/kellogg-s-logo.svg@blur": {
-      "delta_e_mean": 0.5633353039960762,
+      "delta_e_mean": 0.5633229018325187,
       "delta_e_p95": 0.20750280528737094,
-      "psnr": 28.27281979187132,
+      "psnr": 28.27279443918929,
       "paths": 90,
       "nodes": 800,
-      "bytes": 19707,
-      "ms": 11.132095
+      "bytes": 19705,
+      "ms": 10.233384
     },
     "corpus/logos/kellogg-s-logo.svg@clean": {
       "delta_e_mean": 0.4314325941402387,
@@ -3185,16 +3185,16 @@
       "paths": 7,
       "nodes": 280,
       "bytes": 7383,
-      "ms": 19.843196
+      "ms": 11.825038
     },
     "corpus/logos/kellogg-s-logo.svg@half": {
-      "delta_e_mean": 0.9013928808329384,
+      "delta_e_mean": 0.9036912135661274,
       "delta_e_p95": 3.436892092153194,
-      "psnr": 23.671542423979233,
+      "psnr": 23.642127044640127,
       "paths": 21,
       "nodes": 274,
-      "bytes": 6546,
-      "ms": 8.986528
+      "bytes": 6567,
+      "ms": 4.470755
     },
     "corpus/logos/kellogg-s-logo.svg@jpeg35": {
       "delta_e_mean": 0.7887813074704139,
@@ -3203,7 +3203,7 @@
       "paths": 42,
       "nodes": 622,
       "bytes": 16508,
-      "ms": 21.977956
+      "ms": 18.78524
     },
     "corpus/logos/kellogg-s-logo.svg@jpeg75": {
       "delta_e_mean": 0.6618307083476321,
@@ -3212,7 +3212,7 @@
       "paths": 14,
       "nodes": 396,
       "bytes": 11061,
-      "ms": 27.929643000000002
+      "ms": 20.620698
     },
     "corpus/logos/kellogg-s-logo.svg@noise": {
       "delta_e_mean": 0.47813183075854465,
@@ -3221,7 +3221,7 @@
       "paths": 7,
       "nodes": 280,
       "bytes": 7383,
-      "ms": 19.928636
+      "ms": 11.890633
     },
     "corpus/logos/logo-nike.svg@blur": {
       "delta_e_mean": 0.2217114103628411,
@@ -3230,7 +3230,7 @@
       "paths": 1,
       "nodes": 129,
       "bytes": 2032,
-      "ms": 2.736764
+      "ms": 2.670083
     },
     "corpus/logos/logo-nike.svg@clean": {
       "delta_e_mean": 0.1950736767551119,
@@ -3239,7 +3239,7 @@
       "paths": 3,
       "nodes": 137,
       "bytes": 2239,
-      "ms": 2.547704
+      "ms": 2.571167
     },
     "corpus/logos/logo-nike.svg@half": {
       "delta_e_mean": 0.4623337644661585,
@@ -3248,7 +3248,7 @@
       "paths": 2,
       "nodes": 60,
       "bytes": 1001,
-      "ms": 0.956629
+      "ms": 0.9571510000000001
     },
     "corpus/logos/logo-nike.svg@jpeg35": {
       "delta_e_mean": 0.29359245040718546,
@@ -3257,7 +3257,7 @@
       "paths": 9,
       "nodes": 169,
       "bytes": 3061,
-      "ms": 6.256659
+      "ms": 6.299947
     },
     "corpus/logos/logo-nike.svg@jpeg75": {
       "delta_e_mean": 0.20533644210155638,
@@ -3266,7 +3266,7 @@
       "paths": 3,
       "nodes": 54,
       "bytes": 1218,
-      "ms": 6.905019
+      "ms": 6.808339
     },
     "corpus/logos/logo-nike.svg@noise": {
       "delta_e_mean": 0.42981909350230985,
@@ -3275,16 +3275,16 @@
       "paths": 3,
       "nodes": 137,
       "bytes": 2239,
-      "ms": 2.618048
+      "ms": 2.522667
     },
     "corpus/logos/mercedes-benz-free-logo.svg@blur": {
-      "delta_e_mean": 0.4065036419990406,
+      "delta_e_mean": 0.4084494670843036,
       "delta_e_p95": 0.3420904063975803,
-      "psnr": 32.34909750011303,
+      "psnr": 32.308098502915584,
       "paths": 125,
-      "nodes": 856,
-      "bytes": 21116,
-      "ms": 5.664267
+      "nodes": 848,
+      "bytes": 21114,
+      "ms": 9.067487000000002
     },
     "corpus/logos/mercedes-benz-free-logo.svg@clean": {
       "delta_e_mean": 0.23204570464102625,
@@ -3293,7 +3293,7 @@
       "paths": 1,
       "nodes": 95,
       "bytes": 2534,
-      "ms": 13.356981000000001
+      "ms": 9.884578
     },
     "corpus/logos/mercedes-benz-free-logo.svg@half": {
       "delta_e_mean": 0.49489075768198176,
@@ -3302,7 +3302,7 @@
       "paths": 1,
       "nodes": 39,
       "bytes": 1137,
-      "ms": 6.81207
+      "ms": 3.6226700000000003
     },
     "corpus/logos/mercedes-benz-free-logo.svg@jpeg35": {
       "delta_e_mean": 0.4740887150378023,
@@ -3311,7 +3311,7 @@
       "paths": 8,
       "nodes": 155,
       "bytes": 2898,
-      "ms": 18.856769999999997
+      "ms": 16.408853
     },
     "corpus/logos/mercedes-benz-free-logo.svg@jpeg75": {
       "delta_e_mean": 0.2902828219063683,
@@ -3320,7 +3320,7 @@
       "paths": 19,
       "nodes": 189,
       "bytes": 3919,
-      "ms": 10.435298000000001
+      "ms": 12.262582
     },
     "corpus/logos/mercedes-benz-free-logo.svg@noise": {
       "delta_e_mean": 0.23204570464102625,
@@ -3329,7 +3329,7 @@
       "paths": 1,
       "nodes": 95,
       "bytes": 2534,
-      "ms": 13.539024
+      "ms": 10.094564
     },
     "corpus/logos/nasa-logo.svg@blur": {
       "delta_e_mean": 0.9500634008309561,
@@ -3338,25 +3338,25 @@
       "paths": 34,
       "nodes": 663,
       "bytes": 15612,
-      "ms": 14.375064
+      "ms": 16.697201
     },
     "corpus/logos/nasa-logo.svg@clean": {
-      "delta_e_mean": 0.46087115357556796,
+      "delta_e_mean": 0.4626830327402914,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 28.46692139297758,
+      "psnr": 28.442084114537334,
       "paths": 68,
       "nodes": 792,
-      "bytes": 17353,
-      "ms": 16.592036
+      "bytes": 17354,
+      "ms": 19.320728
     },
     "corpus/logos/nasa-logo.svg@half": {
-      "delta_e_mean": 1.2821579445753637,
+      "delta_e_mean": 1.2804716937478196,
       "delta_e_p95": 2.7942105353352633,
-      "psnr": 22.833906390080227,
+      "psnr": 22.83662242147208,
       "paths": 37,
       "nodes": 418,
-      "bytes": 9115,
-      "ms": 5.579872
+      "bytes": 9112,
+      "ms": 6.994954
     },
     "corpus/logos/nasa-logo.svg@jpeg35": {
       "delta_e_mean": 0.7767390738211284,
@@ -3365,79 +3365,79 @@
       "paths": 99,
       "nodes": 963,
       "bytes": 24095,
-      "ms": 23.07298
+      "ms": 24.432066
     },
     "corpus/logos/nasa-logo.svg@jpeg75": {
-      "delta_e_mean": 0.6807286751291346,
+      "delta_e_mean": 0.6809420560174521,
       "delta_e_p95": 1.3017632190690527,
-      "psnr": 28.40760515085362,
+      "psnr": 28.40273581454658,
       "paths": 50,
-      "nodes": 661,
-      "bytes": 14672,
-      "ms": 25.702716
+      "nodes": 660,
+      "bytes": 14655,
+      "ms": 24.139139
     },
     "corpus/logos/nasa-logo.svg@noise": {
-      "delta_e_mean": 0.6807307840237595,
+      "delta_e_mean": 0.68323776963859,
       "delta_e_p95": 1.7651894990368173,
-      "psnr": 28.481065196989277,
+      "psnr": 28.449223142630224,
       "paths": 50,
-      "nodes": 680,
-      "bytes": 15070,
-      "ms": 19.550718000000003
+      "nodes": 675,
+      "bytes": 15014,
+      "ms": 18.501705
     },
     "corpus/logos/noaa-logo.svg@blur": {
-      "delta_e_mean": 2.043286409669481,
+      "delta_e_mean": 2.0428952851366944,
       "delta_e_p95": 18.147633842842804,
-      "psnr": 21.968588377313516,
+      "psnr": 21.970170028186953,
       "paths": 787,
-      "nodes": 5418,
-      "bytes": 137630,
-      "ms": 36.367354999999996
+      "nodes": 5415,
+      "bytes": 137218,
+      "ms": 67.144623
     },
     "corpus/logos/noaa-logo.svg@clean": {
-      "delta_e_mean": 0.6144881046743078,
-      "delta_e_p95": 0.2999903902925394,
-      "psnr": 27.81991418118225,
+      "delta_e_mean": 0.6490062489728305,
+      "delta_e_p95": 0.3018094123915311,
+      "psnr": 27.427728036008297,
       "paths": 157,
-      "nodes": 1271,
-      "bytes": 30196,
-      "ms": 90.747526
+      "nodes": 1295,
+      "bytes": 31353,
+      "ms": 85.341678
     },
     "corpus/logos/noaa-logo.svg@half": {
-      "delta_e_mean": 2.331171851600615,
+      "delta_e_mean": 2.3308778547229743,
       "delta_e_p95": 17.89790230971496,
-      "psnr": 19.510623186695465,
+      "psnr": 19.510103847419977,
       "paths": 292,
-      "nodes": 1731,
-      "bytes": 34737,
-      "ms": 18.747403
+      "nodes": 1733,
+      "bytes": 34736,
+      "ms": 23.161377
     },
     "corpus/logos/noaa-logo.svg@jpeg35": {
-      "delta_e_mean": 0.9420727003732967,
-      "delta_e_p95": 0.4346416994025864,
-      "psnr": 27.03421432381195,
+      "delta_e_mean": 0.9879886196279818,
+      "delta_e_p95": 0.4385764205676325,
+      "psnr": 26.534275939037038,
       "paths": 157,
-      "nodes": 1269,
-      "bytes": 30575,
-      "ms": 81.51465099999999
+      "nodes": 1257,
+      "bytes": 30345,
+      "ms": 75.811526
     },
     "corpus/logos/noaa-logo.svg@jpeg75": {
-      "delta_e_mean": 0.734313716655043,
+      "delta_e_mean": 0.7686986314615852,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 27.705425570726923,
+      "psnr": 27.218314798774706,
       "paths": 154,
-      "nodes": 1231,
-      "bytes": 30419,
-      "ms": 84.371633
+      "nodes": 1234,
+      "bytes": 30755,
+      "ms": 78.652021
     },
     "corpus/logos/noaa-logo.svg@noise": {
-      "delta_e_mean": 1.0651511005931125,
+      "delta_e_mean": 1.0900382347793833,
       "delta_e_p95": 1.4676078255340268,
-      "psnr": 27.428365047076625,
+      "psnr": 27.169394903254865,
       "paths": 172,
-      "nodes": 1387,
-      "bytes": 33180,
-      "ms": 76.978988
+      "nodes": 1389,
+      "bytes": 32652,
+      "ms": 84.764527
     },
     "corpus/logos/olympic-rings-without-rims.svg@blur": {
       "delta_e_mean": 0.4406925529323079,
@@ -3446,115 +3446,115 @@
       "paths": 9,
       "nodes": 222,
       "bytes": 5940,
-      "ms": 12.050463
+      "ms": 12.060272000000001
     },
     "corpus/logos/olympic-rings-without-rims.svg@clean": {
-      "delta_e_mean": 0.3050371031556187,
+      "delta_e_mean": 0.3048917851162997,
       "delta_e_p95": 0.014067633751861652,
-      "psnr": 30.552302523351923,
+      "psnr": 30.555328837067343,
       "paths": 8,
-      "nodes": 188,
-      "bytes": 4921,
-      "ms": 11.352322
+      "nodes": 189,
+      "bytes": 4926,
+      "ms": 11.816461
     },
     "corpus/logos/olympic-rings-without-rims.svg@half": {
-      "delta_e_mean": 0.6918560150910616,
+      "delta_e_mean": 0.6813710724070083,
       "delta_e_p95": 0.5724003079796922,
-      "psnr": 25.160278742008444,
+      "psnr": 25.287945091036267,
       "paths": 8,
-      "nodes": 121,
-      "bytes": 3321,
-      "ms": 3.9420999999999995
+      "nodes": 125,
+      "bytes": 3369,
+      "ms": 4.355719
     },
     "corpus/logos/olympic-rings-without-rims.svg@jpeg35": {
-      "delta_e_mean": 0.6806715135768325,
+      "delta_e_mean": 0.6855815392105705,
       "delta_e_p95": 0.945430338833645,
-      "psnr": 29.061478504093433,
+      "psnr": 28.97408906180297,
       "paths": 28,
-      "nodes": 338,
-      "bytes": 9018,
-      "ms": 20.624208000000003
+      "nodes": 336,
+      "bytes": 8942,
+      "ms": 25.059285
     },
     "corpus/logos/olympic-rings-without-rims.svg@jpeg75": {
-      "delta_e_mean": 0.5471769206277793,
+      "delta_e_mean": 0.5361646776348764,
       "delta_e_p95": 0.4727151694168211,
-      "psnr": 29.631904226166338,
+      "psnr": 29.928473240322223,
       "paths": 27,
-      "nodes": 324,
-      "bytes": 8167,
-      "ms": 20.753790000000002
+      "nodes": 320,
+      "bytes": 7957,
+      "ms": 26.637322
     },
     "corpus/logos/olympic-rings-without-rims.svg@noise": {
-      "delta_e_mean": 0.38599611441833687,
+      "delta_e_mean": 0.3856780711959883,
       "delta_e_p95": 0.945430338833645,
-      "psnr": 30.603352383536713,
+      "psnr": 30.607878890468303,
       "paths": 8,
-      "nodes": 188,
-      "bytes": 5000,
-      "ms": 11.717618000000002
+      "nodes": 191,
+      "bytes": 4979,
+      "ms": 12.103093000000001
     },
     "corpus/logos/us-nationalparkservice-logo.svg@blur": {
-      "delta_e_mean": 1.1832337304463567,
-      "delta_e_p95": 6.998476581156285,
-      "psnr": 25.43552919529304,
+      "delta_e_mean": 1.1914587629318434,
+      "delta_e_p95": 7.086474029560759,
+      "psnr": 25.36045336717802,
       "paths": 322,
-      "nodes": 2848,
-      "bytes": 69758,
-      "ms": 41.445096
+      "nodes": 2852,
+      "bytes": 69629,
+      "ms": 29.360141
     },
     "corpus/logos/us-nationalparkservice-logo.svg@clean": {
-      "delta_e_mean": 0.5299436509306636,
+      "delta_e_mean": 0.5323746628457384,
       "delta_e_p95": 2.5765050818891684,
-      "psnr": 29.123806942949276,
+      "psnr": 29.07163212261077,
       "paths": 92,
-      "nodes": 1115,
-      "bytes": 29360,
-      "ms": 45.695741999999996
+      "nodes": 1108,
+      "bytes": 29140,
+      "ms": 28.768133000000002
     },
     "corpus/logos/us-nationalparkservice-logo.svg@half": {
-      "delta_e_mean": 1.5226272417693518,
-      "delta_e_p95": 9.231869260073095,
-      "psnr": 22.739277232367524,
+      "delta_e_mean": 1.5230630061059185,
+      "delta_e_p95": 9.253812954037523,
+      "psnr": 22.7449320961162,
       "paths": 117,
-      "nodes": 974,
-      "bytes": 21883,
-      "ms": 24.596758
+      "nodes": 975,
+      "bytes": 21867,
+      "ms": 12.160859
     },
     "corpus/logos/us-nationalparkservice-logo.svg@jpeg35": {
-      "delta_e_mean": 0.9884598518672967,
-      "delta_e_p95": 4.288182214365757,
-      "psnr": 27.08598781144363,
+      "delta_e_mean": 0.9912233147931604,
+      "delta_e_p95": 4.307810827616045,
+      "psnr": 27.061621321275634,
       "paths": 160,
-      "nodes": 1759,
-      "bytes": 45610,
-      "ms": 48.805906
+      "nodes": 1750,
+      "bytes": 45488,
+      "ms": 32.335364999999996
     },
     "corpus/logos/us-nationalparkservice-logo.svg@jpeg75": {
-      "delta_e_mean": 0.8423410167910164,
+      "delta_e_mean": 0.8434503891523265,
       "delta_e_p95": 3.512019060208855,
-      "psnr": 28.05362156168186,
+      "psnr": 28.02645575693284,
       "paths": 101,
-      "nodes": 1471,
-      "bytes": 40369,
-      "ms": 53.294009
+      "nodes": 1475,
+      "bytes": 40546,
+      "ms": 31.457736999999998
     },
     "corpus/logos/us-nationalparkservice-logo.svg@noise": {
-      "delta_e_mean": 0.7354005204509959,
-      "delta_e_p95": 2.574753720537862,
-      "psnr": 28.876182632062132,
+      "delta_e_mean": 0.7420768005064857,
+      "delta_e_p95": 2.5809524905594827,
+      "psnr": 28.75908879268423,
       "paths": 78,
-      "nodes": 969,
-      "bytes": 27038,
-      "ms": 52.139851
+      "nodes": 975,
+      "bytes": 27240,
+      "ms": 30.296672
     },
     "corpus/logos/usda-logo.svg@blur": {
-      "delta_e_mean": 0.8572995559565587,
+      "delta_e_mean": 0.8571648933922499,
       "delta_e_p95": 0.443657066741348,
-      "psnr": 25.178549673060285,
+      "psnr": 25.18121521308639,
       "paths": 81,
-      "nodes": 712,
-      "bytes": 13872,
-      "ms": 21.181026
+      "nodes": 718,
+      "bytes": 13971,
+      "ms": 17.723769
     },
     "corpus/logos/usda-logo.svg@clean": {
       "delta_e_mean": 0.7054117691296494,
@@ -3563,25 +3563,25 @@
       "paths": 11,
       "nodes": 290,
       "bytes": 5536,
-      "ms": 26.087372000000002
+      "ms": 15.146158999999999
     },
     "corpus/logos/usda-logo.svg@half": {
-      "delta_e_mean": 1.1807637534915623,
+      "delta_e_mean": 1.1805424425334283,
       "delta_e_p95": 0.17448224828150694,
-      "psnr": 22.045311515627514,
+      "psnr": 22.046953435549486,
       "paths": 10,
       "nodes": 170,
       "bytes": 3050,
-      "ms": 14.572849
+      "ms": 6.357808
     },
     "corpus/logos/usda-logo.svg@jpeg35": {
-      "delta_e_mean": 0.6546643304041442,
+      "delta_e_mean": 0.6560911807166281,
       "delta_e_p95": 0.48997635608416956,
-      "psnr": 30.469751904343564,
+      "psnr": 30.441789874683604,
       "paths": 58,
-      "nodes": 574,
-      "bytes": 11957,
-      "ms": 21.49145
+      "nodes": 570,
+      "bytes": 11959,
+      "ms": 22.725858000000002
     },
     "corpus/logos/usda-logo.svg@jpeg75": {
       "delta_e_mean": 0.6825098109249136,
@@ -3590,7 +3590,7 @@
       "paths": 12,
       "nodes": 174,
       "bytes": 3695,
-      "ms": 44.866356
+      "ms": 35.218399
     },
     "corpus/logos/usda-logo.svg@noise": {
       "delta_e_mean": 0.8096733920557598,
@@ -3599,7 +3599,7 @@
       "paths": 11,
       "nodes": 290,
       "bytes": 5536,
-      "ms": 26.313443999999997
+      "ms": 15.680631
     },
     "corpus/logos/volkswagen-logo-2019.svg@blur": {
       "delta_e_mean": 0.5384587477383573,
@@ -3608,7 +3608,7 @@
       "paths": 1,
       "nodes": 223,
       "bytes": 4349,
-      "ms": 14.635541
+      "ms": 11.074002
     },
     "corpus/logos/volkswagen-logo-2019.svg@clean": {
       "delta_e_mean": 0.4537850975383325,
@@ -3617,7 +3617,7 @@
       "paths": 1,
       "nodes": 225,
       "bytes": 4331,
-      "ms": 14.203833000000001
+      "ms": 10.988852
     },
     "corpus/logos/volkswagen-logo-2019.svg@half": {
       "delta_e_mean": 0.9817612505392099,
@@ -3626,16 +3626,16 @@
       "paths": 1,
       "nodes": 101,
       "bytes": 2038,
-      "ms": 7.460694999999999
+      "ms": 4.066579
     },
     "corpus/logos/volkswagen-logo-2019.svg@jpeg35": {
-      "delta_e_mean": 0.8438180862253011,
+      "delta_e_mean": 0.8437990291096317,
       "delta_e_p95": 0.3914390842929728,
-      "psnr": 28.277291935127067,
+      "psnr": 28.277345626252256,
       "paths": 178,
       "nodes": 1290,
-      "bytes": 25631,
-      "ms": 12.233089000000001
+      "bytes": 25628,
+      "ms": 12.893694
     },
     "corpus/logos/volkswagen-logo-2019.svg@jpeg75": {
       "delta_e_mean": 0.6443683050987746,
@@ -3644,7 +3644,7 @@
       "paths": 9,
       "nodes": 184,
       "bytes": 3923,
-      "ms": 14.214813999999999
+      "ms": 14.126958
     },
     "corpus/logos/volkswagen-logo-2019.svg@noise": {
       "delta_e_mean": 0.6282547194008423,
@@ -3653,25 +3653,25 @@
       "paths": 1,
       "nodes": 225,
       "bytes": 4331,
-      "ms": 14.561716
+      "ms": 11.289427
     },
     "corpus/logos/walt-disney-wordmark.svg@blur": {
-      "delta_e_mean": 0.9428266387286063,
+      "delta_e_mean": 0.9432064438802852,
       "delta_e_p95": 0.42355355999889643,
-      "psnr": 25.264708346225536,
+      "psnr": 25.266922003192597,
       "paths": 10,
       "nodes": 268,
-      "bytes": 6988,
-      "ms": 26.468709
+      "bytes": 6974,
+      "ms": 10.282592
     },
     "corpus/logos/walt-disney-wordmark.svg@clean": {
-      "delta_e_mean": 0.7304295372700218,
+      "delta_e_mean": 0.7268817517085406,
       "delta_e_p95": 0.0,
-      "psnr": 26.65882903802947,
+      "psnr": 26.702070841034914,
       "paths": 11,
       "nodes": 267,
-      "bytes": 7142,
-      "ms": 27.539966
+      "bytes": 7141,
+      "ms": 11.446281
     },
     "corpus/logos/walt-disney-wordmark.svg@half": {
       "delta_e_mean": 1.7052862069806842,
@@ -3680,16 +3680,16 @@
       "paths": 10,
       "nodes": 175,
       "bytes": 4698,
-      "ms": 16.992115
+      "ms": 4.466119
     },
     "corpus/logos/walt-disney-wordmark.svg@jpeg35": {
-      "delta_e_mean": 1.2923440969168598,
+      "delta_e_mean": 1.2923450330594086,
       "delta_e_p95": 4.847200174663979,
-      "psnr": 25.941476467646098,
+      "psnr": 25.941213836471647,
       "paths": 465,
-      "nodes": 3087,
-      "bytes": 65327,
-      "ms": 20.392534
+      "nodes": 3088,
+      "bytes": 65397,
+      "ms": 20.527471
     },
     "corpus/logos/walt-disney-wordmark.svg@jpeg75": {
       "delta_e_mean": 0.9138889897400153,
@@ -3698,34 +3698,34 @@
       "paths": 47,
       "nodes": 444,
       "bytes": 12489,
-      "ms": 20.307812000000002
+      "ms": 15.547903
     },
     "corpus/logos/walt-disney-wordmark.svg@noise": {
-      "delta_e_mean": 0.8160510987074918,
+      "delta_e_mean": 0.8125383780806011,
       "delta_e_p95": 0.42174136075102053,
-      "psnr": 26.677068821238517,
+      "psnr": 26.720105444738422,
       "paths": 11,
       "nodes": 267,
-      "bytes": 7142,
-      "ms": 28.006801000000003
+      "bytes": 7141,
+      "ms": 11.855929
     },
     "corpus/photos/the-earth-seen-from-apollo-17.jpg@clean": {
-      "delta_e_mean": 3.938011328739295,
-      "delta_e_p95": 15.830646780047314,
-      "psnr": 21.47468621421139,
+      "delta_e_mean": 3.9383402864320067,
+      "delta_e_p95": 15.83065350764139,
+      "psnr": 21.474333665979888,
       "paths": 31231,
-      "nodes": 243116,
-      "bytes": 4701860,
-      "ms": 857.8818030000001
+      "nodes": 243100,
+      "bytes": 4701902,
+      "ms": 1087.479571
     },
     "corpus/photos/tsunami-by-hokusai-19th-century.jpg@clean": {
-      "delta_e_mean": 5.52535039798755,
-      "delta_e_p95": 20.60342175058273,
-      "psnr": 17.98759891473425,
+      "delta_e_mean": 5.5269332991329385,
+      "delta_e_p95": 20.601610073325258,
+      "psnr": 17.983670014094105,
       "paths": 14563,
-      "nodes": 100464,
-      "bytes": 1984255,
-      "ms": 843.490885
+      "nodes": 100430,
+      "bytes": 1985199,
+      "ms": 425.020688
     },
     "corpus/pictograms/apple-logo-black.svg@blur": {
       "delta_e_mean": 0.3033268631907173,
@@ -3734,7 +3734,7 @@
       "paths": 2,
       "nodes": 46,
       "bytes": 1394,
-      "ms": 4.0449329999999994
+      "ms": 3.971555
     },
     "corpus/pictograms/apple-logo-black.svg@clean": {
       "delta_e_mean": 0.2292038939432341,
@@ -3743,7 +3743,7 @@
       "paths": 2,
       "nodes": 37,
       "bytes": 1067,
-      "ms": 4.1619980000000005
+      "ms": 4.108022999999999
     },
     "corpus/pictograms/apple-logo-black.svg@half": {
       "delta_e_mean": 0.5210819903115952,
@@ -3752,7 +3752,7 @@
       "paths": 2,
       "nodes": 25,
       "bytes": 795,
-      "ms": 1.320465
+      "ms": 1.293333
     },
     "corpus/pictograms/apple-logo-black.svg@jpeg35": {
       "delta_e_mean": 0.5526198502726409,
@@ -3761,7 +3761,7 @@
       "paths": 12,
       "nodes": 133,
       "bytes": 3238,
-      "ms": 5.603874
+      "ms": 5.542877
     },
     "corpus/pictograms/apple-logo-black.svg@jpeg75": {
       "delta_e_mean": 0.37240159537824263,
@@ -3770,7 +3770,7 @@
       "paths": 6,
       "nodes": 88,
       "bytes": 2182,
-      "ms": 5.890862
+      "ms": 5.803539
     },
     "corpus/pictograms/apple-logo-black.svg@noise": {
       "delta_e_mean": 0.8211965023041208,
@@ -3779,7 +3779,7 @@
       "paths": 2,
       "nodes": 37,
       "bytes": 1067,
-      "ms": 4.033685
+      "ms": 4.062402
     },
     "corpus/pictograms/biohazard-symbol.svg@blur": {
       "delta_e_mean": 0.5565289805714274,
@@ -3788,7 +3788,7 @@
       "paths": 6,
       "nodes": 123,
       "bytes": 3746,
-      "ms": 15.32435
+      "ms": 10.180013
     },
     "corpus/pictograms/biohazard-symbol.svg@clean": {
       "delta_e_mean": 0.5925948359996772,
@@ -3797,34 +3797,34 @@
       "paths": 6,
       "nodes": 118,
       "bytes": 3484,
-      "ms": 15.974674000000002
+      "ms": 10.184123
     },
     "corpus/pictograms/biohazard-symbol.svg@half": {
-      "delta_e_mean": 1.119847758574999,
+      "delta_e_mean": 1.1189149725311578,
       "delta_e_p95": 0.0,
-      "psnr": 22.06323578806725,
+      "psnr": 22.066897773748586,
       "paths": 6,
       "nodes": 84,
       "bytes": 2506,
-      "ms": 9.336142
+      "ms": 4.92822
     },
     "corpus/pictograms/biohazard-symbol.svg@jpeg35": {
-      "delta_e_mean": 0.9538245356052296,
+      "delta_e_mean": 0.9537483553563436,
       "delta_e_p95": 0.7090727541252316,
-      "psnr": 27.056067450168513,
+      "psnr": 27.05723487312728,
       "paths": 29,
-      "nodes": 229,
-      "bytes": 6270,
-      "ms": 10.470128
+      "nodes": 227,
+      "bytes": 6244,
+      "ms": 14.484135
     },
     "corpus/pictograms/biohazard-symbol.svg@jpeg75": {
-      "delta_e_mean": 0.6187774789189194,
+      "delta_e_mean": 0.9023296396505651,
       "delta_e_p95": 0.4727151694168211,
-      "psnr": 31.201886558178128,
+      "psnr": 26.74070928725837,
       "paths": 7,
-      "nodes": 111,
-      "bytes": 3038,
-      "ms": 20.465783000000002
+      "nodes": 88,
+      "bytes": 2593,
+      "ms": 17.912477
     },
     "corpus/pictograms/biohazard-symbol.svg@noise": {
       "delta_e_mean": 0.8332642747809663,
@@ -3833,25 +3833,25 @@
       "paths": 6,
       "nodes": 118,
       "bytes": 3484,
-      "ms": 16.138441
+      "ms": 10.193463
     },
     "corpus/pictograms/peace-symbol.svg@blur": {
-      "delta_e_mean": 0.7851427261188929,
+      "delta_e_mean": 0.7936325621567389,
       "delta_e_p95": 0.0,
-      "psnr": 25.238357373811453,
+      "psnr": 25.163840792722315,
       "paths": 1,
-      "nodes": 68,
-      "bytes": 1826,
-      "ms": 12.621946
+      "nodes": 67,
+      "bytes": 1815,
+      "ms": 11.537276
     },
     "corpus/pictograms/peace-symbol.svg@clean": {
-      "delta_e_mean": 0.9727139321959608,
+      "delta_e_mean": 0.9722874584275673,
       "delta_e_p95": 0.0,
-      "psnr": 23.920463618517505,
+      "psnr": 23.922603594952648,
       "paths": 1,
       "nodes": 103,
-      "bytes": 2486,
-      "ms": 14.303183
+      "bytes": 2495,
+      "ms": 11.672818999999999
     },
     "corpus/pictograms/peace-symbol.svg@half": {
       "delta_e_mean": 0.909403402786037,
@@ -3860,61 +3860,61 @@
       "paths": 1,
       "nodes": 41,
       "bytes": 947,
-      "ms": 8.274116999999999
+      "ms": 4.328995000000001
     },
     "corpus/pictograms/peace-symbol.svg@jpeg35": {
-      "delta_e_mean": 0.8793445657789253,
+      "delta_e_mean": 0.878133953862014,
       "delta_e_p95": 0.945430338833645,
-      "psnr": 28.543203122304888,
+      "psnr": 28.667286782277838,
       "paths": 21,
-      "nodes": 170,
-      "bytes": 3393,
-      "ms": 12.597624
+      "nodes": 174,
+      "bytes": 3477,
+      "ms": 19.027328
     },
     "corpus/pictograms/peace-symbol.svg@jpeg75": {
-      "delta_e_mean": 0.7454156101188877,
+      "delta_e_mean": 0.7465301360013924,
       "delta_e_p95": 0.945430338833645,
-      "psnr": 30.084426723861224,
+      "psnr": 30.052872301752394,
       "paths": 9,
       "nodes": 118,
-      "bytes": 2569,
-      "ms": 18.561181
+      "bytes": 2568,
+      "ms": 17.33892
     },
     "corpus/pictograms/peace-symbol.svg@noise": {
-      "delta_e_mean": 1.1619234163138883,
+      "delta_e_mean": 1.1615403273209772,
       "delta_e_p95": 0.945430338833645,
-      "psnr": 24.062438192841782,
+      "psnr": 24.06451517592898,
       "paths": 1,
       "nodes": 103,
-      "bytes": 2486,
-      "ms": 14.262194000000001
+      "bytes": 2495,
+      "ms": 11.692321
     },
     "corpus/pictograms/radiation-warning-symbol.svg@blur": {
-      "delta_e_mean": 0.22875546979828099,
+      "delta_e_mean": 0.24172979201338812,
       "delta_e_p95": 0.4625704655504919,
-      "psnr": 36.89147412095258,
+      "psnr": 35.87441362860227,
       "paths": 5,
-      "nodes": 64,
-      "bytes": 1594,
-      "ms": 12.986272
+      "nodes": 70,
+      "bytes": 1694,
+      "ms": 12.388114999999999
     },
     "corpus/pictograms/radiation-warning-symbol.svg@clean": {
-      "delta_e_mean": 0.06599638361697852,
+      "delta_e_mean": 0.06947855474176873,
       "delta_e_p95": 0.0,
-      "psnr": 38.82525968457714,
+      "psnr": 38.252558994925806,
       "paths": 5,
       "nodes": 48,
       "bytes": 1329,
-      "ms": 12.267495
+      "ms": 12.079743
     },
     "corpus/pictograms/radiation-warning-symbol.svg@half": {
-      "delta_e_mean": 0.22309534375946988,
+      "delta_e_mean": 0.2924292696113588,
       "delta_e_p95": 0.30586800524151564,
-      "psnr": 33.48865093110223,
+      "psnr": 31.27425257631772,
       "paths": 5,
       "nodes": 36,
-      "bytes": 933,
-      "ms": 5.303564000000001
+      "bytes": 890,
+      "ms": 4.901885
     },
     "corpus/pictograms/radiation-warning-symbol.svg@jpeg35": {
       "delta_e_mean": 0.4025035847714851,
@@ -3923,25 +3923,25 @@
       "paths": 9,
       "nodes": 90,
       "bytes": 2046,
-      "ms": 9.578258
+      "ms": 12.363862999999998
     },
     "corpus/pictograms/radiation-warning-symbol.svg@jpeg75": {
-      "delta_e_mean": 0.23039968074083825,
+      "delta_e_mean": 0.23058962100699432,
       "delta_e_p95": 0.23635758470841056,
-      "psnr": 36.15299118811612,
+      "psnr": 36.142899752993436,
       "paths": 16,
       "nodes": 121,
       "bytes": 3271,
-      "ms": 8.032199
+      "ms": 12.820124
     },
     "corpus/pictograms/radiation-warning-symbol.svg@noise": {
-      "delta_e_mean": 0.37255518306384855,
+      "delta_e_mean": 0.37318223923225025,
       "delta_e_p95": 1.0091206354033269,
-      "psnr": 36.69464193082646,
+      "psnr": 36.23466804030683,
       "paths": 5,
-      "nodes": 42,
-      "bytes": 1174,
-      "ms": 12.734019
+      "nodes": 48,
+      "bytes": 1342,
+      "ms": 12.722403
     },
     "corpus/pictograms/recycling-symbol.svg@blur": {
       "delta_e_mean": 0.49307320488630657,
@@ -3950,7 +3950,7 @@
       "paths": 6,
       "nodes": 144,
       "bytes": 2921,
-      "ms": 9.919829
+      "ms": 6.200994
     },
     "corpus/pictograms/recycling-symbol.svg@clean": {
       "delta_e_mean": 0.4298851435127216,
@@ -3959,7 +3959,7 @@
       "paths": 6,
       "nodes": 142,
       "bytes": 2759,
-      "ms": 9.783646
+      "ms": 5.827286999999999
     },
     "corpus/pictograms/recycling-symbol.svg@half": {
       "delta_e_mean": 0.8386631556911363,
@@ -3968,16 +3968,16 @@
       "paths": 7,
       "nodes": 96,
       "bytes": 1895,
-      "ms": 4.552533
+      "ms": 2.308921
     },
     "corpus/pictograms/recycling-symbol.svg@jpeg35": {
-      "delta_e_mean": 0.6192949910886348,
+      "delta_e_mean": 0.6190640225866766,
       "delta_e_p95": 0.297480831878383,
-      "psnr": 29.235330442296707,
+      "psnr": 29.235579089897847,
       "paths": 17,
-      "nodes": 289,
-      "bytes": 5240,
-      "ms": 8.242244
+      "nodes": 285,
+      "bytes": 5138,
+      "ms": 10.652313999999999
     },
     "corpus/pictograms/recycling-symbol.svg@jpeg75": {
       "delta_e_mean": 0.42852981453086214,
@@ -3986,7 +3986,7 @@
       "paths": 7,
       "nodes": 149,
       "bytes": 2989,
-      "ms": 13.575656
+      "ms": 9.657862999999999
     },
     "corpus/pictograms/recycling-symbol.svg@noise": {
       "delta_e_mean": 0.8409371245984507,
@@ -3995,223 +3995,223 @@
       "paths": 6,
       "nodes": 142,
       "bytes": 2759,
-      "ms": 9.748692
+      "ms": 5.814524
     },
     "corpus/pixelart/heart.svg@blur": {
-      "delta_e_mean": 0.6853415184217084,
+      "delta_e_mean": 0.6855528414334799,
       "delta_e_p95": 0.43422408830892967,
-      "psnr": 27.40647145426099,
+      "psnr": 27.403559194460087,
       "paths": 34,
       "nodes": 518,
-      "bytes": 9588,
-      "ms": 9.849638
+      "bytes": 9612,
+      "ms": 22.782368
     },
     "corpus/pixelart/heart.svg@clean": {
-      "delta_e_mean": 0.003551319449347051,
+      "delta_e_mean": 0.02645226819061369,
       "delta_e_p95": 0.0,
-      "psnr": 47.48830416905762,
+      "psnr": 38.31445662915237,
       "paths": 27,
-      "nodes": 196,
-      "bytes": 2207,
-      "ms": 8.401499
+      "nodes": 216,
+      "bytes": 3011,
+      "ms": 21.359281
     },
     "corpus/pixelart/heart.svg@half": {
-      "delta_e_mean": 0.24043897938876913,
+      "delta_e_mean": 0.25261289310933016,
       "delta_e_p95": 0.989409908160541,
-      "psnr": 31.467993430892825,
+      "psnr": 30.899354773083317,
       "paths": 27,
-      "nodes": 238,
-      "bytes": 4147,
-      "ms": 2.961631
+      "nodes": 243,
+      "bytes": 4167,
+      "ms": 14.462183
     },
     "corpus/pixelart/heart.svg@jpeg35": {
-      "delta_e_mean": 0.07906938981535235,
+      "delta_e_mean": 0.07868096169203259,
       "delta_e_p95": 0.19196855781732505,
-      "psnr": 40.42579157085843,
+      "psnr": 40.485302960387784,
       "paths": 31,
-      "nodes": 256,
-      "bytes": 4553,
-      "ms": 9.428353000000001
+      "nodes": 260,
+      "bytes": 4401,
+      "ms": 21.605164
     },
     "corpus/pixelart/heart.svg@jpeg75": {
-      "delta_e_mean": 0.0651449524389504,
+      "delta_e_mean": 0.08198834249619849,
       "delta_e_p95": 0.2200218216352487,
-      "psnr": 42.17343339347961,
+      "psnr": 37.95445990833086,
       "paths": 27,
-      "nodes": 215,
-      "bytes": 3215,
-      "ms": 8.729392
+      "nodes": 228,
+      "bytes": 3632,
+      "ms": 21.742048999999998
     },
     "corpus/pixelart/heart.svg@noise": {
-      "delta_e_mean": 0.8511343846790936,
+      "delta_e_mean": 0.8698425089283445,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 36.77048794757913,
+      "psnr": 34.94622620364348,
       "paths": 27,
-      "nodes": 238,
-      "bytes": 3936,
-      "ms": 9.199258
+      "nodes": 246,
+      "bytes": 4242,
+      "ms": 22.17025
     },
     "corpus/pixelart/mushroom.svg@blur": {
-      "delta_e_mean": 1.4655087242522307,
+      "delta_e_mean": 1.4683762415059924,
       "delta_e_p95": 4.33070552432197,
-      "psnr": 23.926554199421503,
+      "psnr": 23.90902879155749,
       "paths": 39,
       "nodes": 760,
-      "bytes": 14996,
-      "ms": 13.19562
+      "bytes": 15032,
+      "ms": 21.714239
     },
     "corpus/pixelart/mushroom.svg@clean": {
-      "delta_e_mean": 0.28566882952839695,
+      "delta_e_mean": 0.29324133357764387,
       "delta_e_p95": 1.5480683228091823,
-      "psnr": 38.39449928633654,
+      "psnr": 37.37990169195692,
       "paths": 16,
-      "nodes": 220,
-      "bytes": 3735,
-      "ms": 9.167985
+      "nodes": 248,
+      "bytes": 4891,
+      "ms": 15.140855
     },
     "corpus/pixelart/mushroom.svg@half": {
-      "delta_e_mean": 0.6435058436235537,
+      "delta_e_mean": 0.6383426019289143,
       "delta_e_p95": 1.5480683228091823,
-      "psnr": 29.75336361035804,
+      "psnr": 29.829602684729085,
       "paths": 18,
-      "nodes": 296,
-      "bytes": 4710,
-      "ms": 3.248802
+      "nodes": 292,
+      "bytes": 4658,
+      "ms": 6.581234
     },
     "corpus/pixelart/mushroom.svg@jpeg35": {
-      "delta_e_mean": 0.4355445912808823,
+      "delta_e_mean": 0.43671367177932585,
       "delta_e_p95": 1.5480683228091823,
-      "psnr": 38.48013521016556,
+      "psnr": 38.25143408197963,
       "paths": 15,
-      "nodes": 221,
-      "bytes": 4105,
-      "ms": 9.505856999999999
+      "nodes": 225,
+      "bytes": 4203,
+      "ms": 14.145857
     },
     "corpus/pixelart/mushroom.svg@jpeg75": {
-      "delta_e_mean": 0.30864534804598764,
+      "delta_e_mean": 0.3160461194527663,
       "delta_e_p95": 1.5480683228091823,
-      "psnr": 38.08293608174633,
+      "psnr": 36.98862722538917,
       "paths": 16,
-      "nodes": 232,
-      "bytes": 4182,
-      "ms": 9.440999
+      "nodes": 252,
+      "bytes": 4990,
+      "ms": 15.64678
     },
     "corpus/pixelart/mushroom.svg@noise": {
-      "delta_e_mean": 0.843093841321585,
+      "delta_e_mean": 0.8540846385597892,
       "delta_e_p95": 1.4676078255340268,
-      "psnr": 36.111314879167594,
+      "psnr": 35.10975510656103,
       "paths": 16,
-      "nodes": 237,
-      "bytes": 4357,
-      "ms": 10.087900000000001
+      "nodes": 259,
+      "bytes": 5189,
+      "ms": 16.033645999999997
     },
     "corpus/pixelart/potion.svg@blur": {
-      "delta_e_mean": 1.1667194615507237,
+      "delta_e_mean": 1.1671531251639624,
       "delta_e_p95": 5.797549951111229,
-      "psnr": 25.186401486290457,
+      "psnr": 25.18537373911187,
       "paths": 54,
-      "nodes": 707,
-      "bytes": 12138,
-      "ms": 11.385742
+      "nodes": 709,
+      "bytes": 12168,
+      "ms": 27.570931
     },
     "corpus/pixelart/potion.svg@clean": {
-      "delta_e_mean": 0.05743474941462702,
+      "delta_e_mean": 0.057732675570383044,
       "delta_e_p95": 0.0,
-      "psnr": 41.3614381626861,
+      "psnr": 41.34595654383589,
       "paths": 24,
-      "nodes": 192,
-      "bytes": 2598,
-      "ms": 8.4549
+      "nodes": 198,
+      "bytes": 2862,
+      "ms": 18.58547
     },
     "corpus/pixelart/potion.svg@half": {
-      "delta_e_mean": 0.3499536159317032,
+      "delta_e_mean": 0.35578312254889266,
       "delta_e_p95": 0.8269132836699359,
-      "psnr": 34.01229302646194,
+      "psnr": 33.84373574134206,
       "paths": 19,
-      "nodes": 203,
-      "bytes": 3292,
-      "ms": 2.965849
+      "nodes": 207,
+      "bytes": 3384,
+      "ms": 9.244784000000001
     },
     "corpus/pixelart/potion.svg@jpeg35": {
-      "delta_e_mean": 0.15948567136269967,
+      "delta_e_mean": 0.1598245791897373,
       "delta_e_p95": 0.5514998222736617,
-      "psnr": 40.406331490449396,
+      "psnr": 40.38525245873565,
       "paths": 24,
-      "nodes": 201,
-      "bytes": 3283,
-      "ms": 8.758989
+      "nodes": 205,
+      "bytes": 3501,
+      "ms": 18.788732
     },
     "corpus/pixelart/potion.svg@jpeg75": {
-      "delta_e_mean": 0.1520468164521676,
+      "delta_e_mean": 0.15286429620554562,
       "delta_e_p95": 0.3597093407366189,
-      "psnr": 40.79543598227792,
+      "psnr": 40.6980258858206,
       "paths": 24,
-      "nodes": 196,
-      "bytes": 2921,
-      "ms": 8.587508000000001
+      "nodes": 198,
+      "bytes": 3073,
+      "ms": 18.696015
     },
     "corpus/pixelart/potion.svg@noise": {
-      "delta_e_mean": 0.7853598176164146,
+      "delta_e_mean": 0.7858376101758291,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 37.00822168235368,
+      "psnr": 36.99375768120676,
       "paths": 24,
-      "nodes": 241,
-      "bytes": 3705,
-      "ms": 9.626267
+      "nodes": 221,
+      "bytes": 3668,
+      "ms": 19.712099000000002
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@blur": {
-      "delta_e_mean": 1.6157731400949118,
+      "delta_e_mean": 1.6171946964309571,
       "delta_e_p95": 9.76171890284174,
-      "psnr": 20.70837611369068,
+      "psnr": 20.708682043313775,
       "paths": 16,
-      "nodes": 269,
-      "bytes": 6670,
-      "ms": 6.926511
+      "nodes": 271,
+      "bytes": 6695,
+      "ms": 3.921412
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@clean": {
-      "delta_e_mean": 1.1773492310678448,
+      "delta_e_mean": 1.1766358569442354,
       "delta_e_p95": 5.788942624999503,
-      "psnr": 23.48102045049352,
+      "psnr": 23.483050964974787,
       "paths": 6,
       "nodes": 268,
-      "bytes": 6692,
-      "ms": 13.626779
+      "bytes": 6694,
+      "ms": 5.821174
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@half": {
-      "delta_e_mean": 2.9714501323401223,
+      "delta_e_mean": 2.9824589706092706,
       "delta_e_p95": 22.97500193450441,
-      "psnr": 16.755250294433242,
+      "psnr": 16.738957571375366,
       "paths": 73,
-      "nodes": 405,
-      "bytes": 8084,
-      "ms": 1.9556069999999999
+      "nodes": 404,
+      "bytes": 8095,
+      "ms": 1.882292
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@jpeg35": {
-      "delta_e_mean": 1.784784855574607,
+      "delta_e_mean": 1.7800759267513218,
       "delta_e_p95": 9.281943324035367,
-      "psnr": 23.342800039978307,
+      "psnr": 23.368184053357087,
       "paths": 39,
       "nodes": 573,
-      "bytes": 13605,
-      "ms": 8.51771
+      "bytes": 13562,
+      "ms": 8.757434
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@jpeg75": {
-      "delta_e_mean": 1.7205970574662344,
+      "delta_e_mean": 1.7301828084701838,
       "delta_e_p95": 9.710009002945254,
-      "psnr": 23.703559890538706,
+      "psnr": 23.626948501910388,
       "paths": 15,
-      "nodes": 324,
-      "bytes": 8213,
-      "ms": 20.239707
+      "nodes": 322,
+      "bytes": 8057,
+      "ms": 10.617125999999999
     },
     "corpus/signatures/albert-einstein-signature-1934.svg@noise": {
-      "delta_e_mean": 1.218395485872688,
+      "delta_e_mean": 1.217677438023807,
       "delta_e_p95": 5.379128163460604,
-      "psnr": 23.539749823434953,
+      "psnr": 23.541958160119375,
       "paths": 6,
       "nodes": 268,
-      "bytes": 6692,
-      "ms": 13.585621000000002
+      "bytes": 6694,
+      "ms": 5.732476999999999
     },
     "corpus/signatures/george-washington-signature.svg@blur": {
       "delta_e_mean": 1.2636855381819316,
@@ -4220,7 +4220,7 @@
       "paths": 13,
       "nodes": 358,
       "bytes": 9191,
-      "ms": 29.628353
+      "ms": 12.21357
     },
     "corpus/signatures/george-washington-signature.svg@clean": {
       "delta_e_mean": 1.0073312326448949,
@@ -4229,7 +4229,7 @@
       "paths": 8,
       "nodes": 365,
       "bytes": 8899,
-      "ms": 28.517337
+      "ms": 12.772131000000002
     },
     "corpus/signatures/george-washington-signature.svg@half": {
       "delta_e_mean": 2.4482406297616888,
@@ -4238,25 +4238,25 @@
       "paths": 62,
       "nodes": 413,
       "bytes": 9774,
-      "ms": 5.59893
+      "ms": 3.410472
     },
     "corpus/signatures/george-washington-signature.svg@jpeg35": {
-      "delta_e_mean": 1.6688757975471986,
+      "delta_e_mean": 1.6671602126811067,
       "delta_e_p95": 7.549147213281482,
-      "psnr": 24.127725300674836,
+      "psnr": 24.146480876287338,
       "paths": 57,
-      "nodes": 584,
-      "bytes": 14077,
-      "ms": 18.013644999999997
+      "nodes": 585,
+      "bytes": 14062,
+      "ms": 18.87095
     },
     "corpus/signatures/george-washington-signature.svg@jpeg75": {
-      "delta_e_mean": 1.4762564294335925,
+      "delta_e_mean": 1.4764278051582609,
       "delta_e_p95": 7.110505156823866,
-      "psnr": 25.304261988728783,
+      "psnr": 25.30708961244308,
       "paths": 17,
       "nodes": 367,
-      "bytes": 9272,
-      "ms": 40.362047
+      "bytes": 9274,
+      "ms": 24.765459
     },
     "corpus/signatures/george-washington-signature.svg@noise": {
       "delta_e_mean": 1.062061138251902,
@@ -4265,7 +4265,7 @@
       "paths": 8,
       "nodes": 365,
       "bytes": 8899,
-      "ms": 28.528495
+      "ms": 12.708698
     },
     "corpus/signatures/napoleon-signature.svg@blur": {
       "delta_e_mean": 0.5502713736201047,
@@ -4274,7 +4274,7 @@
       "paths": 1,
       "nodes": 290,
       "bytes": 6252,
-      "ms": 13.880269
+      "ms": 8.975489
     },
     "corpus/signatures/napoleon-signature.svg@clean": {
       "delta_e_mean": 0.5390236651031276,
@@ -4283,16 +4283,16 @@
       "paths": 1,
       "nodes": 302,
       "bytes": 6226,
-      "ms": 12.015635999999999
+      "ms": 8.691378
     },
     "corpus/signatures/napoleon-signature.svg@half": {
-      "delta_e_mean": 1.1943757752476118,
+      "delta_e_mean": 1.191862270651908,
       "delta_e_p95": 0.0,
-      "psnr": 21.197400574432198,
+      "psnr": 21.204874453812927,
       "paths": 1,
-      "nodes": 161,
-      "bytes": 3392,
-      "ms": 5.472462
+      "nodes": 160,
+      "bytes": 3406,
+      "ms": 2.919596
     },
     "corpus/signatures/napoleon-signature.svg@jpeg35": {
       "delta_e_mean": 0.6288753769983492,
@@ -4301,7 +4301,7 @@
       "paths": 77,
       "nodes": 704,
       "bytes": 16042,
-      "ms": 19.675676
+      "ms": 23.412754
     },
     "corpus/signatures/napoleon-signature.svg@jpeg75": {
       "delta_e_mean": 0.7449203083642914,
@@ -4310,7 +4310,7 @@
       "paths": 6,
       "nodes": 251,
       "bytes": 5508,
-      "ms": 34.310888
+      "ms": 29.208736
     },
     "corpus/signatures/napoleon-signature.svg@noise": {
       "delta_e_mean": 0.6137037455971613,
@@ -4319,61 +4319,61 @@
       "paths": 1,
       "nodes": 302,
       "bytes": 6226,
-      "ms": 11.915827
+      "ms": 8.693311
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@blur": {
-      "delta_e_mean": 1.1317210037048238,
+      "delta_e_mean": 1.1315949931097127,
       "delta_e_p95": 4.034866220366662,
-      "psnr": 22.6622766923852,
+      "psnr": 22.6641158440184,
       "paths": 8,
       "nodes": 294,
       "bytes": 8238,
-      "ms": 17.441392999999998
+      "ms": 7.482997
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@clean": {
-      "delta_e_mean": 0.8926773455486032,
+      "delta_e_mean": 0.8927193915135243,
       "delta_e_p95": 0.0,
-      "psnr": 24.720987471994768,
+      "psnr": 24.720389605940404,
       "paths": 7,
       "nodes": 303,
-      "bytes": 8457,
-      "ms": 20.914265
+      "bytes": 8459,
+      "ms": 9.005757
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@half": {
-      "delta_e_mean": 2.162585809875011,
+      "delta_e_mean": 2.1782067855103793,
       "delta_e_p95": 10.560370707888199,
-      "psnr": 18.302559596685583,
+      "psnr": 18.25685089698991,
       "paths": 15,
       "nodes": 208,
-      "bytes": 5282,
-      "ms": 8.274453
+      "bytes": 5281,
+      "ms": 2.64483
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@jpeg35": {
-      "delta_e_mean": 1.4449544351738808,
+      "delta_e_mean": 1.4458154603814273,
       "delta_e_p95": 4.364939189757869,
-      "psnr": 24.25957808430761,
+      "psnr": 24.25024134185792,
       "paths": 56,
-      "nodes": 504,
-      "bytes": 13811,
-      "ms": 14.069599
+      "nodes": 502,
+      "bytes": 13743,
+      "ms": 12.692522
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@jpeg75": {
-      "delta_e_mean": 1.3529290434236467,
+      "delta_e_mean": 1.3522636413743043,
       "delta_e_p95": 4.364939189757869,
-      "psnr": 24.98218608710362,
+      "psnr": 24.970618876502645,
       "paths": 18,
-      "nodes": 297,
-      "bytes": 8905,
-      "ms": 27.113402
+      "nodes": 299,
+      "bytes": 8818,
+      "ms": 14.995269
     },
     "corpus/signatures/wolfgang-amadeus-mozart-signature.svg@noise": {
-      "delta_e_mean": 0.9596921915161973,
+      "delta_e_mean": 0.959699843629916,
       "delta_e_p95": 1.3165472083465115,
-      "psnr": 24.755581525841393,
+      "psnr": 24.755245569829235,
       "paths": 7,
       "nodes": 303,
-      "bytes": 8457,
-      "ms": 20.979119
+      "bytes": 8459,
+      "ms": 8.953976
     },
     "synthetic/01-shapes.svg@blur": {
       "delta_e_mean": 0.3092906187460712,
@@ -4382,7 +4382,7 @@
       "paths": 5,
       "nodes": 76,
       "bytes": 1504,
-      "ms": 12.018054
+      "ms": 12.166853
     },
     "synthetic/01-shapes.svg@clean": {
       "delta_e_mean": 0.012133238018051166,
@@ -4391,7 +4391,7 @@
       "paths": 4,
       "nodes": 30,
       "bytes": 685,
-      "ms": 10.9376
+      "ms": 11.217296999999999
     },
     "synthetic/01-shapes.svg@half": {
       "delta_e_mean": 0.0704645672644435,
@@ -4400,7 +4400,7 @@
       "paths": 4,
       "nodes": 35,
       "bytes": 786,
-      "ms": 4.642243
+      "ms": 4.959868
     },
     "synthetic/01-shapes.svg@jpeg35": {
       "delta_e_mean": 0.12251973587413226,
@@ -4409,7 +4409,7 @@
       "paths": 4,
       "nodes": 61,
       "bytes": 1270,
-      "ms": 11.271667
+      "ms": 11.533083
     },
     "synthetic/01-shapes.svg@jpeg75": {
       "delta_e_mean": 0.05727918715140706,
@@ -4418,7 +4418,7 @@
       "paths": 4,
       "nodes": 38,
       "bytes": 855,
-      "ms": 10.941385
+      "ms": 11.264394000000001
     },
     "synthetic/01-shapes.svg@noise": {
       "delta_e_mean": 0.8194562849448863,
@@ -4427,7 +4427,7 @@
       "paths": 4,
       "nodes": 30,
       "bytes": 743,
-      "ms": 11.517612999999999
+      "ms": 11.824658999999999
     },
     "synthetic/02-rounded-badge.svg@blur": {
       "delta_e_mean": 0.2586534970302064,
@@ -4436,7 +4436,7 @@
       "paths": 5,
       "nodes": 40,
       "bytes": 970,
-      "ms": 14.375973
+      "ms": 14.405414
     },
     "synthetic/02-rounded-badge.svg@clean": {
       "delta_e_mean": 0.032800840571024815,
@@ -4445,7 +4445,7 @@
       "paths": 5,
       "nodes": 40,
       "bytes": 975,
-      "ms": 14.154339
+      "ms": 14.156535
     },
     "synthetic/02-rounded-badge.svg@half": {
       "delta_e_mean": 0.23815666528126822,
@@ -4454,7 +4454,7 @@
       "paths": 5,
       "nodes": 40,
       "bytes": 933,
-      "ms": 6.04152
+      "ms": 5.9613510000000005
     },
     "synthetic/02-rounded-badge.svg@jpeg35": {
       "delta_e_mean": 0.48427689402387686,
@@ -4463,7 +4463,7 @@
       "paths": 5,
       "nodes": 41,
       "bytes": 1060,
-      "ms": 15.993179999999999
+      "ms": 15.362305
     },
     "synthetic/02-rounded-badge.svg@jpeg75": {
       "delta_e_mean": 0.13457010847864437,
@@ -4472,7 +4472,7 @@
       "paths": 5,
       "nodes": 40,
       "bytes": 973,
-      "ms": 14.443648999999999
+      "ms": 14.512215
     },
     "synthetic/02-rounded-badge.svg@noise": {
       "delta_e_mean": 0.2718251201996614,
@@ -4481,7 +4481,7 @@
       "paths": 5,
       "nodes": 44,
       "bytes": 1074,
-      "ms": 15.174711
+      "ms": 15.076708
     },
     "synthetic/03-star-ring.svg@blur": {
       "delta_e_mean": 0.3187163807454208,
@@ -4490,7 +4490,7 @@
       "paths": 4,
       "nodes": 89,
       "bytes": 1734,
-      "ms": 16.012535
+      "ms": 18.064021
     },
     "synthetic/03-star-ring.svg@clean": {
       "delta_e_mean": 0.02769306385405966,
@@ -4499,7 +4499,7 @@
       "paths": 4,
       "nodes": 32,
       "bytes": 727,
-      "ms": 16.369055
+      "ms": 18.406632
     },
     "synthetic/03-star-ring.svg@half": {
       "delta_e_mean": 0.2520402437379734,
@@ -4508,25 +4508,25 @@
       "paths": 4,
       "nodes": 33,
       "bytes": 687,
-      "ms": 6.580417
+      "ms": 8.182412
     },
     "synthetic/03-star-ring.svg@jpeg35": {
-      "delta_e_mean": 0.3583533478598352,
+      "delta_e_mean": 0.35836654981053123,
       "delta_e_p95": 0.5941685020547172,
-      "psnr": 33.45949257341027,
+      "psnr": 33.45948818427252,
       "paths": 50,
       "nodes": 319,
-      "bytes": 7888,
-      "ms": 16.942365000000002
+      "bytes": 7879,
+      "ms": 17.529752
     },
     "synthetic/03-star-ring.svg@jpeg75": {
-      "delta_e_mean": 0.14285808458803004,
+      "delta_e_mean": 0.14266941014767226,
       "delta_e_p95": 0.16510264461316804,
-      "psnr": 42.94976537870694,
+      "psnr": 42.963618967182605,
       "paths": 4,
       "nodes": 31,
-      "bytes": 708,
-      "ms": 16.991688
+      "bytes": 706,
+      "ms": 19.069298
     },
     "synthetic/03-star-ring.svg@noise": {
       "delta_e_mean": 0.9703737410133857,
@@ -4535,34 +4535,34 @@
       "paths": 4,
       "nodes": 32,
       "bytes": 728,
-      "ms": 17.003943
+      "ms": 19.084776
     },
     "synthetic/04-thin-lines.svg@blur": {
-      "delta_e_mean": 1.225138323329296,
+      "delta_e_mean": 1.2224110323861246,
       "delta_e_p95": 5.771195071238792,
-      "psnr": 24.3897890375662,
+      "psnr": 24.408944596138518,
       "paths": 52,
       "nodes": 340,
-      "bytes": 10052,
-      "ms": 12.097163
+      "bytes": 9995,
+      "ms": 18.233469
     },
     "synthetic/04-thin-lines.svg@clean": {
-      "delta_e_mean": 0.36002832697690074,
+      "delta_e_mean": 0.3597855759106951,
       "delta_e_p95": 2.9358147575289006,
-      "psnr": 31.49090108555341,
+      "psnr": 31.493798092245463,
       "paths": 6,
       "nodes": 44,
       "bytes": 1114,
-      "ms": 15.294762
+      "ms": 15.250843
     },
     "synthetic/04-thin-lines.svg@half": {
-      "delta_e_mean": 1.1114413232970095,
+      "delta_e_mean": 1.118944486760818,
       "delta_e_p95": 7.038432273619071,
-      "psnr": 24.299417301117877,
+      "psnr": 24.30129173829401,
       "paths": 18,
       "nodes": 115,
-      "bytes": 2804,
-      "ms": 4.174175
+      "bytes": 2915,
+      "ms": 9.87566
     },
     "synthetic/04-thin-lines.svg@jpeg35": {
       "delta_e_mean": 0.6864755225142052,
@@ -4571,7 +4571,7 @@
       "paths": 6,
       "nodes": 48,
       "bytes": 1190,
-      "ms": 15.063794
+      "ms": 14.957823
     },
     "synthetic/04-thin-lines.svg@jpeg75": {
       "delta_e_mean": 0.6461272458677105,
@@ -4580,7 +4580,7 @@
       "paths": 6,
       "nodes": 46,
       "bytes": 1149,
-      "ms": 15.232567000000001
+      "ms": 15.214356
     },
     "synthetic/04-thin-lines.svg@noise": {
       "delta_e_mean": 1.5358273627015957,
@@ -4589,61 +4589,61 @@
       "paths": 6,
       "nodes": 42,
       "bytes": 1091,
-      "ms": 15.903654
+      "ms": 15.859117999999999
     },
     "synthetic/05-adjacent-colors.svg@blur": {
-      "delta_e_mean": 0.08618394731667724,
+      "delta_e_mean": 0.08718413235685284,
       "delta_e_p95": 0.24426493292168805,
-      "psnr": 36.17192234771508,
+      "psnr": 36.057956181561465,
       "paths": 12,
       "nodes": 130,
-      "bytes": 3037,
-      "ms": 6.586002
+      "bytes": 2983,
+      "ms": 7.426437
     },
     "synthetic/05-adjacent-colors.svg@clean": {
-      "delta_e_mean": 0.04201515415541785,
+      "delta_e_mean": 0.04737537747892987,
       "delta_e_p95": 0.0,
-      "psnr": 39.6650458760172,
-      "paths": 6,
-      "nodes": 66,
-      "bytes": 1236,
-      "ms": 6.306563000000001
-    },
-    "synthetic/05-adjacent-colors.svg@half": {
-      "delta_e_mean": 0.12977796566242306,
-      "delta_e_p95": 0.13430365890785292,
-      "psnr": 33.53706391979227,
+      "psnr": 38.68049742526882,
       "paths": 6,
       "nodes": 50,
-      "bytes": 1164,
-      "ms": 2.288206
+      "bytes": 1026,
+      "ms": 7.364753
+    },
+    "synthetic/05-adjacent-colors.svg@half": {
+      "delta_e_mean": 0.12787472587147453,
+      "delta_e_p95": 0.13430365890785292,
+      "psnr": 33.47896215519868,
+      "paths": 6,
+      "nodes": 52,
+      "bytes": 1186,
+      "ms": 2.998836
     },
     "synthetic/05-adjacent-colors.svg@jpeg35": {
-      "delta_e_mean": 0.34454115743035385,
+      "delta_e_mean": 0.3410706508485274,
       "delta_e_p95": 0.47068163389588263,
-      "psnr": 36.469213370279526,
+      "psnr": 37.30045464467415,
       "paths": 8,
       "nodes": 82,
-      "bytes": 1959,
-      "ms": 6.72907
+      "bytes": 1743,
+      "ms": 7.759105
     },
     "synthetic/05-adjacent-colors.svg@jpeg75": {
-      "delta_e_mean": 0.1545498436034071,
+      "delta_e_mean": 0.16037789651055734,
       "delta_e_p95": 0.3163661183763686,
-      "psnr": 37.04348991194585,
+      "psnr": 36.843807376303616,
       "paths": 6,
-      "nodes": 60,
-      "bytes": 1334,
-      "ms": 6.513353
+      "nodes": 56,
+      "bytes": 1312,
+      "ms": 7.604446
     },
     "synthetic/05-adjacent-colors.svg@noise": {
-      "delta_e_mean": 0.34225691437200423,
+      "delta_e_mean": 0.3427564814153571,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 37.567968759686174,
+      "psnr": 37.51162230442377,
       "paths": 6,
-      "nodes": 72,
-      "bytes": 1337,
-      "ms": 7.014488
+      "nodes": 54,
+      "bytes": 1119,
+      "ms": 7.98347
     },
     "synthetic/06-small-icon.svg@blur": {
       "delta_e_mean": 1.3110961212480963,
@@ -4652,7 +4652,7 @@
       "paths": 2,
       "nodes": 21,
       "bytes": 421,
-      "ms": 1.682483
+      "ms": 0.533413
     },
     "synthetic/06-small-icon.svg@clean": {
       "delta_e_mean": 0.25844008080457637,
@@ -4661,7 +4661,7 @@
       "paths": 2,
       "nodes": 22,
       "bytes": 525,
-      "ms": 1.880763
+      "ms": 0.6809999999999999
     },
     "synthetic/06-small-icon.svg@half": {
       "delta_e_mean": 1.2674776333075881,
@@ -4670,16 +4670,16 @@
       "paths": 2,
       "nodes": 20,
       "bytes": 441,
-      "ms": 1.391435
+      "ms": 0.310819
     },
     "synthetic/06-small-icon.svg@jpeg35": {
-      "delta_e_mean": 1.1946335032744901,
-      "delta_e_p95": 3.6476738498222008,
-      "psnr": 27.39422198083765,
+      "delta_e_mean": 1.2599296868913303,
+      "delta_e_p95": 3.1349848562856115,
+      "psnr": 26.691748506837115,
       "paths": 10,
-      "nodes": 66,
-      "bytes": 968,
-      "ms": 0.654856
+      "nodes": 67,
+      "bytes": 1003,
+      "ms": 0.733471
     },
     "synthetic/06-small-icon.svg@jpeg75": {
       "delta_e_mean": 0.8870747465025818,
@@ -4688,7 +4688,7 @@
       "paths": 6,
       "nodes": 43,
       "bytes": 695,
-      "ms": 1.788212
+      "ms": 0.62685
     },
     "synthetic/06-small-icon.svg@noise": {
       "delta_e_mean": 0.5367634794811267,
@@ -4697,34 +4697,34 @@
       "paths": 2,
       "nodes": 23,
       "bytes": 495,
-      "ms": 1.9758940000000003
+      "ms": 0.8119219999999999
     },
     "synthetic/07-chart.svg@blur": {
-      "delta_e_mean": 0.5487934404055494,
+      "delta_e_mean": 0.5488018663255729,
       "delta_e_p95": 0.18164146432583128,
-      "psnr": 28.244021009441667,
+      "psnr": 28.244252024055577,
       "paths": 66,
-      "nodes": 527,
-      "bytes": 8510,
-      "ms": 22.076016
+      "nodes": 531,
+      "bytes": 8574,
+      "ms": 33.854737
     },
     "synthetic/07-chart.svg@clean": {
-      "delta_e_mean": 0.07167981645707866,
+      "delta_e_mean": 0.07235860215269004,
       "delta_e_p95": 0.0,
-      "psnr": 38.6454758513276,
+      "psnr": 38.952301341697016,
       "paths": 11,
-      "nodes": 117,
-      "bytes": 2091,
-      "ms": 19.595412
+      "nodes": 114,
+      "bytes": 2000,
+      "ms": 25.122484
     },
     "synthetic/07-chart.svg@half": {
-      "delta_e_mean": 0.45609101982605504,
+      "delta_e_mean": 0.45590987123666055,
       "delta_e_p95": 0.27356325746916726,
-      "psnr": 28.00275694097018,
+      "psnr": 28.00465966154688,
       "paths": 9,
-      "nodes": 96,
-      "bytes": 1951,
-      "ms": 5.779359
+      "nodes": 94,
+      "bytes": 1926,
+      "ms": 10.100534
     },
     "synthetic/07-chart.svg@jpeg35": {
       "delta_e_mean": 0.1878127083479256,
@@ -4733,25 +4733,25 @@
       "paths": 9,
       "nodes": 126,
       "bytes": 2274,
-      "ms": 20.510329000000002
+      "ms": 24.785147000000002
     },
     "synthetic/07-chart.svg@jpeg75": {
-      "delta_e_mean": 0.11589774549186503,
+      "delta_e_mean": 0.11504312134681886,
       "delta_e_p95": 0.273943334807792,
-      "psnr": 39.340146118706755,
+      "psnr": 39.493753837851024,
       "paths": 9,
-      "nodes": 110,
-      "bytes": 1872,
-      "ms": 20.769656
+      "nodes": 100,
+      "bytes": 1734,
+      "ms": 25.948818
     },
     "synthetic/07-chart.svg@noise": {
-      "delta_e_mean": 0.940366213114544,
+      "delta_e_mean": 0.9403904010668975,
       "delta_e_p95": 1.1912597089936867,
-      "psnr": 35.98880692232444,
+      "psnr": 35.9884293873984,
       "paths": 9,
       "nodes": 121,
       "bytes": 2045,
-      "ms": 20.184408
+      "ms": 25.131957
     }
   }
 }
