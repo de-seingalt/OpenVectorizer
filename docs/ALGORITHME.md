@@ -1,6 +1,6 @@
 # Algorithme de vectorisation sur mesure — document de conception
 
-Version 1 (brouillon soumis à relecture). Ce document décrit l'algorithme cible d'OpenVectorizer : ses fondements mathématiques, l'organisation du code Rust, la manière de le valider et l'ordre dans lequel le construire. Les synthèses de recherche qui l'alimentent sont dans [`docs/recherche/`](recherche/) (en anglais) ; chaque section y renvoie par un code `[R1 §2.3]` = synthèse 01, section 2.3.
+**Version 2** : intègre la première tournée de relecture indépendante (rigueur mathématique, faisabilité Rust/WASM, couverture des objectifs et robustesse). Les synthèses de recherche qui alimentent ce document sont dans [`docs/recherche/`](recherche/) (en anglais) ; un renvoi `[R1 §2.3]` désigne la synthèse 01, section 2.3. Un glossaire (annexe A) et un exemple complet (annexe B) aident à la lecture.
 
 ---
 
@@ -8,611 +8,940 @@ Version 1 (brouillon soumis à relecture). Ce document décrit l'algorithme cibl
 
 ### 0.1 Le constat
 
-Le moteur actuel trace les contours d'une image **postérisée** (k-means dans Oklab) puis y ajoute des couches de correction : détection de coins par RDP, cercles et ellipses sur les contours isolés, symétries, alignements, vérification. Rien n'est mesuré sur l'image raster elle-même, sauf une netteté de bord (Scharr) et une position sous-pixel par couverture. Conséquences observées :
+Le moteur actuel trace les contours d'une image **postérisée** (k-means dans Oklab) puis y ajoute des couches de correction : coins par RDP, cercles et ellipses sur les contours, symétries, alignements, vérification. Rien n'est mesuré sur l'image raster elle-même, sauf une netteté de bord (Scharr) et une position sous-pixel par couverture. Conséquences observées lors des tests :
 
 - des géométries « hallucinées » sur les dégradés (les frontières entre bandes de couleur sont des artefacts de la postérisation, pas des bords réels) ;
-- les grandes lignes et grands cercles ne sont pas trouvés, parce que la recherche est locale et que les seuils sont en pixels absolus ;
+- de petites géométries trouvées, mais pas les grandes lignes ni les grands cercles ;
+- des lignes colinéaires interrompues par d'autres formes, non unifiées ;
+- des repères d'ellipse trouvés mais non suivis ;
+- des artefacts JPEG qui trompent la palette ;
+- des coutures claires ou sombres entre formes voisines ;
 - une cinquantaine de constantes réglées à la main, sans lien avec le bruit réel de l'image.
 
 ### 0.2 L'idée directrice
 
 On sépare deux questions que le moteur actuel confond :
 
-1. **Topologie** : quelles zones de couleur existent, lesquelles se touchent, où sont les jonctions. La postérisation y répond bien et on la garde.
-2. **Géométrie** : où passe exactement chaque frontière, et quelle forme simple (droite, arc, ellipse, coin vif ou arrondi) elle suit. On y répond **sur l'image raster**, à plusieurs échelles, avec des détecteurs dont les seuils découlent d'un modèle de bruit.
+1. **Topologie** : quelles zones de couleur existent, lesquelles se touchent, où sont les jonctions. La postérisation y répond bien ; on la garde, et on la **répare** là où le raster la contredit (traits fins, petits points, §8.2).
+2. **Géométrie** : où passe exactement chaque frontière et quelle forme simple elle suit (droite, arc, ellipse, coin vif ou arrondi). On y répond **sur l'image raster**, à plusieurs échelles, avec des détecteurs dont les seuils découlent d'un modèle de bruit mesuré.
 
-Les détections raster deviennent des **repères** (« guides ») : segments, coins, jonctions, arcs, cercles, ellipses, taches, traits fins, chacun avec une position, une incertitude, une échelle et un score de signification. Le tracé des frontières de zones est ensuite une courbe lisse (Bézier) qui, à l'approche d'un repère, **devient** la primitive du repère. Le tracé final est une suite de droites, d'arcs de cercle, d'arcs d'ellipse et de Béziers, tangents entre eux sauf aux coins.
+Les détections raster deviennent des **repères** (« guides ») : segments, coins, jonctions, arcs, cercles, ellipses, taches, traits fins, chacun avec une position, une incertitude, une échelle et un score de signification. Le tracé de chaque frontière de zone est ensuite une courbe lisse (Bézier) qui, à l'approche d'un repère, **devient** la primitive du repère, y compris quand ce repère traverse plusieurs frontières. Le tracé final est une suite de droites, d'arcs de cercle, d'arcs d'ellipse et de Béziers, tangents entre eux sauf aux coins.
 
-### 0.3 Les cinq règles de conception
+### 0.3 Les règles de conception
 
-1. **Toute décision est une comparaison de modèles.** « Est-ce une droite ? », « ce coin est-il arrondi ? », « ces deux traits sont-ils alignés ? » se tranchent par un critère unique : coût de description (résidus pondérés par l'incertitude) + pénalité par paramètre (MDL / AIC géométrique de Kanatani), ou par un nombre de fausses alarmes (NFA, approche a contrario). Pas de seuil arbitraire en pixels.
-2. **Les seuils viennent de l'image.** Le bruit σ_n est estimé sur l'image ; les seuils de détection en découlent (probabilité de fausse alarme fixée). Ils peuvent varier localement.
-3. **La simplicité est une préférence explicite.** Un a priori par type de primitive (droite < arc < ellipse < Bézier) et un poids réglable par l'utilisateur. Un détail plus petit que l'échelle de perception choisie ne peut pas casser une symétrie, une droite ou une ellipse.
-4. **Tout est recodé en Rust, sans bibliothèque de traitement d'image.** On s'inspire de code permissif (MIT, BSD, Apache) en le citant ; pour le code GPL/AGPL, on implémente uniquement à partir des articles (§14).
-5. **Déterministe et mesurable.** Même entrée, mêmes réglages → même SVG, au bit près, en natif comme en WASM. Chaque étape a une vérité terrain synthétique et un critère d'acceptation chiffré (§12).
+1. **Un seul critère de décision** (§3). « Est-ce une droite ? », « ce coin est-il arrondi ? », « ces deux traits sont-ils alignés ? » se tranchent tous de la même manière : résidus pondérés par l'incertitude réelle + coût de description des paramètres (longueur de description minimale, MDL). La signification statistique d'un repère raster (NFA, approche a contrario) sert à **détecter**, pas à décider du tracé.
+2. **Les seuils viennent de l'image.** Le bruit est estimé sur l'image ; les seuils de détection en découlent pour une probabilité de fausse alarme fixée. Ils varient localement.
+3. **La simplicité est une préférence explicite et dosable.** A priori par type de primitive et échelle de perception réglable : un détail plus petit que cette échelle ne casse ni une symétrie, ni une droite, ni une ellipse (§3.5).
+4. **Tout est recodé en Rust, sans bibliothèque de traitement d'image ni de calcul.** On s'inspire de code permissif (MIT, BSD, Apache) en le citant ; pour le code GPL/AGPL ou sans licence, on implémente uniquement depuis l'article (§15).
+5. **Déterministe, borné, mesurable.** Même entrée, mêmes réglages → même SVG au bit près, en natif comme en WASM (§14.4). Chaque étape a une borne de coût explicite (§14.3) et une vérité terrain synthétique avec un critère chiffré (§13).
 
-### 0.4 Ce qui ne change pas
+### 0.4 Ce qui change et ce qui reste
 
-Le format des options et de la sortie (`Output { svg, stats, palette, corners, guides }`), l'interface (guides affichés, désactivables, forçables ; coins éditables), la palette k-means Oklab, les composantes connexes, les cycles en arêtes inter-pixels (crack edges), le découpage aux jonctions, le remplissage anti-couture, le benchmark de 515 cas. Le nouvel algorithme remplace l'intérieur de `fit.rs`, `shape.rs`, `align.rs`, une partie de `planar.rs`, et ajoute un étage de détection raster.
+**Reste** : les options et la sortie (`Output { svg, stats, palette, corners, guides }`), la palette k-means Oklab éditable, les composantes connexes, les cycles en arêtes inter-pixels (crack edges), les frontières partagées découpées aux jonctions, la stratégie anti-couture (§8.3), le benchmark de 515 cas.
+
+**Change** :
+- l'intérieur de `fit.rs`, `shape.rs`, `align.rs`, `edges.rs` et une partie de `planar.rs` ;
+- un étage de détection raster est ajouté ;
+- l'interface gagne des types de repères (Coin, Jonction, Trait, Tache), un réglage Qualité/temps, et une table de correspondance des anciens réglages (§12.4) ;
+- les éditions enregistrées (coins, repères forcés ou désactivés) sont conservées par une règle de migration testée (§7.3).
+
+**Périmètre** : le nouveau pipeline vise d'abord les préréglages Logo et Illustration. Le préréglage Photo garde son chemin actuel (VTracer) jusqu'à ce que le nouveau pipeline le batte sur le corpus photo (phase P8).
 
 ---
 
 ## 1. Vue d'ensemble
 
 ```
- image RGBA8
+ image RGBA8 ──► classification d'entrée (pixel art ? petite image ? JPEG ? transparence ?)
    │
-   ├─(A) Oklab f32, estimation du bruit σ_n (global + carte locale), détection JPEG
+   ├─(A) Oklab, modèle de bruit (fonction de niveau, propagée par pixel), détection JPEG
    │
-   ├─(B) Pyramide / espace d'échelle (budget qualité-temps)
+   ├─(B) Plans à σ₀ par bandes + pyramide (budget qualité/temps)
    │       │
-   │       ├─(C) Bords sous-pixel en couleur (Di Zenzo + Canny/Devernay), chaînes orientées,
-   │       │     échelle de flou par point, variance par point ; traits fins (Steger)
+   │       ├─(C) Bords sous-pixel couleur (Di Zenzo généralisé + Canny/Devernay),
+   │       │     chaînes orientées ; par point : flou, position finale, variance ;
+   │       │     traits fins (Steger)
    │       │
-   │       └─(D) Détecteurs de primitives sur les chaînes : segments, coins & jonctions,
-   │             arcs / cercles / ellipses, taches (blobs)  ──►  (E) GRAPHE DE REPÈRES
+   │       └─(D) Primitives sur les chaînes : segments, coins & jonctions, arrondis,
+   │             arcs / cercles / ellipses, taches ──► (E) GRAPHE DE REPÈRES
    │
-   ├─(F) Postérisation (existante) → zones, frontières partagées, jonctions topologiques
-   │       │
-   │       └── Association frontière ↔ chaînes de bords (hybride) : chaque morceau de
-   │           frontière reçoit des points sous-pixel mesurés et un statut « bord réel »
-   │           ou « bord de postérisation »
+   ├─(F) Postérisation (existante) → zones, frontières partagées, jonctions
+   │       └─(F′) Réparation de topologie guidée par les repères (traits, points, fusions)
    │
-   ├─(G) Segmentation optimale de chaque frontière en primitives (programmation
-   │     dynamique, critère MDL, a priori des repères)
+   ├─(F″) Association frontière ↔ bords : points mesurés, statut « bord réel » ou
+   │      « bord de postérisation » par sous-morceau
    │
-   ├─(H) Ajustement conjoint par frontière, contraintes G1 aux jonctions lisses
+   │   ─ ─ ─ ─ ─ ─ (tout ce qui précède est mis en cache, §14.6) ─ ─ ─ ─ ─ ─
    │
-   ├─(I) Régularisation globale : colinéarités, parallèles, rayons égaux, concentricité,
-   │     symétries, répétitions (acceptées par le même critère MDL)
-   │
-   └─(J) Vérification contre les pixels, émission SVG (L, A, C ; frontières partagées)
+   ├─(G) Segmentation optimale de chaque frontière (programmation dynamique, §3),
+   │     modèle « sur repère » partagé entre frontières
+   ├─(H) Ajustement conjoint, contraintes G1 aux jonctions lisses
+   ├─(I) Régularisation globale : colinéarités, parallèles, rayons, symétries, répétitions
+   └─(J) Vérification, émission SVG (L, A, C ; anti-couture ; <use> pour les répétitions)
 ```
 
-Les étapes C–E ne dépendent pas de la postérisation et peuvent tourner en parallèle de F (plus tard, quand le WASM aura des threads).
+Déplacer un curseur de Géométrie, Échelle ou Lissage, éditer un coin ou un repère ne relance que G–J.
 
 ---
 
 ## 2. Conventions
 
-- **Coordonnées.** Le pixel (i, j) couvre le carré [i, i+1] × [j, j+1] ; son centre est en (i + ½, j + ½). Toute la géométrie (repères, frontières, SVG) est dans ce repère. Les plans d'image sont indexés par centres entiers ; on ajoute ½ à la sortie du détecteur. Pyramide à décimation par 2 avec moyennage de blocs 2×2 : x_plein = 2^o · x_o (en coordonnées « coin », celles du SVG). Une seule fonction de conversion, testée. Une erreur ici décale tous les bords grossiers de 0,25 à 0,5 px [R1 §4.4].
-- **Couleur.** Détection et seuils dans **Oklab** (L ∈ [0, 1] ; ΔE ≈ distance euclidienne ; seuil de visibilité ≈ 0,02). Les matrices de conversion sont dans [R1 §1.3]. Alpha : prémultiplié avant conversion, puis canal supplémentaire du tenseur (§4.1).
-- **Échelles.** σ en pixels de l'image d'origine ; t = σ². Gaussienne normalisée g_σ.
-- **Précision numérique.** f32 pour les plans d'image ; f64 pour tous les ajustements géométriques et les accumulations [R5 §3.4].
-- **Notation statistique.** B(n, k, p) = Σ_{j≥k} C(n, j) p^j (1−p)^{n−j} (queue binomiale) ; NFA = nombre de tests × probabilité sous le modèle de fond ; un événement est retenu si NFA ≤ ε, ε = 1 [R2 §2].
+- **Coordonnées.** Le pixel (i, j) couvre le carré [i, i+1] × [j, j+1] de l'espace SVG ; son centre est en (i + ½, j + ½). Toute la géométrie est exprimée dans cet espace. Les plans d'image sont indexés par pixel ; la conversion indice → SVG est une seule fonction, testée.
+- **Pyramide.** Le niveau o + 1 s'obtient par un flou gaussien puis un moyennage de blocs 2×2. Le centre du pixel i du niveau o est en x_SVG = 2^o (i + ½). Le moyennage ajoute une variance de 1/3 px² (boîte de 2 px fins) dont la sélection d'échelle tient compte. Une erreur de convention décalerait tous les bords grossiers de 0,25 à 0,5 px [R1 §4.4].
+- **Couleur.** Détection dans **Oklab** (L ∈ [0, 1] ; ΔE ≈ distance euclidienne ; seuil de visibilité ≈ 0,02). Matrices dans [R1 §1.3]. Pour la palette, la couleur est **dé-prémultipliée** ; l'alpha est traité à part (§4.4).
+- **Échelles.** σ en pixels de l'image d'origine ; t = σ² ; g_σ gaussienne normalisée.
+- **Précision.** f32 pour les plans ; f64 pour les ajustements géométriques et toutes les accumulations [R5 §3.4].
+- **Notation.** B(n, k, p) = Σ_{j≥k} C(n, j) p^j (1−p)^{n−j} (queue binomiale) ; NFA = nombre de tests × probabilité sous le modèle de fond ; z_q = quantile q de la loi normale.
 
 ---
 
-## 3. Étape A — Préparation et modèle de bruit
+## 3. Le critère de décision unique
 
-### 3.1 Conversion
+Toutes les décisions des étapes D (choix vif/arrondi, cercle/ellipse), G (segmentation), H et I (relations) utilisent ce critère. Il est exprimé en unités de χ², c'est-à-dire −2 × log-vraisemblance.
 
-sRGB 8 bits → linéaire → LMS → racine cubique → Oklab, en f32, un plan par canal (L, a, b, α). Planaire (structure de tableaux) pour les filtres séparables et le SIMD [R5 §3.4].
+### 3.1 Variance d'un point
 
-### 3.2 Estimation du bruit σ_n
+Chaque point de frontière p_i porte une variance normale totale :
 
-Méthode d'Immerkær robuste [R1 §5] : masque N = [[1, −2, 1], [−2, 4, −2], [1, −2, 1]] (différence de deux laplaciens, annule les structures lisses ; Σ N² = 36). Par canal c :
+  v_i′ = var_n,i + σ_sys² + (τ_perc / 3)²
 
-  σ_n,c = médiane(|I_c ∗ N|) / (0,6745 · 6)
+- **var_n,i** : variance due au bruit de l'image, calculée par point (§5.6).
+- **σ_sys** : erreur systématique résiduelle du localisateur, **mesurée** sur la vérité terrain synthétique (§13.1) et tabulée par méthode de localisation et par flou σ_b. Ordre attendu : 0,02 à 0,05 px. Sans ce plancher, une image nette donnerait var_n ≈ (0,003 px)², et le moindre biais de quelques centièmes de pixel compterait pour des centaines d'unités de χ² : toutes les droites et tous les arcs seraient rejetés au profit de Béziers. Les biais **connus** (table de Devernay, biais de courbure κs²/2) sont soustraits de la position et ne sont pas ajoutés à la variance.
+- **τ_perc** : échelle de perception (§3.5), qui exprime la tolérance voulue par l'utilisateur. Un écart de τ_perc compte pour environ 3 écarts-types.
 
-calculé uniquement sur les pixels dont le gradient est sous sa médiane (on exclut les bords, qui gonflent l'estimation), avec une itération de raffinement.
+### 3.2 Corrélation des points
 
-- **Plancher** : σ_min ≈ 0,5/255 en équivalent sRGB, propagé dans Oklab par le jacobien local. Sans plancher, un aplat numérique donne σ_n = 0 et une sensibilité infinie.
-- **JPEG** : détection d'une périodicité 8×8 de |I ∗ N| (rapport de l'énergie aux positions de bloc sur l'énergie moyenne). Si détectée, σ_n est relevé (plancher 2–3/255) et le débruitage existant (bilatéral Oklab, réglage « Nettoyage ») est proposé plus fort par défaut. Les échos de bord (ringing) sont ensuite éliminés par le plancher perceptif (§4.3).
-- **Carte locale** : le même estimateur sur des tuiles de 64×64 px (médiane robuste, au moins 256 pixels plats par tuile, sinon valeur globale), interpolée bilinéairement. C'est la base des seuils locaux (§11).
+Deux points voisins d'une chaîne partagent le bruit à travers le noyau de dérivation. L'autocorrélation le long du bord est ρ(Δ) = exp(−Δ²/(4σ_loc²)) ; le facteur d'inflation est
 
-### 3.3 Estimation du flou de l'image σ_b
+  κ_c = Σ_k ρ(k·Δs) ≈ 2√π · σ_loc / Δs  (≈ 3,5 à σ_loc = 1, Δs = 1 px)
 
-Le flou optique (photo, mise à l'échelle) se mesure sur les bords droits détectés en C, par la sélection d'échelle (§4.5). On en garde la médiane globale σ_b et une version par tuile. Il fixe le rayon minimal d'un arrondi détectable (§5.3) et l'échelle de localisation.
+où Δs est l'espacement moyen des points. Partout :
+
+- résidu effectif **J_eff = (1/κ_c) Σ_i d_i² / v_i′** ;
+- covariances des paramètres ajustés multipliées par κ_c ;
+- nombre d'échantillons indépendants n_eff = n / κ_c.
+
+Pour les localisateurs par fenêtre (surface partielle, erf, §5.5), κ_c est tabulé par simulation. Pour les points de repli issus de la couverture (§9), κ_c = 1.
+
+### 3.3 Coût total
+
+Pour une frontière découpée en morceaux k de modèles m_k, aux ruptures b :
+
+  E = Σ_k [ J_eff,k + λ · c(m_k) + λ · π(m_k) ] + Σ_b [ λ_b + λ · δ_coin(b) ]
+
+- **c(m)** : nombre de degrés de liberté de forme d'un morceau entre deux ruptures, déduction faite du glissement tangentiel des extrémités. Droite 2, arc de cercle 3, arc d'ellipse 5, Bézier libre 6, Bézier aux deux tangentes imposées 2, morceau « sur repère » 0 (§10.2).
+- **π(m)** : a priori de simplicité, en unités de λ. Droite 0, arc 0,5, ellipse 1, Bézier 1,5 par défaut, réglé par Géométrie (§12.4) et calibré sur le corpus.
+- **λ_b = 2 ln N_c** : coût de description de la position d'une rupture choisie parmi N_c candidates. Sans ce coût, les critères de type AIC sur-segmentent.
+- **δ_coin(b)** = 1 si la rupture est un coin (tangentes indépendantes), 0 si la jonction est lisse (G1, une tangente partagée).
+- **λ** : pénalité par paramètre, entre l'AIC géométrique de Kanatani (λ = 2) et le MDL géométrique (λ = 2 ln(L/σ̄), plus conservateur, qui préfère le modèle dégénéré) [R3 §3, R4 §1.3]. Ici L est la diagonale de la boîte englobante de la frontière et σ̄ = √médiane(v_i′). Exemple : L = 512 px, σ̄ = 0,03 px donne λ ≈ 19,5. Le réglage Géométrie interpole de 2 à λ_MDL.
+
+### 3.4 Tests entre modèles emboîtés
+
+Toute comparaison d'un modèle simple (k paramètres) à un modèle plus riche (k + Δk) se fait par
+
+  ΔJ_eff = J_eff,simple − J_eff,riche  comparé à  λ · Δk (+ coûts de rupture et de choix)
+
+- droite contre arc : Δk = 1 ;
+- cercle contre ellipse : Δk = 2 ;
+- coin vif contre arrondi : Δk = 1 ;
+- jonction lisse contre coin : Δk = 1 ;
+- relation entre primitives (§11) : Δk = q, degrés de liberté retirés, plus le coût de choix 2 ln N_rel.
+
+Il n'existe pas d'autre règle (pas de « (A − B)/σ < 2 », pas de χ² à 99 % ici et à 95 % ailleurs). Les fenêtres de regroupement (2–4°, 3–5 %) servent seulement à générer des candidats.
+
+**Écart maximal.** Quand une portée est rejetée parce qu'un point s'écarte trop, le seuil tient compte du nombre de points : τ_max,i = z_{1−α/(2 n_eff)} · √v_i′ (correction de Šidák, α = 10⁻²). Cela donne z ≈ 3,9 pour n_eff = 100 et 4,4 pour n_eff = 1000. Un seuil fixe de 3σ rejetterait à tort 42 % des droites justes de 200 points.
+
+### 3.5 Préférer la forme simple : échelle de perception et pontage
+
+C'est la règle « tricher et préférer la forme la plus simple en laissant de côté les détails trop petits ». Elle agit par deux mécanismes, l'un sur les écarts faibles et l'autre sur les détails plus marqués.
+
+1. **Écarts sous la perception** : τ_perc = ρ_éch · D, où D est la taille de la forme (diagonale de la boîte englobante de la frontière ou du repère) et ρ_éch ∈ [0 ; 0,03] vient du réglage Échelle. L'ajout de (τ_perc/3)² à la variance (§3.1) rend presque gratuits les écarts inférieurs à τ_perc. Le modèle simple gagne alors, en segmentation comme en régularisation.
+2. **Pontage des petits détails** : un détail plus marqué mais petit (encoche, bosse, petite excroissance) peut être enjambé. Le coût par point est tronqué : ρ(d_i) = min(d_i²/v_i′, z²), avec z = τ_max,i/√v_i′. Une série contiguë de points pontés est admise si l'aire entre la primitive et les points est ≤ (2 τ_perc)², et si la longueur pontée totale est ≤ β · longueur de la portée (β = 10 % × Échelle). Au-delà, le modèle est infaisable sur cette portée. Les points pontés sont marqués et l'écart de couleur qui en résulte est contrôlé à la vérification (§12.3, J).
+3. **Petites zones** : une zone entièrement contenue dans la bande de tolérance d'une primitive (largeur τ_perc) est fusionnée avec sa voisine. Ce filtre remplace le filtre d'aire fixe pour les zones de détail.
+
+Avec Échelle = 0, τ_perc = 0 et β = 0 : fidélité pure.
+
+### 3.6 Rôle des NFA
+
+Le nombre de fausses alarmes (approche a contrario de Desolneux, Moisan et Morel) répond à la question « cette structure existe-t-elle vraiment dans l'image, ou est-elle due au hasard ? ». Il sert à **retenir** un repère raster (NFA ≤ ε = 1). Il **n'entre pas** dans E :
+
+- un NFA est une borne de probabilité, non bornée, pas une vraisemblance ;
+- les points de bord qui ont produit le repère sont déjà dans J, donc les compter deux fois serait une erreur.
+
+Un repère agit sur le tracé par ce qu'il **offre** à la segmentation : des ruptures candidates, un modèle candidat sur sa portée (« sur repère », §10.2), et un modèle imposé quand l'utilisateur le force.
 
 ---
 
-## 4. Étape C — Bords sous-pixel en couleur
+## 4. Étape A — Préparation et modèle de bruit
 
-C'est le socle : tout le reste en dépend. Méthode : Canny/Devernay modifié par Grompone von Gioi et Randall (IPOL 2017), appliqué au gradient couleur de Di Zenzo. Code de référence AGPL : on implémente depuis l'article [R1 §2–3, R5 §1.1].
+### 4.1 Classification de l'entrée
 
-### 4.1 Gradient couleur
+Avant tout calcul :
 
-Dérivées gaussiennes séparables à l'échelle σ (noyaux renormalisés : Σ g = 1, Σ x·g′(x) = −1 ; bords par réflexion ; rayon ⌈4σ⌉ ; σ ≥ 0,8 au niveau de travail) [R1 §1.1].
+- **JPEG** : énergie de |I ∗ N| (masque d'Immerkær, §4.3) aux positions de blocs 8×8 rapportée à l'énergie moyenne ; la détection est un drapeau.
+- **Pixel art** : grille native détectée par autocorrélation du gradient, peu de couleurs, quasi aucun pixel de mélange. Première version : avertissement dans l'interface et traitement à la résolution native, sans flou, en polygones exacts sur les arêtes inter-pixels. Un vrai mode pixel art (à la Kopf-Lischinski) est une étape ultérieure, après vérification du brevet signalé [R5 §2].
+- **Petite image** (côté < 128 px) : σ₀ = 0,7 avec le noyau gaussien discret de Lindeberg (le noyau échantillonné est faux sous 0,8), estimation de bruit globale. Taille minimale supportée : 16 px.
+- **Transparence** : présence d'un alpha non constant (§4.4).
 
-Tenseur de Di Zenzo **blanchi** : pondération de chaque canal par l'inverse de sa variance de bruit (w_c = 1/σ_n,c²), pour que la statistique de détection soit exacte quel que soit le canal :
+### 4.2 Conversion
 
-  g11 = Σ_c w_c (∂x L_c)², g22 = Σ_c w_c (∂y L_c)², g12 = Σ_c w_c ∂x L_c ∂y L_c
+sRGB 8 bits → linéaire → LMS → racine cubique → Oklab, en f32, un plan par canal (L, a, b). Les plans sont stockés séparément (structure de tableaux) pour les filtres séparables et le SIMD [R5 §3.4].
+
+### 4.3 Modèle de bruit
+
+Le bruit de l'image n'est ni uniforme ni indépendant d'un canal à l'autre dans Oklab. Les trois canaux mélangent les mêmes valeurs LMS, et les zones sombres sont environ deux fois plus bruitées après la racine cubique. On l'estime donc là où il est le plus simple, en sRGB, puis on le propage [revue math. B1].
+
+1. **Fonction de niveau de bruit** par canal sRGB : σ²(I) = α·I + β. On calcule les réponses d'Immerkær r = I ∗ N, avec N = [[1, −2, 1], [−2, 4, −2], [1, −2, 1]] et Σ N² = 36, qui annule les structures lisses. On ne garde que les pixels dont le gradient est sous sa médiane, pour exclure les bords ; ce masquage ne biaise pas l'estimation. On les regroupe par intensité locale (16 classes) et on prend un écart-type robuste par classe : MAD/(0,6745 · 6). Puis moindres carrés pondérés pour (α, β) [R1 §5].
+2. **Planchers** : β ≥ (0,5/255)² (sinon un aplat numérique donnerait un bruit nul et une sensibilité infinie) ; en JPEG, β ≥ (2/255)².
+3. **Propagation par pixel** : Σ_n(x) = J(x) · diag(σ²(I_c(x))) · J(x)ᵀ, où J(x) est le jacobien 3×3 de la conversion sRGB → Oklab au pixel x. Les valeurs LMS sont bornées à ≥ 10⁻⁴ avant dérivation, car la racine cubique a une dérivée infinie en 0.
+4. **Carte locale** : le même estimateur sur des tuiles (au moins 256 pixels plats par tuile, sinon valeur globale), interpolées bilinéairement. Elle capte les variations que la fonction de niveau ne décrit pas, comme le grain d'un scan.
+
+### 4.4 Alpha
+
+Si l'alpha n'est pas constant, il forme un canal à part, avec son propre bruit et un plancher de 0,5/255. Un canal constant est retiré du calcul, faute de quoi son poids serait infini. La frontière avec le transparent est le croisement à 50 % d'alpha. Ce bord prime sur le bord de couleur au même endroit : les pixels de bord semi-transparents prémultipliés créent sinon un faux liseré coloré. La zone transparente est une entrée « aucune » de la palette.
+
+---
+
+## 5. Étapes B et C — Bords sous-pixel en couleur
+
+C'est le socle. Méthode : Canny/Devernay dans la variante de Grompone von Gioi et Randall (IPOL 2017, code AGPL, donc implémentée depuis l'article), appliquée à un gradient couleur de Di Zenzo généralisé [R1 §1–3, R5 §1.1].
+
+### 5.1 Organisation du calcul (coût et mémoire)
+
+Une pile complète de dérivées à plusieurs échelles en pleine résolution coûterait environ 3 milliards de multiplications-additions à 2 MP, soit plusieurs secondes en WASM [revue ingé. B1]. On organise donc le calcul ainsi :
+
+- **Plans pleine résolution à une seule échelle σ₀** (≈ 1, de 0,7 à 1,5 selon le bruit), calculés **par bandes** de 64 à 256 lignes avec une marge égale au rayon du noyau + 2 (pour la NMS, Devernay et le chaînage 5×5). Chaque bande produit des **enregistrements de points de bord**, puis ses plans sont libérés.
+- **Pyramide** (§2) pour les grandes échelles : chaque niveau coûte le quart du précédent. On y détecte les structures larges, floues ou peu contrastées : grandes lignes, grands cercles, taches, traits épais.
+- **Analyse par point** : sélection d'échelle, flou, échelle de localisation, relocalisation finale et variance se calculent pour chaque point de bord sur un **profil 1D le long de sa normale**, échantillonné dans le plan σ₀. Les échelles plus grandes s'obtiennent en convoluant ce profil en 1D. Pour un bord droit, c'est exact. Pour un bord de courbure κ, l'erreur est d'ordre (κσ)², qu'on contrôle sur la vérité terrain.
+
+### 5.2 Gradient couleur généralisé
+
+Dérivées gaussiennes séparables à σ₀ : noyaux renormalisés (Σ g = 1, Σ x·g′(x) = −1), bords par réflexion, rayon ⌈4σ⌉ [R1 §1.1]. Tenseur de Di Zenzo **blanchi par la covariance du bruit** :
+
+  G = ∇Lᵀ Σ_n⁻¹ ∇L,  g_ij = Σ_{c,c′} ∂_i L_c (Σ_n⁻¹)_{cc′} ∂_j L_{c′}
   λ± = ½ [ (g11 + g22) ± √((g11 − g22)² + 4 g12²) ], θ = ½ atan2(2 g12, g11 − g22)
 
-- Force du bord E = √λ+ (en unités de bruit).
-- Normale orientée : n = (cos θ, sin θ), signe choisi pour que n · ∇L_L > 0 (canal de luminance), ou le canal de plus grand |n·∇L_c| si le bord est isoluminant.
-- Indicateur de jonction : ρ = λ− / λ+ (≈ 0 sur un bord simple, grand près d'un coin ou d'une jonction).
-- Le contraste du bord en Oklab non pondéré, Δ = (ΔL, Δa, Δb), est conservé par point : il sert à l'association avec la palette (§8.2) et au plancher perceptif.
+- **Force** E = √λ+, en unités de bruit.
+- **Normale orientée** n = (cos θ, sin θ), de signe choisi pour que n · ∇L_L > 0. Sur un bord isoluminant, on prend le canal de plus grand |n · ∇L_c|.
+- **Indicateur de jonction** ρ = λ−/λ+ : proche de 0 sur un bord simple, grand près d'un coin ou d'une jonction.
+- **Contraste par point** en Oklab non pondéré. Pour un bord en marche floue, Δ_c = √(2π) · s · ∂_n L_c, avec s² = σ² + σ_b² (σ_b : §5.5).
+- **Variance du gradient sous le bruit** σ_g² = Σ_x k′(x)² · Σ_y k(y)², calculée sur les noyaux discrets réels. La valeur continue 1/(8πσ⁴) est fausse de 4 % à σ = 0,8.
+- On ne lisse pas le tenseur (échelle d'intégration nulle) pour la localisation.
 
-On ne lisse pas le tenseur (échelle d'intégration nulle) pour la localisation [R1 §1.2].
+### 5.3 Suppression des non-maxima et position initiale
 
-### 4.2 Suppression des non-maxima et position sous-pixel
+**NMS sur l'axe dominant** (variante IPOL), déterminé par θ :
 
-NMS sur l'axe dominant (variante IPOL) : si |gx| ≥ |gy|, le pixel est un maximum horizontal si E(x−1, y) < E(x, y) ≥ E(x+1, y) ; sinon test vertical. Puis correction de Devernay le long de cet axe :
+- si |cos θ| ≥ |sin θ|, le point est un maximum si E(x−1, y) < E(x, y) ≥ E(x+1, y) ;
+- sinon, test vertical équivalent.
 
-  η = ½ (a − c) / (a − 2b + c),  a = E(p − d), b = E(p), c = E(p + d),  |η| ≤ ½
+L'inégalité stricte d'un côté départage les plateaux de façon déterministe.
 
-Point sous-pixel p + η·d. Biais résiduel de quelques centièmes de pixel, tabulable par simulation et soustrait [R1 §3.1].
+**Correction de Devernay** le long de cet axe :
 
-**Raffinement optionnel** (mode qualité « Précis » et au-delà) :
-- *Effet de surface partielle* (Trujillo-Pino 2013) pour les images nettes anti-crénelées : position < 0,01 px, plus courbure et contraste par point. Formules dans [R1 §3.2] ; référence lisible sous MIT.
-- *Ajustement d'un bord flou* I(x) = B + (A − B)·Φ((n·x − ρ)/s) par Gauss-Newton sur une bande normale, pour les photos floues : donne position, flou s, couleurs et matrice de covariance.
+  η = ½ (a − c) / (a − 2b + c),  a = E(p − d), b = E(p), c = E(p + d)
 
-Choix automatique : effet de surface partielle si σ_b < 0,7 px, ajustement erf sinon.
+- η = 0 si a − 2b + c = 0 ;
+- |η| ≤ ½ ;
+- biais résiduel de quelques centièmes de pixel, tabulé par simulation et soustrait [R1 §3.1].
 
-### 4.3 Seuils automatiques
+### 5.4 Seuils et chaînage
 
-En zone plate, avec le tenseur blanchi, trace/1 suit une loi χ² à 2C degrés de liberté (C canaux), mise à l'échelle par la variance d'une dérivée gaussienne :
+Après blanchiment, en zone plate, trace(G)/σ_g² suit une loi χ² à 2C degrés de liberté (C = nombre de canaux actifs). Pour un nombre pair de degrés,
 
-  σ_g² = 1 / (8π σ⁴)  (variance d'une composante de gradient pour un bruit blanc unitaire)
+  P(χ²_{2C} > x) = e^{−x/2} Σ_{i<C} (x/2)^i / i!
 
-Seuil haut H et bas L tels que P(χ²_{2C} > T²/σ_g²) = p, avec p_H = 10⁻⁵ et p_L = 10⁻² par pixel. Pour C = 3 : P(χ²_6 > x) = e^{−x/2} (1 + x/2 + x²/8), inversé par Newton. Comme λ+ ≤ trace, le test est conservateur.
+Les seuils haut H et bas L correspondent à p_H = 10⁻⁵ et p_L = 10⁻² par pixel. Ils sont calculés une fois par (C, p) par Newton sécurisé en log. Le test sur λ+ ≤ trace est conservateur (d'un facteur ≈ 2,6 à 10⁻²). Une table de la plus grande valeur propre d'une loi de Wishart, simulée une fois à graine fixe, peut le rendre exact.
 
-**Plancher perceptif** : un bord n'est retenu que si son contraste |Δ| en Oklab dépasse ΔE_min = 0,02 (réglable via « Détail »). Cela élimine les bords statistiquement réels mais invisibles, et les échos JPEG.
+**Plancher perceptif** : un point n'est gardé que si |Δ| ≥ ΔE_min = 0,02 (réglé par Détail). Cela écarte les bords statistiquement réels mais invisibles, et les échos JPEG.
 
-**Validation a contrario des chaînes** (optionnelle, deuxième filtre) : NFA d'une chaîne de longueur l = N_chaînes · H(μ)^{l/2}, où μ est le gradient minimal le long de la chaîne et H la distribution empirique de |∇| sur l'image (échantillons indépendants tous les 2 px) [R2 §2].
+**Chaînage** [R1 §7.1] :
+- voisinage 5×5 ;
+- lien A → B si g(A)·g(B) > 0 et AB · g(A)^⊥ > 0 (le côté sombre reste du même côté) ;
+- au plus un successeur et un prédécesseur par point ;
+- pour l'indépendance à l'ordre de parcours, liens triés par longueur quantifiée (tri par paquets, linéaire) puis par indice, et acceptés gloutonnement ;
+- le chaînage se fait sur la liste globale des points, après les bandes, pour que le découpage en bandes ne change pas le résultat.
 
-Attention : les échantillons d'une même chaîne sont corrélés sur environ 2σ (le noyau). Toute statistique sur une chaîne utilise un nombre effectif d'échantillons n_eff = longueur / (2σ), pas le nombre de points.
+**Hystérésis** le long des chaînes : une chaîne survit si un point dépasse H ; les points sous L la coupent. Les extrémités près des jonctions (le gradient y est indéfini) gardent leur tangente pour l'étape D.
 
-### 4.4 Chaînage
+**Validation des chaînes** (optionnelle) : NFA = N_chaînes · H(μ)^{n_eff}, où μ est le gradient minimal le long de la chaîne et H(μ) = P(|∇| ≥ μ) la distribution empirique sur l'image. Les points d'une chaîne ont été sélectionnés par la NMS, donc le modèle de fond est optimiste : ε se calibre sur des images de bruit.
 
-Voisinage 5×5. Lien A → B accepté seulement si g(A)·g(B) > 0 (orientations à moins de 90°) et AB · g(A)^⊥ > 0 (le côté sombre reste du même côté). Chaque point a au plus un successeur et un prédécesseur. Pour supprimer la dépendance à l'ordre de parcours de l'article, on collecte tous les liens candidats, on les trie par longueur (puis par indice) et on les accepte gloutonnement (à la Kruskal) [R1 §7.1]. Hystérésis ensuite le long des chaînes : une chaîne survit si un de ses points dépasse H ; les points sous L la coupent.
+### 5.5 Analyse par point : flou, localisation finale
 
-Les chaînes s'arrêtent à σ–2σ des jonctions (gradient indéfini) : leurs extrémités et tangentes sont enregistrées pour l'étape D.
+Sur le profil normal de chaque point (§5.1) :
 
-### 4.5 Échelles
+1. **Flou σ_b**, par forme fermée sur deux échelles. Pour une marche de flou t₀, le gradient vérifie E²(t) ∝ h²/(t₀ + t). Avec deux échelles t₁ < t₂ et R = E²(t₁)/E²(t₂) :
+   t₀ = (t₂ − R·t₁)/(R − 1).
+   Cette formule reste valable pour t₀ < σ₀², alors que le maximum de Lindeberg (γ = ½) bute sur le bas de la pile. Elle est moyennée le long de la chaîne (n_eff) et corrigée des gains des noyaux discrets (table). Le maximum γ = ½ sert seulement de contrôle.
+2. **Échelle de localisation** σ_loc = max(σ₀, σ_b/2). On ne localise jamais à une échelle grossière : sur un bord courbe, le lissage introduit un biais ≈ κs²/2 vers le centre de courbure (s² = σ_loc² + σ_b²), qu'on soustrait.
+3. **Localisateur** :
+   - si σ_b < 0,7 px et pas de JPEG, **effet de surface partielle** (Trujillo-Pino 2013 ; formules et port MIT dans [R1 §3.2]). Il donne une précision < 0,01 px, plus une courbure et un contraste par point, pour un coût négligeable par point ;
+   - si le bord est flou, **ajustement d'une marche floue** I(x) = B + (A − B)·Φ((n·x − ρ)/s) par Gauss-Newton sur le profil, qui donne position, flou, couleurs et covariance ;
+   - sinon, Devernay.
+4. **Espace de localisation** : on détecte dans Oklab, mais la position finale se calcule sur les canaux sRGB gamma. C'est là que les moteurs SVG anti-crénèlent, et le croisement à 50 % reproduit alors le raster. C'est une hypothèse d'une synthèse, à valider sur vérité terrain avant d'en faire le défaut ; un interrupteur interne permet de comparer.
+5. **JPEG** : le sous-échantillonnage de la chrominance (4:2:0) décale les bords de a et b jusqu'à 1 px. On localise alors sur L seul, et la chrominance ne sert qu'à la détection.
 
-Pile d'échelles σ_k = σ_0 · 2^{k/3} (σ_0 = 1), dérivées gaussiennes jusqu'à σ = 2, pyramide au-delà [R1 §4].
+### 5.6 Variance par point
 
-- **Détection** à l'échelle fine σ_0 (adaptée au bruit : 1 à 1,5).
-- **Sélection d'échelle par point** (Lindeberg, γ = ½) : on maximise G_k = σ_k · E_k² sur la pile, interpolation parabolique en log σ ⇒ σ_sel. Pour un bord flou de variance t_0, γ = ½ donne t_sel = t_0 : **σ_sel est le flou du bord**.
-- **Localisation** à σ_loc = max(σ_0, σ_sel/2), jamais sur un niveau décimé. On ne localise pas à σ_sel : sur un bord courbe de courbure κ, le lissage introduit un biais ≈ κσ²/2 vers le centre de courbure.
-- Les **échelles grossières** (niveaux de pyramide) servent à détecter les grandes structures floues ou peu contrastées (grandes lignes, grands cercles) ; leurs chaînes sont re-localisées à pleine résolution dans une bande de ±3σ.
+Pour l'estimateur de Devernay à l'échelle σ_loc, avec s² = σ_loc² + σ_b² [R1 §7.2 ; algèbre vérifiée par la revue] :
 
-### 4.6 Incertitude par point
+  var_n = (3/8) · (1/SNR²) · (s/σ_loc)⁶,  SNR² = hᵀ Σ_n⁻¹ h
 
-Pour un bord droit de contraste h, de flou σ_b, détecté à l'échelle σ (s² = σ² + σ_b²), le déplacement normal dû au bruit a pour variance [R1 §7.2, à confronter à Kakarala & Hero 1992] :
+où h est le vecteur de contraste. Pour la surface partielle et l'ajustement erf, la variance vient de la covariance de l'ajustement, σ² (JᵀJ)⁻¹, avec un κ_c propre à chaque méthode. S'y ajoute σ_sys (§3.1).
 
-  Var(δ) = (3/8) · (σ_n / h)² · (s / σ)⁶
+Chaque point stocke : position, normale orientée, contraste Δ, force E, σ_b, σ_loc, var_n, ρ, identifiant de chaîne. Stockage en structure de tableaux, environ 50 octets par point.
 
-Pour la couleur, (h/σ_n)² est remplacé par le rapport signal/bruit blanchi Σ_c h_c²/σ_n,c² le long de n. S'y ajoutent des biais déterministes (parabole de Devernay, courbure κσ²/2, espace colorimétrique §4.7). Si l'ajustement erf est utilisé, la covariance vient directement de σ_n² (JᵀJ)⁻¹.
+### 5.7 Traits fins (Steger)
 
-Chaque point de bord stocke : position, normale orientée, contraste Δ (Oklab), force E, σ_sel, σ_loc, var_n, indicateur de jonction ρ, identifiant de chaîne. Les ajustements de courbes pondèrent par 1/var_n (distance le long de la normale uniquement).
+Un trait de largeur W ≲ 3–4 px donne deux bords trop proches pour être localisés séparément. On le détecte comme une **crête** (ligne centrale + largeur) selon Steger 1998. Le code de référence est GPL, donc on part de l'article [R1 §6]. Calcul sur L seul, aux niveaux de pyramide utiles :
 
-### 4.7 Espace de localisation
+- hessienne, vecteur propre n de la plus grande |valeur propre| ;
+- t = −(r_x n_x + r_y n_y)/(r_xx n_x² + 2 r_xy n_x n_y + r_yy n_y²) ;
+- point de crête si |t n_x| ≤ ½ et |t n_y| ≤ ½ ;
+- sélection d'échelle par N_γ = t^{4γ}(L_pp² − L_qq²)², avec γ = ¾. La forme t^{2γ} de [R1 §4.3] est fausse : elle sélectionne t₀/3. Le résultat t_sel = t₀ ne vaut que pour un profil gaussien ; la table de correction absorbe le cas d'une barre plate ;
+- largeur et décalage corrigés par une table (largeur, asymétrie) → (largeur vraie, décalage), construite par simulation du profil analytique.
 
-Le flou optique a lieu en lumière linéaire, mais la plupart des moteurs SVG anti-crénèlent en sRGB gamma. La racine cubique d'Oklab et le gamma sRGB déplacent le point d'inflexion d'un bord flou très contrasté vers le côté sombre, de quelques dixièmes de σ_b. Décision : on détecte et on seuille dans Oklab, puis on relocalise la position finale sur les canaux sRGB gamma (le croisement à 50 % reproduit alors l'anti-crénelage du raster). C'est une hypothèse de l'auteur de la synthèse, à vérifier sur rendus synthétiques avant d'en faire le défaut (interrupteur interne).
+**Choix entre crête et paire de bords** : déterministe, selon la largeur corrigée. On traite le trait comme une crête si W < c · σ_loc, où c est tabulé par simulation : c'est la largeur à laquelle l'erreur de localisation à deux bords égale celle de la crête. Comparer les deux réponses normalisées n'aurait pas de sens, car elles n'ont pas la même unité.
 
-### 4.8 Traits fins (Steger)
-
-Un trait de largeur W ≲ 3–4 px donne deux bords trop proches pour être localisés indépendamment. On le détecte comme une **crête** (ligne centrale + largeur) avec la méthode de Steger 1998 (code de référence GPL : depuis l'article) [R1 §6] :
-
-- hessienne à l'échelle σ, vecteur propre n de la plus grande |valeur propre| ;
-- t = −(r_x n_x + r_y n_y) / (r_xx n_x² + 2 r_xy n_x n_y + r_yy n_y²), point de crête si |t n_x| ≤ ½ et |t n_y| ≤ ½ ;
-- sélection d'échelle γ = ¾ (pour une crête gaussienne de variance t_0, t_sel = t_0) ;
-- largeur et correction de biais par une table (w, a) → (largeur, décalage) construite par simulation du profil analytique ;
-- arbitrage crête / paire de bords par la réponse normalisée de chaque détecteur à son échelle sélectionnée.
-
-Sortie : repère « Trait » (ligne centrale + largeur). L'émission en trait SVG (`stroke`) est une option future ; dans un premier temps, le repère contraint les deux frontières de la zone fine à rester parallèles.
-
----
-
-## 5. Étape D — Détecteurs de primitives
-
-Ils travaillent sur les chaînes de C (ordonnées, sous-pixel, pondérées), pas sur des pixels bruts. C'est le principe d'EDLines / EDCircles (code des auteurs sous MIT) [R2 §1.2, R5 §1.2].
-
-### 5.1 Segments de droite
-
-1. **Croissance sur chaîne** (EDLines) : ajustement par moindres carrés totaux pondérés sur une longueur minimale, extension tant que l'écart normal reste compatible avec var_n (test χ² au lieu du seuil fixe de 1 px), réajustement à la sortie.
-2. **Longueur minimale significative** : L_min tel que NFA = N⁴ · p^{n_eff} ≤ 1 (p = 1/8, N = côté de l'image) ; environ 12 px pour 512² à σ = 1.
-3. **Validation a contrario** : NFA = N⁴ · B(n, k, 1/8), k = nombre de points dont l'orientation du gradient est à moins de 22,5° de la normale du segment [R2 §1.1–1.2]. On garde −log₁₀ NFA comme confiance.
-4. **Ajustement** : centroïde, matrice de dispersion pondérée S, direction = vecteur propre de λmax, résidu = λmin. Covariance : var(φ) ≈ σ²/Σ w_i t_i², var(décalage au centroïde) = σ²/W (incertitude en sablier) [R2 §1.5].
-5. **Fusion des segments colinéaires interrompus** (la demande « grandes lignes ») : candidats indexés par angle (cases de 5°) et grille spatiale ; test de colinéarité par distance de Mahalanobis D² = Δθᵀ (Σ1 + Σ2)⁻¹ Δθ comparée à χ²₂ (99 % → 9,21), puis test a contrario du trou : la fusion est acceptée si NFA(union) < NFA(s1)·NFA(s2) (un grand trou non aligné gonfle n sans k et fait échouer la fusion automatiquement) [R2 §1.6]. Itéré du plus long au plus court.
-6. **Transformée de Hough** : seulement en secours, pour les alignements très lointains (règles, grilles), par vote à noyau gaussien elliptique depuis les covariances des segments (idée KHT, article seulement, code GPL).
-
-### 5.2 Coins et jonctions
-
-Deux sources complémentaires :
-
-- **Topologiques** (exactes) : les coins de pixels où au moins 3 étiquettes de zones se rencontrent. Le nombre de frontières incidentes donne l'ordre m. Elles viennent de F.
-- **Géométriques** (raster) : pour les coins en L (2 zones seulement, donc invisibles topologiquement) et pour valider/positionner. Opérateur de Förstner sur le tenseur couleur lissé (σ_i ≈ 1,5–2) : candidats si rondeur q = 4 det M/(tr M)² > 0,5 et poids w = det M / tr M au-dessus d'un seuil dérivé de σ_n ; position précise par
-  x̂ = argmin Σ_i w_i (g_iᵀ (x̂ − x_i))²  ⇒  (Σ w_i g_i g_iᵀ) x̂ = Σ w_i g_i g_iᵀ x_i, covariance σ̂² M⁻¹ [R2 §3.2].
-  Le même système avec les tangentes à la place des gradients donne le **centre d'un arrondi**.
-
-**Position d'un coin** : intersection, pondérée par les covariances, des droites (ou arcs) ajustées sur chaque branche, en excluant un rayon de 2–3 px autour du sommet où l'anti-crénelage corrompt les mesures. Harris ne sert jamais de position (biais vers l'intérieur du coin ≈ σ_i).
-
-**Typage** (pour l'interface et la régularisation) depuis les angles des branches : L (m = 2), T (m = 3 dont une paire colinéaire), Y, flèche, X [R2 §3.5].
-
-### 5.3 Vif ou arrondi
-
-Diagnostic par le comportement en échelle [R2 §3.7] : pour un coin vif d'angle de virage Δ, la courbure maximale après lissage σ vaut κ_max ≈ Δ/(σ√(2π)) (σ·κ_max constant) ; pour un arrondi de rayon r, κ_max ≈ 1/r (constant) tant que σ ≪ rΔ. On mesure κ_max à 3–4 échelles, avec σ_eff² = σ_b² + σ_lissage².
-
-Puis ajustement à un paramètre de l'arrondi tangent aux deux branches (géométrie du congé [R2 §4.1]) :
-
-  C(r) = V + (r / sin(φ/2)) · b,  T_k = V + (r / tan(φ/2)) · u_k,  h = r (1/sin(φ/2) − 1)
-
-où V est le sommet virtuel, φ l'angle intérieur, b la bissectrice intérieure. Minimisation de E(r) = Σ_i (|p_i − C(r)| − r)² (points au-delà des points de tangence mesurés aux droites) par recherche dorée sur [0, r_max].
-
-**Décision** : arrondi si (J_vif − J_arrondi)/σ̂² > λ · 1 (un paramètre de plus ; λ du §11) **et** r > r_min = 1,5 · σ_eff. Sinon vif. Ce test remplace AUTO_SHARP_RADIUS et la règle des 135°.
-
-### 5.4 Arcs, cercles, ellipses
-
-Découpage des chaînes en arcs convexes (aux coins et aux inflexions), puis par arc [R3 §1–3] :
-
-- **Cercle** : ajustement algébrique *Hyper* (Al-Sharadqah & Chernov 2009, biais du second ordre nul), raffiné par Levenberg-Marquardt sur Σ(|p_i − c| − R)². Paramétrage de Chernov (A, B, C, D avec B² + C² − 4AD = 1) pour gérer proprement la limite « droite » (R → ∞).
-- **Ellipse** : Halíř & Flusser 1998 (problème propre 3×3, toujours une ellipse) après normalisation de Hartley ; puis, en mode « Précis », hyper-renormalisation de Kanatani (3–5 itérations, précision à la borne KCR), repli sur Halíř & Flusser si le résultat n'est pas une ellipse ; raffinement géométrique par distance orthogonale (distance point–ellipse d'Eberly, bissection garantie).
-- **Limites d'étendue** : cercle seulement si l'arc couvre ≥ 25–30° ; ellipse libre seulement si ≥ 120° ou si le cercle est rejeté par le critère MDL. Sur un arc court la variance de R croît comme 1/Δ⁴.
-- **Covariance** Cov(p) ≈ σ̂² (JᵀJ)⁻¹, pour les tests « cette ellipse est-elle un cercle ? » ((A − B)/σ_{A−B} < 2) et « est-elle alignée sur les axes ? ».
-- **Test des runs** sur le signe des résidus : des résidus systématiques (peu de longues séries) révèlent un mauvais modèle (superellipse, rectangle arrondi pris pour une ellipse), même avec un faible résidu total.
-
-**Regroupement d'arcs** en une même ellipse (cercle coupé par une autre forme) à la Fornaciari 2014 : convexités compatibles, centres compatibles (Mahalanobis, ou propriété des cordes parallèles : leurs milieux sont alignés sur une droite passant par le centre), ajustement conjoint, validation NFA (fraction du périmètre soutenue par des points de bord bien orientés), union-find pour supprimer les doublons [R3 §2.2–2.4].
-
-### 5.5 Taches (blobs)
-
-Laplacien normalisé t(L_xx + L_yy) et déterminant de la hessienne t²(L_xx L_yy − L_xy²) sur la pile d'échelles, extrema dans (x, y, t). Pour un disque de rayon r, l'extremum est à σ = r/√2 : **rayon gratuit**. Raffinement sous-pixel par interpolation quadratique 3D (≈ 0,1 px, 5 % sur le rayon) [R3 §4.1]. Usage :
-
-- repères « Cercle » pour les petits points (< 6–10 px) que l'ajustement de contour ne peut pas traiter, et que la postérisation fusionne ou fragmente ;
-- semences pour garder une petite zone que le filtre d'aire supprimerait ;
-- détection de trames (points sur un réseau régulier à une même échelle) à filtrer avant postérisation.
-
-MSER/MSCR (VLFeat, BSD) est une extension possible pour fournir des régions stables et leur ellipse de moments ; pas dans la première version.
+Le repère « Trait » contraint les deux frontières de la zone fine à rester parallèles, et peut créer cette zone si la postérisation l'a perdue (§8.2). L'émission en trait SVG (`stroke`) viendra plus tard.
 
 ---
 
-## 6. Étape E — Le graphe de repères
+## 6. Étape D — Détecteurs de primitives
 
-### 6.1 Structure
+Ils travaillent sur les chaînes de C (ordonnées, sous-pixel, pondérées) selon le principe d'EDLines/EDCircles, dont le code des auteurs est sous MIT [R2 §1.2, R5 §1.2]. Toutes leurs décisions de modèle suivent le §3.4.
 
-Un repère (`Guide`) porte :
+### 6.1 Segments de droite
+
+1. **Croissance le long d'une chaîne** : ajustement par moindres carrés totaux pondérés (w_i = 1/v_i′), puis extension tant que le point suivant reste sous τ_max (§3.4), et réajustement.
+2. **Ajustement** : centroïde pondéré, matrice de dispersion, direction = vecteur propre de λmax. Covariances : var(φ) = κ_c / Σ w_i t_i² et var(décalage au centroïde) = κ_c / W, soit une incertitude en sablier [R2 §1.5].
+3. **Validation a contrario** : NFA = N⁴ · B(n, k, 1/8), où k compte les points dont l'orientation est à moins de 22,5° de la normale. Comme LSD, les orientations utilisées ici viennent du masque 2×2, qui minimise la dépendance entre voisins [R2 §1.1]. La longueur minimale est alors ≈ 12 px à 512². ε se calibre sur des images de bruit et d'aplats JPEG.
+4. **Grandes lignes interrompues** : ce cas (« lignes coupées par d'autres formes ») passe par la relation de colinéarité de l'étape I (§11), **pas** par la fusion de D. La fusion de D ne réunit que des fragments d'un même bord séparés par une lacune de détection : test de Mahalanobis sur (θ, ρ), les deux droites étant exprimées au même point de référence (entre les segments), avec Δθ ramené dans (−π, π]. Puis test du trou NFA(union) < NFA(s₁) · NFA(s₂), avec le nombre de paires testées explicitement compté [R2 §1.6].
+5. **Hough** : seulement en secours, pour des alignements très lointains (règles, grilles), par vote à noyau elliptique tiré des covariances. L'idée vient de KHT ; on ne prend que l'article, le code étant GPL.
+
+### 6.2 Coins et jonctions
+
+- **Topologiques** (exacts) : coins de pixels où au moins 3 étiquettes de zones se rencontrent (étape F). L'ordre m est le nombre de frontières incidentes.
+- **Géométriques** (raster) : nécessaires pour les coins en L, qui ne séparent que 2 zones et sont donc invisibles en topologie. On calcule l'opérateur de Förstner **localement**, sur des fenêtres autour des candidats (points à fort ρ, extrémités de chaînes). Sous le bruit, la trace de M suit une loi σ_g² · χ²_{2 n_w} avec n_w ≈ aire de la fenêtre / (4πσ²) ; le seuil s'en déduit. La rondeur doit vérifier q = 4 det M / (tr M)² > 0,5. Position par
+  x̂ = (Σ w_i g_i g_iᵀ)⁻¹ Σ w_i g_i g_iᵀ x_i, covariance σ̂² M⁻¹ [R2 §3.2].
+  Le même système avec les tangentes donne le **centre d'un arrondi**.
+- **Position d'un coin** : intersection, pondérée par les covariances, des primitives ajustées sur chaque branche, en excluant les points à moins de 2σ_loc + σ_b du sommet (zone où l'anti-crénelage mélange les zones). Le maximum de Harris n'est jamais utilisé comme position : il est biaisé vers l'intérieur.
+- **Typage** L, T, Y, flèche, X d'après les angles des branches [R2 §3.5].
+
+### 6.3 Vif ou arrondi
+
+**Géométrie du congé** [R2 §4.1] : sommet virtuel V, angle intérieur φ, bissectrice intérieure b, directions des branches u_k :
+
+  C(r) = V + (r / sin(φ/2)) · b,  T_k = V + (r / tan(φ/2)) · u_k,  flèche h = r (1/sin(φ/2) − 1)
+
+**Ajustement** : on minimise la distance des points à la courbe composite droite–arc–droite. Elle est continue en r, ce que ne serait pas une affectation des points qui change avec r. Ce n'est pas garanti unimodal : on encadre sur une grille de 16 valeurs, puis recherche dorée.
+
+**Décision** : arrondi si ΔJ_eff > λ · 1 (§3.4). Il n'y a pas de rayon minimal arbitraire : grâce au plancher σ_sys, un « arrondi » de la taille du flou n'apporte pas assez pour payer son paramètre.
+
+**Contrôle multi-échelle** : pour un coin vif, κ_max · σ_eff = c(φ) est constant, la table c(φ) étant faite par simulation ; pour un arrondi, κ_max ≈ 1/r. Ce contrôle produit des candidats et un diagnostic, pas la décision. Les éditions de l'utilisateur (vif imposé, rayon glissé à la souris) priment toujours.
+
+### 6.4 Arcs, cercles, ellipses
+
+Les chaînes sont découpées en arcs convexes, aux coins et aux inflexions. Pour chaque arc [R3 §1–3] :
+
+- **Cercle** : ajustement algébrique *Hyper* (Al-Sharadqah & Chernov 2009, sans biais du second ordre), puis Levenberg-Marquardt dans le paramétrage de Chernov (A, B, C, D, contrainte B² + C² − 4AD = 1 éliminée). Ce paramétrage traite proprement la limite « droite » (R → ∞), là où un LM en (centre, rayon) est mal conditionné.
+- **Ellipse** :
+  - Halíř & Flusser 1998 après normalisation de Hartley : problème propre 3×3, toujours une ellipse ;
+  - garde-fous : nombre de conditionnement de S₃, itération inverse si les valeurs propres sont proches, repli sur le cercle si aucun vecteur ne vérifie 4ac − b² > 0 ;
+  - en mode Précis, hyper-renormalisation de Kanatani (nombre d'itérations fixe, arrêt déterministe), avec repli sur Halíř–Flusser si le résultat est une hyperbole ;
+  - raffinement géométrique par la distance point–ellipse d'Eberly (bissection garantie). Si a ≈ b, φ est indéfini et on bascule sur le modèle cercle.
+- **Étendue** : c'est une précaution de conditionnement, pas une règle de décision. Un cercle libre exige un arc ≥ 25–30°, une ellipse libre ≥ 120°, car en dessous la variance du rayon explose (en 1/Δ⁴). Un arc plus court peut toujours suivre un repère cercle ou ellipse établi ailleurs : c'est le modèle « sur repère » (§10.2), sans limite d'étendue.
+- **Test des séries** sur le signe des résidus : de longues séries de même signe révèlent un mauvais modèle (superellipse, rectangle arrondi pris pour une ellipse), même si le résidu total est faible.
+
+**Regroupement d'arcs** (un cercle coupé par d'autres formes), à la Fornaciari 2014 :
+- convexités compatibles ;
+- centres compatibles (Mahalanobis, ou cordes parallèles : leurs milieux sont alignés avec le centre) ;
+- ajustement conjoint ;
+- validation par NFA : fraction du périmètre soutenue par des points bien orientés ;
+- union-find contre les doublons [R3 §2.2–2.4].
+
+Les paires sont cherchées par grille spatiale des centres, avec un plafond par arc (§14.3).
+
+### 6.5 Taches (blobs)
+
+Laplacien normalisé t(L_xx + L_yy) et déterminant de la hessienne t²(L_xx L_yy − L_xy²) sur les niveaux de pyramide, sur L. On cherche les extrema dans (x, y, t). Pour un disque de rayon r, l'extremum est à σ = r/√2, ce qui donne le rayon directement. Raffinement par interpolation quadratique 3D [R3 §4.1]. Usage :
+
+- repères Cercle pour les petits points que l'ajustement de contour ne traite pas bien ;
+- insertion d'une zone que la postérisation a perdue (§8.2).
+
+Les trames (points réguliers à une même échelle) et MSER/MSCR viendront plus tard.
+
+---
+
+## 7. Étape E — Le graphe de repères
+
+### 7.1 Structure interne
 
 | Champ | Contenu |
 |---|---|
-| `kind` | Segment, Coin, Jonction, Arc, Cercle, Ellipse, Trait, Tache ; plus les relations Symétrie, Répétition, Alignement produites en I |
-| géométrie | paramètres de la primitive (droite (θ, ρ) + extrémités ; cercle (C, r) + étendue ; ellipse (C, a, b, φ) + étendue ; coin : sommet, directions des branches, rayon) |
-| `cov` | covariance des paramètres |
-| `scale` | échelle σ à laquelle il a été détecté |
-| `nfa` | −log₁₀ NFA (confiance) |
-| `support` | chaînes de bords qui le soutiennent |
-| `status` | Suivi / Candidat / Forcé / Désactivé (inchangé côté interface) |
-| clé | type + point clé (milieu, point le plus haut), recherche à GUIDE_REACH comme aujourd'hui |
+| type | Segment, Coin, Jonction, Arc, Cercle, Ellipse, Trait, Tache ; plus les relations Symétrie, Répétition, Alignement produites en I |
+| géométrie | droite (θ, ρ) + extrémités ; cercle (C, r) + étendue ; ellipse (C, a, b, φ) + étendue ; coin : sommet, branches, rayon ; trait : ligne centrale + largeur |
+| covariance | des paramètres (déjà multipliée par κ_c) |
+| échelle | σ de détection (niveau de pyramide) |
+| signification | −log₁₀ NFA (détection et affichage seulement) |
+| support | chaînes de bords qui le soutiennent, et frontières qu'il touche |
 
-Les repères sont stockés dans une arène (`Vec` + indices `u32`), avec une grille spatiale pour les requêtes « repères près de ce point ».
+Les repères sont stockés dans une arène (`Vec` + indices `u32`) avec une grille spatiale. Le type exporté vers l'interface (`guide::Guide`, généré en TypeScript) reste un objet de transfert séparé : type, point clé, statut, tracé SVG.
 
-### 6.2 Fusion multi-échelle
+### 7.2 Fusion multi-échelle et statut
 
-Un même objet est souvent détecté à plusieurs échelles. Deux repères de même type sont fusionnés si leurs paramètres sont compatibles (Mahalanobis < χ²_k(0,99)) ; on garde celui de plus faible NFA et on agrège les supports. Un repère grossier qui n'a pas d'équivalent fin reste un repère « de grande échelle » : il contraint les frontières mais n'impose pas de position fine (son incertitude est grande).
+Deux repères de même type sont fusionnés si le test §3.4 l'accepte (Δk = nombre de paramètres). On garde le mieux déterminé et on réunit les supports. Un repère qui n'existe qu'aux échelles grossières garde sa grande incertitude : il oriente le tracé sans imposer de position fine.
 
-### 6.3 Statut Suivi / Candidat
+**Statut**, déduit après l'optimisation de G–I :
+- **Suivi** : le tracé final l'utilise ;
+- **Candidat** : significatif (NFA ≤ 1) mais non retenu ;
+- **Forcé** : imposé par l'utilisateur ;
+- **Désactivé** : retiré des propositions.
 
-Aujourd'hui, un repère est « suivi » s'il passe la tolérance du réglage Géométrie, « candidat » sinon. Dans le nouveau modèle, le statut vient de la comparaison de modèles de l'étape G : un repère est **suivi** si la segmentation MDL l'a retenu, **candidat** s'il est significatif (NFA ≤ 1) mais que la segmentation a préféré autre chose. Forcer un candidat revient à imposer ce modèle sur la portée concernée ; désactiver un repère le retire des a priori.
+### 7.3 Stabilité des éditions
 
----
+Les éditions sont mémorisées par type et position, comme aujourd'hui (GUIDE_REACH, CORNER_EDIT_REACH). Le nouveau détecteur déplace légèrement les points clés et introduit de nouveaux types. Il y a deux règles de migration :
 
-## 7. Étape F — Postérisation et topologie (existant, adapté)
+- tolérance de recherche proportionnelle à l'incertitude du repère, avec un plancher à la valeur actuelle ;
+- correspondance des anciens types vers les nouveaux (Line → Segment, Arc → Arc ou Coin arrondi, etc.).
 
-Inchangé : débruitage bilatéral dosable, palette k-means Oklab (éditable), étiquettes, composantes, filtre d'aire, cycles de crack edges, découpage aux jonctions en **frontières partagées** (chaque frontière entre deux zones est un objet unique utilisé par les deux contours : c'est ce qui garantit l'absence de trous et de chevauchements).
-
-Changement : le **remplissage anti-couture** (traits de comblement) reste, mais doit devenir inutile une fois que les frontières partagées sont émises une seule fois avec une géométrie commune ; on mesurera la différence.
-
----
-
-## 8. Association hybride frontière ↔ bords
-
-C'est le cœur de l'hybridation demandée : la topologie vient de la postérisation, la géométrie des bords raster.
-
-### 8.1 Points de frontière
-
-Pour chaque frontière (zones A | B), on calcule les points sous-pixel actuels (couverture mesurée entre les deux teintes) comme **position de repli**.
-
-### 8.2 Appariement
-
-Un point de chaîne de bord q est apparié à la frontière A | B si :
-1. distance(q, frontière) < 2 px + 3·√var_n(q) ;
-2. sa normale est compatible avec celle de la frontière (écart < 30°, orientation A → B cohérente) ;
-3. son contraste Δ(q) est compatible avec la différence de palette c_B − c_A : cos(Δ, c_B − c_A) > 0,8 et |Δ| / |c_B − c_A| ∈ [0,5 ; 2].
-
-Appariement par programmation dynamique monotone le long de la frontière (les deux séquences sont ordonnées), pour éviter les croisements.
-
-### 8.3 Statut de la frontière
-
-Chaque morceau de frontière reçoit :
-- **bord réel** si ≥ 60 % de sa longueur est soutenue par des points appariés ;
-- **bord de postérisation** sinon (typiquement la limite entre deux bandes d'un dégradé).
-
-Un bord de postérisation n'a **aucun repère géométrique** : il est tracé en Bézier lisse, avec une tolérance large (il n'y a pas de vérité géométrique à respecter). C'est la version principielle du critère actuel SOFT_EDGE = 0,45, et la réponse aux hallucinations sur les dégradés. (Les dégradés eux-mêmes, en remplissage SVG, sont une étape ultérieure de la feuille de route.)
-
-### 8.4 Position
-
-Sur les parties soutenues, la position de la frontière est celle des points de bord (pondérés par 1/var_n) ; ailleurs, la couverture. Les repères dont les supports touchent la frontière lui sont attachés avec leur portée (abscisses de début et de fin le long de la frontière).
+Un test vérifie que plus de 95 % des éditions enregistrées sur l'ancien pipeline s'appliquent encore, sur tout le benchmark et avec un réglage légèrement modifié.
 
 ---
 
-## 9. Étapes G et H — Segmentation et ajustement des frontières
+## 8. Étape F — Topologie
 
-### 9.1 Formulation
+### 8.1 Postérisation (existante)
 
-Pour une frontière de points p_0..p_{N−1} (variances v_i), on cherche des points de rupture b_0 < … < b_K et un modèle m_k par morceau qui minimisent [R4 §1] :
+Inchangée : débruitage bilatéral dosable, palette k-means Oklab, étiquettes, composantes, cycles d'arêtes inter-pixels, découpage aux jonctions en **frontières partagées**. Chaque frontière entre deux zones est un objet unique, utilisé par les deux contours ; c'est ce qui exclut les trous et les chevauchements géométriques. Le filtre d'aire fixe est complété par la fusion des zones sous la tolérance (§3.5).
 
-  E = Σ_k [ J(b_k, b_{k+1}, m_k) + λ · c(m_k) + π(m_k) ] + Σ_ruptures λ_join(type)
+### 8.2 Réparation de topologie guidée par les repères (F′)
 
-- J = Σ (distance orthogonale)² / v_i, en tenant compte de la corrélation des points (n_eff) ;
-- c(m) = nombre de paramètres : droite 2, arc 3, ellipse 5, Bézier aux tangentes fixées 2, Bézier libre jusqu'à 8 ;
-- π(m) = **a priori de simplicité par type** (droite 0, arc +1, ellipse +3, Bézier +4, en unités de λ), réglable ;
-- un morceau qui coïncide avec un repère suivi reçoit un **bonus** = −log₁₀ NFA du repère (le repère est une preuve indépendante venue du raster), et son modèle est imposé si le repère est forcé ;
-- λ_join : une jointure lisse (G1) coûte un paramètre de moins qu'un coin (angle de tangente partagé).
+La postérisation fragmente parfois un trait fin, perd un petit point, fusionne deux formes à 1 px l'une de l'autre ou bouche l'œil d'une lettre. Aucun repère géométrique ne peut corriger cela après coup. On ajoute donc, entre F et G, quatre opérations proposées par les repères :
 
-λ est dérivé de l'AIC/MDL géométrique de Kanatani (G-AIC : λ = 2 ; G-MDL : λ = −ln(σ/L)², plus conservateur, préfère le modèle dégénéré). Le réglage « Géométrie » de l'utilisateur interpole entre les deux (§11).
+| Repère | Opération |
+|---|---|
+| Trait (Steger) sans zone fine correspondante | créer ou reconnecter la zone le long de la ligne centrale, à la largeur mesurée |
+| Chaîne de bord significative qui traverse une zone | couper la zone le long de la chaîne |
+| Tache sans zone | insérer une zone circulaire |
+| Zone fragmentée le long d'une même crête | fusionner les fragments |
 
-### 9.2 Programmation dynamique
+Une opération est acceptée si elle réduit l'écart de couleur entre le rendu et la source (ΔE moyen sur la bande concernée) d'au moins ΔE_min, et si le critère §3 ne s'y oppose pas. Chaque opération modifie les étiquettes, puis les frontières sont recalculées localement. Cette étape vient en phase P6 (§16) : jusque-là, ces cas restent une limite connue.
 
-F[j] = min_{i<j, m} F[i] + coût(i, j, m), avec pointeurs arrière [R4 §1.2].
+### 8.3 Coutures
 
-- **Coûts en O(1)** par sommes préfixes : droite (moments d'ordre 2 → λmin de la dispersion), cercle (moments jusqu'à l'ordre 4 pour l'ajustement algébrique ; classement suffisant pour la DP, raffinement géométrique ensuite), ellipse (matrice de dispersion 6×6 cumulable + problème propre 3×3).
-- **Béziers** : pas de forme O(1) ; restreints aux portées entre points de rupture candidats (coins, extrema de courbure, extrémités de repères), en nombre N_c ≈ N/5 à N/20.
-- **Élagage** : portée rejetée si l'écart maximal dépasse τ_max ; élagage PELT (on retire i des candidats quand F[i] + coût(i, j) > F[j] + constante), espérance O(N).
-- **Frontière fermée** : on ouvre au coin le plus sûr (ou à une extrémité de repère) ; à défaut, quelques départs essayés.
-- **Ruptures candidates** : coins et jonctions de D, extrema de la courbure, extrémités de repères, points de jonction topologique. Les marches d'escalier d'une droite discrète ne sont jamais des coins (critère des segments maximaux, Lachaud et al.) [R4 §3.2].
+Les liserés clairs ou sombres entre deux formes qui partagent exactement la même frontière viennent du rendu : chaque forme est anti-crénelée séparément, puis composée, si bien que le pixel de bord n'est couvert qu'à environ 75 %. Émettre la frontière une seule fois **ne suffit pas**. On garde donc une stratégie anti-couture explicite :
 
-### 9.3 Coin ou jointure lisse
+- par défaut, le trait de comblement actuel (`fillGaps`) ;
+- ou le mode empilé, où la forme du dessous déborde sous celle du dessus.
 
-À chaque rupture : ajustement libre (J_libre) et ajustement avec point et tangente partagés (J_G1). Coin si (J_G1 − J_libre) > λ. Filtre rapide : virage < 10° → lisse ; > 60° → coin ; entre les deux, le test. Les coins détectés sur le raster (Förstner, jonctions) imposent la rupture ; leur type (vif/arrondi, §5.3) et les éditions de l'utilisateur (`corners.edits`, rayon glissé à la souris) priment.
-
-### 9.4 Ajustement des Béziers
-
-Schneider (Graphics Gems, licence libre) comme base : tangentes d'extrémité (estimateur λ-MST ou repère adjacent), paramétrage par longueur de corde, système 2×2 pour les longueurs de poignées, reparamétrage de Newton [R4 §2.1]. Améliorations :
-
-- **Coupure** au maximum de courbure plutôt qu'au point d'erreur maximale, ou laissée à la DP ;
-- **Raffinement par minimisation de la distance au carré** (SDM, Wang-Pottmann-Liu 2006) : convergence quasi-newtonienne, bien plus rapide et robuste que la projection point par point ;
-- **Poignées positives** (α ≥ 0) imposées, sinon repli sur |P3 − P0|/3.
-- Référence de qualité à porter : `curve-fit-nd` (Blender, BSD-3) et `kurbo::fit` (MIT/Apache, ajustement par aire signée et premier moment).
-
-### 9.5 Ajustement conjoint G1 (étape H)
-
-Toute la frontière est ensuite réajustée d'un bloc par Levenberg-Marquardt [R4 §2.4] :
-
-- contraintes **éliminées par paramétrage** quand c'est possible (plus robuste que les multiplicateurs) : jonction Bézier–droite (P1 = J + β·u, J sur la droite), Bézier–Bézier G1 (P2^A = J − β_A·d(φ), P1^B = J + β_B·d(φ)) ;
-- contraintes restantes (tangence droite–cercle |n·C − ρ| = r, cercle–cercle) par système KKT :
-  [JᵀJ + μI, Cᵀ ; C, 0] [δ ; ν] = [−Jᵀr ; −c] ;
-- la matrice est bande le long de la frontière : Cholesky bande, O(K) par itération pour K morceaux.
-
-G2 (continuité de courbure) n'est pas visé dans la première version ; G1 suffit pour un rendu « designer ».
-
-### 9.6 Lissage préalable
-
-Lissage λ|μ de Taubin (λ ≈ 0,33, μ ≈ −0,34 ; sans rétrécissement) sur les points de repli uniquement, morceau par morceau, sans traverser les coins [R4 §3.1]. Les points de bord raster n'ont pas besoin d'être lissés : leur variance est connue.
+Une mesure la contrôle (§13.2) : rendu du SVG à 1× et 4×, et écart de couleur maximal le long des frontières partagées, comparé à la source.
 
 ---
 
-## 10. Étape I — Régularisation globale
+## 9. Association frontière ↔ bords (F″)
 
-### 10.1 Relations candidates
+C'est le cœur de l'hybridation : la topologie vient de la postérisation, la géométrie des bords raster.
 
-Découvertes par regroupement des paramètres [R4 §5, R3 §5] :
+### 9.1 Points de repli
 
-| Relation | Découverte | Paramètre partagé |
+Pour chaque frontière (zones A | B), la position par couverture mesurée entre les deux teintes est calculée comme aujourd'hui. Elle sert là où aucun bord n'est apparié. Ces points sont lissés par l'opérateur λ|μ de Taubin (λ = 0,33, μ = −0,34, sans rétrécissement), morceau par morceau et sans traverser les coins [R4 §3.1]. Leur variance est tabulée par simulation, et κ_c = 1.
+
+### 9.2 Appariement
+
+Un point de bord q est apparié à la frontière A | B si trois conditions sont réunies :
+
+1. sa distance à la frontière est inférieure à 1 px + 3√var_n(q) + σ_b ;
+2. sa normale est compatible avec celle de la frontière : écart < 3 écarts-types d'orientation, et même sens A → B ;
+3. son contraste Δ(q) est compatible avec la **différence de couleur locale** mesurée de part et d'autre de la frontière, à cet endroit : moyenne des pixels source dans une bande de 2–3 px côté A et côté B. On n'utilise pas les couleurs moyennes de la palette : sur un logo rempli d'un dégradé, elles sont loin des couleurs locales, et le vrai contour serait déclassé à tort. La compatibilité se juge par un test de Mahalanobis entre Δ(q) et c_B,local − c_A,local, avec les covariances du bruit.
+
+L'appariement se fait par programmation dynamique monotone le long de la frontière, en bande (largeur fixée par la condition 1), pour éviter les croisements.
+
+### 9.3 Statut des sous-morceaux
+
+La frontière est découpée en **sous-morceaux** de statut homogène :
+
+- **bord réel** : une série de points appariés ;
+- **bord de postérisation** : le reste, typiquement la limite entre deux bandes d'un dégradé.
+
+Des sous-morceaux plus courts que 2σ_loc + σ_b sont absorbés par leurs voisins.
+
+Un bord de postérisation ne reçoit **aucun modèle géométrique** : la segmentation n'y propose que des Béziers, et sa variance est celle de la couverture, élargie. C'est la version principielle de l'ancien seuil SOFT_EDGE, et la réponse aux hallucinations sur les dégradés. Le rendu des dégradés eux-mêmes (`linearGradient`, `radialGradient`) est une étape ultérieure de la feuille de route.
+
+### 9.4 Position et repères attachés
+
+Sur un bord réel, les points de la frontière sont les points de bord appariés, avec leur variance. Les repères dont le support touche la frontière lui sont attachés, avec leur portée (abscisses de début et de fin le long de la frontière).
+
+---
+
+## 10. Étapes G et H — Segmentation et ajustement des frontières
+
+### 10.1 Programmation dynamique
+
+Pour chaque frontière, on minimise E (§3.3) par programmation dynamique : F[j] = min_{i<j, m} F[i] + coût(i, j, m), avec des pointeurs arrière [R4 §1.2].
+
+**Candidats de rupture** : coins et jonctions (D, F), extrêmes de courbure, extrémités de repères et changements de statut (§9.3). Les marches d'escalier d'une droite discrète ne sont jamais des coins : le critère des segments maximaux de Lachaud et al. les élimine [R4 §3.2].
+
+**Bornes de coût** :
+- fenêtre i ∈ [j − W, j), avec W de 200 à 400 points ;
+- Béziers seulement entre candidats séparés de 16 au plus ;
+- frontières fermées ouvertes au coin le plus sûr, avec au plus 2 points de départ.
+
+**Coûts comparables entre modèles** :
+- droite : λmin de la matrice de dispersion ;
+- cercle : résidu algébrique sous la normalisation de Pratt (B² + C² − 4AD = 1), qui égale le résidu géométrique au premier ordre ;
+- ellipse : résidu normalisé de Taubin θᵀMθ / θᵀNθ.
+
+Ces trois coûts se calculent en O(1) par sommes préfixes de moments. Deux précautions numériques sont nécessaires :
+- coordonnées normalisées par la boîte englobante de la frontière ;
+- sommes préfixes **par blocs** de 64 à 256 points, chacun avec son origine locale, combinées par les formules de translation de moments (Pébay). Des moments bruts d'ordre 4 perdraient 6 à 10 chiffres significatifs sur les portées courtes, celles justement où la programmation dynamique tranche.
+
+Un test compare le coût par préfixes au coût direct sur une portée éloignée de l'origine. Les Béziers n'ont pas de forme en O(1) : on les ajuste sur les seules portées admises.
+
+**Élagage (PELT)** : on retire i des candidats si F[i] + coût(i, j) ≥ F[j]. Cette règle n'est valable que si le coût vérifie coût(i, k) ≥ coût(i, j) + coût(j, k). Ce n'est pas le cas avec les portées infaisables ni avec les coûts algébriques approchés ; dans ces cas, l'élagage est désactivé et la fenêtre W sert de borne.
+
+**Repli** : si le budget de temps d'une frontière est dépassé, la frontière est tracée en Béziers seuls, et le cas est compté dans les statistiques.
+
+### 10.2 Modèle « sur repère »
+
+C'est la correction du défaut « repères d'ellipse non suivis ». Chaque repère attaché à une frontière (cercle, ellipse, droite, arc) propose sur sa portée un modèle dont **les paramètres sont ceux du repère**, ajustés globalement sur tous ses supports. Ce modèle a :
+
+- 0 paramètre de forme libre, seulement les extrémités ;
+- un coût J_eff = Σ d²(p_i, repère)/v_i′, la variance incluant l'incertitude du repère projetée sur la normale ;
+- un a priori de simplicité nul ;
+- aucune limite d'étendue.
+
+Un cercle coupé en trois arcs de 40° par d'autres formes est donc proposé sur chacun des trois morceaux. Ses paramètres sont ensuite **partagés** à l'étape H : une seule variable pour toutes les frontières qui l'utilisent, par élimination (§11.3). Un repère forcé par l'utilisateur rend ce modèle obligatoire sur sa portée ; un repère désactivé ne le propose plus.
+
+### 10.3 Coin ou jonction lisse
+
+À chaque rupture retenue, le test §3.4 tranche, avec Δk = 1 entre « point et tangente partagés » (G1) et « point partagé seul » (coin). Il existe aussi un filtre perceptif, assumé comme tel : un virage de moins de 3 écarts-types d'orientation est toujours lisse. Les coins détectés sur le raster imposent la rupture. Leur type (§6.3) et les éditions de l'utilisateur priment.
+
+### 10.4 Béziers
+
+On part de Schneider (Graphics Gems, licence libre) [R4 §2.1] :
+- tangentes d'extrémité données par la primitive voisine ou le repère ; à défaut, par l'estimateur λ-MST ;
+- paramétrage par longueur de corde ;
+- système 2×2 pour les longueurs de poignées, qui sont imposées positives ;
+- reparamétrage de Newton.
+
+**Raffinement par minimisation de la distance au carré** (SDM, Wang-Pottmann-Liu 2006) : convergence quasi-newtonienne, plus robuste que la projection point par point. Références lisibles à porter : `curve-fit-nd` (Blender, BSD-3) et `kurbo::fit` (MIT/Apache).
+
+### 10.5 Ajustement conjoint (H)
+
+Chaque frontière est réajustée d'un bloc par un Levenberg-Marquardt générique (`num::lm`) :
+- paramètres mis à l'échelle (px, rad, rayon) ;
+- amortissement de Nielsen ;
+- nombre maximal d'itérations fixe ;
+- critères d'arrêt déterministes.
+
+**Contraintes éliminées par paramétrage** (le plus robuste) :
+- Bézier–droite : P1 = J + β·u, avec J sur la droite ;
+- Bézier–Bézier G1 : P2^A = J − β_A·d(φ), P1^B = J + β_B·d(φ) ;
+- paramètres partagés avec un repère.
+
+**Contraintes restantes**, comme la tangence droite–cercle en forme signée s(n·C − ρ) − r = 0, où s est fixé par le côté de la droite où se trouve le cercle. Elles sont traitées par complément de Schur : A = JᵀJ + μI est symétrique définie positive et à bande pour une frontière ouverte, donc on fait une factorisation de Cholesky à bande de A, puis on résout le petit système dense (C A⁻¹ Cᵀ) ν = c − C A⁻¹ Jᵀr, et enfin δ = −A⁻¹(Jᵀr + Cᵀν). La matrice KKT complète est indéfinie : une factorisation de Cholesky directe y échouerait. Pour une frontière fermée, le bloc de bouclage est traité par la formule de Woodbury.
+
+La continuité de courbure (G2) n'est pas visée dans la première version.
+
+---
+
+## 11. Étape I — Régularisation globale
+
+### 11.1 Relations candidates
+
+| Relation | Génération des candidats | Paramètre partagé |
 |---|---|---|
-| Colinéarité (même sur des segments éloignés) | regroupement (θ, ρ) | droite |
-| Parallélisme, orthogonalité | histogramme de θ mod π, largeur 2–4° | θ (ou θ + π/2) |
-| Axe horizontal / vertical / 45° | attracteurs dans l'histogramme | θ ∈ {0, π/4, π/2} |
+| Colinéarité, y compris de segments éloignés ou interrompus par d'autres formes | regroupement de (θ, ρ) via une grille | la droite |
+| Parallélisme, orthogonalité | histogramme de θ mod π, fenêtre 2–4° | θ (ou θ + π/2) |
+| Axes horizontal, vertical, 45° | attracteurs de l'histogramme | θ |
 | Rayons égaux | regroupement relatif 3–5 % | r |
-| Concentricité | centres à 1–2σ | C |
-| Tangence | distance (C, droite) ≈ r | contrainte |
-| Symétrie miroir / rotation | corrélation circulaire FFT de la courbure, énergie des harmoniques de Fourier ; vote d'axes entre zones | appariement de points |
+| Concentricité | centres à moins de 2σ | C |
+| Tangence | distance (C, droite) ≈ r | contrainte signée |
+| Symétrie miroir ou rotation | corrélation circulaire de la courbure par FFT, énergie des harmoniques de Fourier ; vote d'axes entre zones | appariement de points |
 | Répétition | signatures (Hu, descripteurs de Fourier elliptiques), alignement de Procrustes | forme moyenne + transformations |
 
-### 10.2 Acceptation
+Les modules actuels `shape.rs` (symétries, profil radial), `repeat.rs` (seaux de tailles, Procrustes) et `align.rs` deviennent des générateurs de candidats.
 
-Une relation qui retire q degrés de liberté est acceptée si :
+### 11.2 Acceptation
 
-  ΔJ / σ² < λ · q  **et**  écart maximal < τ_perception
+Une relation qui retire q degrés de liberté est acceptée si
 
-avec le même λ que la segmentation : segmentation et régularisation obéissent à un seul objectif. τ_perception = max(3σ_loc, ρ_échelle · taille de la forme), où ρ_échelle vient du réglage « Échelle » : c'est la règle « préférer la forme la plus simple en ignorant les détails trop petits ». Un détail plus petit que τ_perception ne peut pas empêcher une symétrie, une droite ou une ellipse.
+  ΔJ_eff + 2 ln N_rel < λ · q
 
-Ordre glouton : du plus faible ΔJ au plus fort, réajustement incrémental, rejet des relations contradictoires (cycles parallèle/orthogonal incohérents détectés dans l'union-find avec étiquettes d'angle mod π/2). Hiérarchie de confiance : repère raster > axes > parallèle/orthogonal > rayon égal/concentrique > symétrie (la plus souvent accidentelle sur les petites formes : au moins 3 éléments appariés exigés).
+où N_rel est le nombre de candidats générés pour ce type de relation. C'est le coût de description du choix, l'équivalent MDL du nombre de tests d'un NFA. Sans lui, parmi des centaines de paires, beaucoup de relations accidentelles seraient acceptées.
 
-### 10.3 Résolution
+Les écarts inférieurs à l'échelle de perception sont déjà presque gratuits grâce à v′ (§3.1). Il n'y a donc **pas** de seconde condition sur l'écart maximal, qui contredirait la règle « un détail sous τ_perc n'empêche pas une symétrie ».
 
-- relations « même valeur » par **élimination** : union-find → une seule variable par classe, puis LM sans contrainte ;
-- autres (tangence, symétrie, longueurs égales) par KKT ou lagrangien augmenté ;
-- par étapes à la GlobFit : orientations, puis positions, puis égalités, avec réajustement de la topologie entre chaque étape.
+**Ordre** : glouton, du ΔJ_eff le plus faible au plus fort. On rejette les relations contradictoires : un cycle parallèle/orthogonal incohérent est détecté par l'union-find avec étiquettes d'angle mod π/2. On réajuste par **composante connexe** du graphe des relations. La symétrie exige au moins 3 éléments appariés : sur les petites formes, elle est souvent accidentelle.
 
-### 10.4 Répétitions et `<use>`
+### 11.3 Résolution
 
-Les instances d'une forme répétée sont moyennées dans leur repère canonique (le bruit baisse en 1/√k pour k copies), puis émises comme un tracé maître et des `<use>` avec transformation. Le détecteur de réseau (vecteurs de différence les plus fréquents) aligne les positions sur une grille ou un cercle quand c'est significatif.
+- **Relations de même valeur** (parallèle, colinéaire, concentrique, rayon égal, axe, repère partagé) : par élimination. L'union-find donne une variable par classe, puis Levenberg-Marquardt.
+- **Autres** (tangence, symétrie, longueurs égales) : par espace nul (QR de Cᵀ, puis Cholesky sur le système réduit) ou par lagrangien augmenté.
+- **Par étapes**, à la GlobFit : orientations, puis positions, puis égalités, avec mise à jour des jonctions entre chaque étape.
+- Composantes plafonnées à 200 inconnues en dense ; au-delà, résolution par étapes seulement.
 
-Les modules actuels `shape.rs` (symétries, profil radial) et `repeat.rs` (seaux de tailles, Procrustes) sont conservés comme générateurs de candidats ; leur acceptation passe au critère 10.2.
+### 11.4 Répétitions et `<use>`
+
+Les instances d'une forme répétée sont moyennées dans leur repère canonique : le bruit baisse en 1/√k pour k copies. Elles sont émises comme un tracé maître et des `<use>` avec transformation. Un détecteur de réseau (vecteurs de différence les plus fréquents) aligne les positions sur une grille ou un cercle quand le critère l'accepte.
 
 ---
 
-## 11. Seuils automatiques, adaptation locale et réglages
+## 12. Seuils, adaptation locale et réglages
 
-### 11.1 D'où vient chaque seuil
+### 12.1 Bilan des constantes
 
-| Grandeur | Origine | Remplace |
+| Grandeur | Valeur | Nature |
 |---|---|---|
-| σ_n (global et carte) | Immerkær robuste (§3.2) | — |
-| seuils de bord H, L | χ²_{2C}, p_H = 10⁻⁵, p_L = 10⁻² | gradient Scharr + SOFT_EDGE |
-| plancher de contraste | ΔE_min = 0,02 Oklab, piloté par « Détail » | — |
-| longueur minimale d'un segment | NFA ≤ 1 (≈ 12 px à 512²) | segments ≥ 6 px |
-| repère significatif | NFA ≤ ε = 1 | CANDIDATE_GEOMETRY |
-| rayon minimal d'arrondi | 1,5 · σ_eff (flou mesuré) | AUTO_SHARP_RADIUS |
-| choix de modèle | λ (G-AIC ↔ G-MDL) + a priori de type | tolérances en px, ARC_TOL |
-| étendue min. arc / ellipse | 25–30° / 120° (conditionnement) | — |
-| tolérance de perception | max(3σ_loc, ρ_échelle · taille) | relative = 0,02 × scale |
-| écart maximal par morceau τ_max | 3·√v_i (95 % unilatéral ≈ 2,5–3σ) | VERIFY_SLACK |
+| bruit σ_n (fonction de niveau, carte) | mesuré | image |
+| flou σ_b | mesuré (§5.5) | image |
+| σ_sys | mesuré sur vérité terrain | calibration |
+| probabilités p_H, p_L | 10⁻⁵, 10⁻² | probabilité de fausse alarme |
+| ε des NFA | 1 (calibré sur images de bruit) | nombre de fausses alarmes |
+| précision angulaire des NFA | 22,5° (p = 1/8) | théorie LSD |
+| λ | de 2 à 2 ln(L/σ̄) | théorie (G-AIC ↔ G-MDL) |
+| a priori de type π | 0 / 0,5 / 1 / 1,5 | goût, calibré sur corpus |
+| α de Šidák | 10⁻² | probabilité |
+| ΔE_min | 0,02 Oklab | perception |
+| étendue min. cercle / ellipse libres | 25–30° / 120° | conditionnement numérique |
+| fenêtre de candidats (angles, rayons) | 2–4°, 3–5 % | génération seulement |
+| ρ_éch, β | réglage Échelle | utilisateur |
+| tuiles de bruit, bandes de calcul | 256 px plats min., 64–256 lignes | technique, sans effet sur le résultat |
+| fenêtre W, plafonds de paires | 200–400, §14.3 | budget de temps |
 
-Il reste des constantes (p_H, p_L, ε, angles de 22,5°, 10°/60°), mais elles sont **sans unité** et ont une interprétation (probabilité de fausse alarme, précision angulaire) : elles ne dépendent ni de la taille, ni du bruit, ni du contraste de l'image.
+Il reste des constantes. Chacune est étiquetée selon sa nature : image, théorie, probabilité, perception, calibration ou budget. Le protocole de calibration (§13.1) fixe celles qui sont marquées « calibration » ou « goût ». Aucune n'est un seuil en pixels qui dépendrait de la taille de l'image.
 
-### 11.2 Adaptation locale
+### 12.2 Adaptation locale
 
-Trois cartes, calculées par tuiles et interpolées :
+1. **Bruit local** : fonction de niveau + carte de tuiles (§4.3), d'où des seuils de détection locaux.
+2. **Flou local** : σ_b par point (§5.5), d'où l'échelle de localisation et la variance.
+3. **Complexité locale** κ_loc : longueur de chaînes par unité d'aire, normalisée par la médiane de l'image. Dans les zones chargées (texture, feuillage), λ_local = λ · (1 + log(1 + κ_loc)) : on simplifie davantage et on cherche moins de géométrie. Cette loi est une première proposition, à calibrer sur le corpus (§13).
 
-1. **σ_n local** (§3.2) → seuils de détection locaux.
-2. **σ_b local** (flou) → échelle de localisation et rayon minimal d'arrondi locaux.
-3. **Complexité locale** κ_loc = longueur de chaînes de bords par unité d'aire à l'échelle σ_0, normalisée par la médiane de l'image. Dans les zones très chargées (texture, feuillage), λ_local = λ · (1 + log(1 + κ_loc)) : on simplifie plus, on cherche moins de géométrie ; dans les zones dépouillées (logo), λ reste au niveau de base. Cette loi est une première proposition, à calibrer sur le corpus (§12).
+### 12.3 Vérification (J)
 
-En complément, le long d'une frontière, l'échelle de bruit « significative » de Kerautret & Lachaud (2012) fournit une tolérance locale sans paramètre ; à évaluer.
+Avant l'émission, chaque frontière est confrontée aux pixels :
+- l'écart de couleur entre le rendu local et la source, sur la bande de la frontière, doit rester sous ΔE_min, hors des parties pontées volontairement (§3.5) ;
+- l'écart géométrique doit rester sous τ_max.
 
-### 11.3 Réglages utilisateur
+En cas d'échec, la frontière est retracée avec λ abaissé. C'est la généralisation de la vérification actuelle (`Prepared::deviation`).
 
-| Réglage (interface) | Effet dans le nouveau modèle |
-|---|---|
-| **Géométrie** (0–1) | interpole λ entre G-AIC (0) et G-MDL (1) et règle le poids de l'a priori de type : plus haut = préfère les primitives géométriques |
-| **Échelle** (0–1) | ρ_échelle de la tolérance de perception (§10.2) et taille minimale des repères : plus haut = seules les grandes structures comptent, les petits détails sont absorbés |
-| **Détail** | ΔE_min et aire minimale des zones |
-| **Nettoyage** | force du débruitage bilatéral ; relève le plancher de σ_n |
-| **Lissage** | poids des Béziers dans l'a priori de type, lissage Taubin |
-| **Qualité / temps** (nouveau) | voir 11.4 |
-| Coins, guides, palette | inchangés (éditions par position) |
+### 12.4 Réglages utilisateur
 
-### 11.4 Qualité / temps
-
-| Mode | Résolution d'analyse max | Échelles / octave | Raffinement sous-pixel | Ellipses | Régularisation |
-|---|---|---|---|---|---|
-| Rapide | 1 MP (détection), pleine pour la localisation | 2 | Devernay | Halíř–Flusser | colinéarité + axes |
-| Équilibré (défaut) | 4 MP | 3 | Devernay | + LM géométrique | toutes, sauf symétries entre zones |
-| Précis | pleine | 3 | + surface partielle / erf | + hyper-renormalisation | toutes |
-
-Au-delà de la résolution d'analyse, la détection se fait sur l'image réduite (Gaussienne puis décimation) et seules les chaînes trouvées sont relocalisées à pleine résolution dans une bande de ±3σ ; coût ≈ 3–4 fois moindre sans perte de précision [R1 §4.4].
-
----
-
-## 12. Validation
-
-### 12.1 Vérité terrain synthétique (priorité)
-
-C'est le seul moyen de mesurer une précision sous-pixel [R5 §4.2]. Un générateur Rust (dans `crates/core`, tests) dessine des scènes SVG aléatoires à paramètres connus : droites, polygones aux angles 30°–170°, coins arrondis de rayon connu, cercles, ellipses (étendues 30°–360°), Béziers, traits fins, dégradés ; rendu avec anti-crénelage analytique (ou sur-échantillonnage 16×16), puis flou σ_b, bruit σ_n, compression JPEG à plusieurs qualités. Graines fixes, rien n'est stocké dans le dépôt sauf le code.
-
-Métriques et cibles (à SNR ≥ 20 dB) :
-
-| Étape | Mesure | Cible |
+| Réglage | Effet | Correspondance avec l'ancien réglage |
 |---|---|---|
-| C | erreur RMS de position des bords | < 0,05 px net, < 0,1 px flou σ_b = 1 |
-| C | estimation de σ_b | < 15 % |
-| A | estimation de σ_n | < 10 % (bruit blanc), < 25 % (JPEG) |
-| D | segments : rappel / précision des extrémités | > 95 % / < 0,5 px |
-| D | coins : détection, position, vif/arrondi | > 95 %, < 0,2 px, > 95 % corrects, r à 10 % |
-| D | cercles / ellipses : centre, axes, angle | < 0,1 px, < 1 %, < 1° (arc ≥ 120°) |
-| G–I | primitives retrouvées (type correct) | > 90 % |
-| J | aucune fausse géométrie sur dégradés | 0 repère suivi sur les bords de postérisation |
+| **Géométrie** (0–1) | λ de 2 à λ_MDL ; poids de l'a priori de type | même sens ; table de conversion pour les réglages enregistrés et le benchmark |
+| **Échelle** (0–1) | ρ_éch ∈ [0 ; 0,03] et β ∈ [0 ; 10 %] (§3.5) | remplace « relative = 0,02 × échelle » |
+| **Détail** | ΔE_min et aire minimale | inchangé dans son sens |
+| **Nettoyage** | débruitage bilatéral ; relève le plancher de bruit | inchangé |
+| **Lissage** | a priori des Béziers, lissage Taubin des points de repli | inchangé dans son sens |
+| **Qualité/temps** (nouveau) | §12.5 | — |
+| Coins, repères, palette | éditions par position (§7.3) | migration testée |
 
-### 12.2 Benchmark existant
+### 12.5 Qualité/temps
 
-Les 515 cas (`openvectorizer eval testdata --baseline testdata/baseline.json`) restent la non-régression de fidélité : ΔE moyen ≤ 0,927 et p95 ≤ 2,93 (valeurs actuelles), taille du SVG et nombre de nœuds suivis en plus.
+| Mode | Résolution d'analyse max | Localisateur | Ellipses | Régularisation |
+|---|---|---|---|---|
+| Rapide | 1 MP | surface partielle ou Devernay | Halíř–Flusser | colinéarité + axes |
+| Équilibré (défaut) | 4 MP | surface partielle / erf / Devernay (§5.5) | + LM géométrique | toutes, sauf symétries entre zones |
+| Précis | 8 MP | idem | + hyper-renormalisation | toutes |
 
-### 12.3 Corpus d'aller-retour
-
-Rendus d'icônes et d'emojis sous licence libre (Noto Emoji et Material Symbols, Apache-2.0) à plusieurs résolutions, avec et sans JPEG : on compare la géométrie retrouvée au SVG d'origine (Chamfer/Hausdorff des contours, précision/rappel des coins à 1–2 px, part des primitives régularisées). Téléchargés à la demande, jamais commités. Les jeux de données de recherche (YorkUrban, Prasad, Fornaciari, BIPED) servent ponctuellement en local, leurs licences interdisant souvent la redistribution.
-
-### 12.4 Déterminisme
-
-Test doré : hachage du SVG sur un petit corpus, identique en natif et en WASM (`wasm-pack test --node`).
+Au-delà de la résolution d'analyse, **tout le pipeline** tourne sur l'image réduite (flou gaussien puis rééchantillonnage par surfaces), et le SVG est remis à l'échelle. La géométrie ne dépend pas de la résolution, et ce choix borne le temps comme la mémoire. En mode Précis, une relocalisation par bandes à pleine résolution, autour des seules chaînes trouvées, est une option ultérieure.
 
 ---
 
-## 13. Implémentation Rust
+## 13. Validation
 
-### 13.1 Modules
+### 13.1 Vérité terrain synthétique
+
+C'est le seul moyen de mesurer une précision sous-pixel [R5 §4.2]. Un générateur (tests de `crates/core`) dessine des scènes à paramètres connus :
+
+- **Formes** : droites, polygones aux angles de 30° à 170°, coins arrondis de rayon connu, cercles, ellipses (étendues de 30° à 360°), Béziers, traits de 0,75 à 4 px, points de 2 à 8 px, texte de 8 à 24 px (police sous licence OFL, rendue dans le test), dégradés de fond et dégradés de remplissage.
+- **Rendu** : anti-crénelage analytique ou sur-échantillonnage 16×16.
+- **Dégradations** : flou σ_b ∈ {0 ; 0,5 ; 1 ; 2}, bruit (SNR de 10 à 40 dB), JPEG qualité {30, 50, 75, 90}, agrandissement au plus proche et bilinéaire, tailles {32, 64, 128, 512, 4096}.
+
+Graines fixes ; images de 256² au plus pour les tests rapides ; le profil de test compile `core` en optimisé. Rien n'est stocké dans le dépôt, à part le code.
+
+**Calibration** : ce corpus fixe σ_sys, les tables (Devernay, c(φ), Steger, κ_c), ε et les a priori π. Le corpus de calibration et le corpus de mesure sont distincts (graines différentes).
+
+| Étape | Mesure | Cible (net, SNR ≥ 20 dB) | Cible (JPEG q50, flou 1) |
+|---|---|---|---|
+| A | erreur sur σ_n | < 10 % | < 25 % |
+| C | erreur RMS de position des bords | < 0,05 px | < 0,15 px |
+| C | erreur sur σ_b | < 15 % ou < 0,1 px | < 25 % |
+| D | segments : rappel, erreur aux extrémités | > 95 %, < 0,5 px | > 85 %, < 1 px |
+| D | coins : détection, position, vif/arrondi juste, rayon | > 95 %, < 0,2 px, > 95 %, ± 10 % | > 85 %, < 0,5 px, > 85 %, ± 20 % |
+| D | cercles / ellipses (arc ≥ 120°) : centre, axes, angle | < 0,1 px, < 1 %, < 1° | < 0,3 px, < 3 %, < 3° |
+| D | **fausses détections** (repères significatifs par MP sur bruit pur, texture, blocs JPEG, dégradés) | ≤ 1 | ≤ 1 |
+| F′ | traits fins, texte, points : composantes connexes justes, largeur | 100 %, ± 0,2 px | > 95 %, ± 0,4 px |
+| G–I | primitives retrouvées avec le bon type | > 90 % | > 75 % |
+
+### 13.2 Batterie de cas « défauts signalés »
+
+Un générateur par défaut signalé lors des tests, avec un critère réussi/échoué, exécuté à chaque phase :
+
+| Défaut | Scène | Critère |
+|---|---|---|
+| Géométrie sur les dégradés | fond en dégradé, forme pleine posée dessus | 0 repère suivi sur les bandes ; contour de la forme suivi |
+| Contour d'une forme remplie d'un dégradé | rectangle et cercle en dégradé sur fond uni | repères suivis sur le contour, 0 sur les bandes internes |
+| Grandes lignes et cercles manqués | grand cercle peu contrasté + petits détails | grand cercle suivi |
+| Lignes interrompues | une droite coupée par 3 formes | une seule droite partagée (écart < 0,1 px) |
+| Ellipse non suivie | cercle coupé par 2 à 4 bandes | un seul cercle partagé par tous les morceaux, à 0,1 px près |
+| Coutures | formes sombres adjacentes ; bleu/gris avec liseré | écart de couleur maximal le long des frontières < ΔE_min, rendu à 1× et 4× |
+| Artefacts JPEG | pétales colorés en JPEG q50 | pas de zone parasite ; ΔE moyen comparable au PNG |
+| Petit détail qui casse la symétrie | forme symétrique + encoche sous et au-dessus de τ_perc | symétrie retrouvée sous τ_perc ; encoche conservée au-dessus |
+
+### 13.3 Benchmark de non-régression
+
+Les 515 cas (`openvectorizer eval testdata --baseline testdata/baseline.json`) :
+
+- ΔE moyen ≤ 0,927, p95 ≤ 2,93 (valeurs actuelles) ;
+- **par image** : aucune image dégradée de plus de 10 % de ΔE ;
+- suivi supplémentaire : nombre de nœuds, taille du SVG, part de la longueur des contours émise en droites, arcs ou ellipses.
+
+Ce benchmark est surtout fait de rendus synthétiques. Il ne suffit pas pour les images réelles, d'où les points 13.4 et 13.5.
+
+### 13.4 Corpus d'aller-retour et images réelles
+
+- Rendus d'icônes et d'emojis sous licence libre (Noto Emoji et Material Symbols, Apache-2.0) à plusieurs résolutions, avec et sans JPEG. On compare au SVG d'origine :
+  - distance de Chamfer et de Hausdorff des contours ;
+  - précision et rappel des coins à 1–2 px ;
+  - nombre de nœuds ;
+  - part des primitives régularisées.
+- Les données sont téléchargées à la demande et jamais commitées. Les jeux de recherche (YorkUrban, Prasad, Fornaciari, BIPED) sont utilisés ponctuellement, en local.
+- **Comparaison avec vectorizer.ai**, en local uniquement : une vingtaine d'images libres, avec leurs résultats vectorizer.ai conservés hors du dépôt. Mesures : ΔE, nombre de nœuds, comparaison visuelle A/B.
+
+### 13.5 Performance, mémoire, robustesse
+
+- **Chronomètres par étape** dans `eval` (natif, release) et dans le worker WASM (`performance.now()`), plus une sonde mémoire (`memory.buffer.byteLength`), dès la phase P1.
+- **Tests d'endurance** avec assertion de temps : une photo de 2 MP, une frontière de 4000 px, une image de 16 MP (chemin de plafonnement).
+- **Cas limites** : 1×1, 1×N, image entièrement transparente ou constante ; propagation de NaN.
+- **Sorties de débogage** : un SVG des points de bord, chaînes, repères (avec ellipses de covariance) et ruptures de la programmation dynamique, pour le développement.
+
+### 13.6 Déterminisme
+
+Test doré : hachage du SVG sur un petit corpus, **identique au bit près** en natif et en WASM (`wasm-pack test --node`).
+
+---
+
+## 14. Implémentation Rust
+
+### 14.1 Modules et dépendances
+
+L'ordre des couches est num → raster → edges → detect → guides → topo → trace → regular → svg, sans dépendance inverse.
 
 | Module (crate `core`) | Contenu |
 |---|---|
-| `num/` | matrices de taille fixe (génériques const), valeurs propres 2×2 fermées, 3×3 symétriques (Jacobi ou Kopp), 3×3 non symétrique (cubique + produit vectoriel), Cholesky/LDLᵀ, Householder QR, LM générique, racines quadratiques/cubiques/quartiques stables, ln Γ (Lanczos), queue binomiale en log, FFT radix-2, union-find, PRNG PCG32, tri total (`total_cmp` + indice) |
-| `raster/` | `Plane<T>` planaire, conversion Oklab, filtres gaussiens séparables et dérivées, IIR pour σ > 5, pyramide, bruit, carte de tuiles |
-| `edges/` | tenseur Di Zenzo, NMS, Devernay, chaînage, hystérésis, sélection d'échelle, incertitude, surface partielle, erf, Steger |
-| `detect/` | segments, Förstner, jonctions, arcs, cercles, ellipses, regroupement, taches, NFA |
-| `guides/` | graphe de repères, fusion multi-échelle, statuts (étend `guide.rs`) |
-| `trace/` | association frontière ↔ bords, DP MDL, Schneider + SDM, ajustement conjoint G1 |
-| `regular/` | relations, union-find, résolution par étapes, répétitions (reprend `shape.rs`, `repeat.rs`, `align.rs`) |
-| `planar.rs`, `lib.rs` | orchestration, émission SVG (inchangé dans le principe) |
+| `num/` | Fonctions transcendantes propres (§14.4) ; matrices de taille fixe ; valeurs propres 2×2 fermées, 3×3 symétriques (Jacobi), 3×3 non symétriques (cubique + itération inverse) ; Cholesky et LDLᵀ (bande ou non) ; Householder QR ; `lm` générique ; racines stables ; ln Γ (Lanczos) ; queue binomiale en log (récurrence sur le rapport des termes, sans jamais calculer 1 − queue) ; FFT ; union-find ; PCG32 ; tri total. Chaque solveur entre dans la phase qui l'utilise en premier, avec ses tests. |
+| `raster/` | `Plane<T>`, Oklab et jacobien, filtres gaussiens et dérivées, bandes, pyramide, modèle de bruit, classification d'entrée |
+| `edges/` | tenseur généralisé, NMS, Devernay, chaînage, hystérésis, analyse par point, surface partielle, erf, Steger |
+| `detect/` | segments, Förstner, jonctions, congés, arcs, cercles, ellipses, regroupement, taches, NFA |
+| `guides/` | arène de repères, fusion, statuts, migration des éditions ; le type exporté reste dans `guide.rs` |
+| `topo/` | postérisation, zones, frontières partagées, réparation F′ (extrait de `planar.rs`) |
+| `trace/` | association, programmation dynamique, Béziers, ajustement conjoint |
+| `regular/` | relations, résolution par composantes, répétitions (reprend `shape.rs`, `repeat.rs`, `align.rs`) |
+| `svg/` | émission, anti-couture, `<use>` (extrait de `planar.rs`) |
 
-### 13.2 Performances
+### 14.2 Budget de temps
 
-Objectif : 2 MP en moins d'une seconde dans le navigateur, sur un seul thread [R5 §3.1].
+Image de 1920×1080 (2 MP), WASM sur un seul thread. Les débits scalaires de référence sont de 0,5 à 1,5 milliard d'opérations simples par seconde ; le SIMD multiplie par 2 à 4 les filtres [R5 §3.1].
 
-| Étape (1920×1080) | Budget |
+| Étape | Opérations par pixel (ordre) | Total | Scalaire | SIMD |
+|---|---|---|---|---|
+| Oklab + jacobien + bruit | ~75 | 0,15 G | 100–300 ms | 60–150 ms |
+| Gaussienne σ₀ (9 coeff. × 2 passes × 3 canaux), différences, tenseur, NMS | ~100 | 0,2 G | 130–400 ms | 50–150 ms |
+| Pyramide (⅓ du précédent) + Steger et taches sur L | ~55 | 0,11 G | 70–220 ms | 30–90 ms |
+| Analyse par point (5 à 30 % des pixels × ~300 op.) | — | 0,03–0,2 G | 20–400 ms | 20–300 ms |
+| Chaînage, détecteurs D | par point | ~0,05 G | 30–100 ms | 30–100 ms |
+| Postérisation (existante) | mesurée | — | 80–200 ms | 80–200 ms |
+| Association, G–J | par point de frontière | — | 100–300 ms | 100–300 ms |
+| **Total** (hors Nettoyage) | | | **≈ 0,5–1,9 s** | **≈ 0,4–1,3 s** |
+
+**Objectifs** (mode Équilibré, 2 MP, hors Nettoyage) : ≤ 1 s en SIMD et ≤ 2 s en scalaire, plus ≤ 300 ms pour relancer G–J après un déplacement de curseur (§14.6). Le débruitage bilatéral actuel (jusqu'à 7×7 avec exponentielles, de l'ordre de 500 opérations par pixel) coûte à lui seul environ 1 G opérations quand il est actif. Il faudra l'optimiser (approximation séparable, table d'exponentielles), ou ne l'activer par défaut que si le bruit mesuré le justifie. Ces chiffres sont des estimations, remplacées par des mesures dès la phase P1.
+
+### 14.3 Bornes explicites
+
+Chaque étape par paires ou par programmation dynamique a un plafond. Au-delà, elle se dégrade proprement et le compte.
+
+| Étape | Borne |
 |---|---|
-| Oklab + bruit | 20–40 ms |
-| Dérivées gaussiennes (3 canaux, 3–6 échelles) | 60–150 ms |
-| NMS, Devernay, chaînage | 30–60 ms |
-| Förstner, segments, arcs, taches | 60–150 ms |
-| Postérisation (existante) | 80–200 ms |
-| Association, DP, ajustements, régularisation | 80–200 ms |
-| **Total** | **≈ 0,4–0,8 s** (estimation, à mesurer) |
+| Programmation dynamique de segmentation | fenêtre W = 200–400 points ; Béziers entre candidats à ≤ 16 d'écart ; ≤ 2 départs |
+| Chaînage | tri par paquets, linéaire |
+| Fusion de segments, regroupement d'arcs, fusion multi-échelle | grille spatiale + cases d'angle ; ≤ 16 partenaires par élément ; ≤ 10⁶ tests au total |
+| Association | programmation dynamique en bande |
+| Relations | ≤ 16 partenaires par primitive ; résolution par composante ≤ 200 inconnues |
+| Symétries et répétitions entre zones | seaux de tailles et de signatures ; ≤ 10⁵ paires vérifiées |
+| Temps par frontière | budget ; repli sur Béziers seuls (§10.1) |
 
-Règles :
-- **pas d'allocation dans les boucles chaudes** : une structure `Workspace` réutilisée, passée par `&mut` ;
-- itération par tranches (`chunks_exact`, lignes) pour que le compilateur élimine les vérifications de bornes ;
-- passe verticale des filtres par accumulation de lignes (pas d'accès en colonne) ; bords traités hors de la boucle intérieure ;
-- **SIMD wasm (simd128)** : chemin scalaire de référence + chemin SIMD testés pour l'égalité au bit près ; deux binaires WASM (avec et sans SIMD), choisis par détection de fonctionnalité côté JavaScript ; jamais de relaxed-SIMD ni de `mul_add` (déterminisme) ;
-- **tuiles** avec marge = rayon du noyau, pour pouvoir paralléliser plus tard (Web Workers) sans changer le résultat ;
-- mémoire : un plan f32 de 2 MP = 8 Mo ; libérer ou réutiliser les plans entre étapes ; viser < 150 Mo de pic.
+### 14.4 Déterminisme
 
-### 13.3 Déterminisme
+- **Fonctions transcendantes** (exp, ln, ln1p, atan2, sin, cos, cbrt, pow, hypot, ln Γ) : `num/` fournit ses propres versions en pur Rust. Elles sont portées des sources de la caisse `libm` (MIT, dérivée de musl et FreeBSD) et citées dans `THIRD_PARTY.md`. Les versions de `std` et `mul_add` sont interdites dans `core` par la règle clippy `disallowed-methods`, active dès la phase P0. Sinon, une différence d'un bit entre la bibliothèque mathématique native et celle du WASM ferait basculer des décisions discrètes : seuils, NFA, minimum de la programmation dynamique, ordre glouton.
+- **SIMD** : une voie par pixel, coefficients appliqués dans le même ordre que le code scalaire. Les deux chemins sont testés pour l'égalité au bit près. Pas de relaxed-SIMD.
+- **Ordre** : chaque étape gloutonne ou triée utilise `total_cmp` + un indice pour départager. Les NaN sont exclus avant tout tri (assertion de débogage). Pas de `HashMap` de `std` dans `core` : tableaux triés, `BTreeMap` ou hachage fixe.
+- **Bandes et tuiles** : sans effet sur le résultat. Le chaînage et l'hystérésis se font sur la liste globale.
+- **Aléa** (k-means, RANSAC éventuel) : PCG32 à graine dérivée de l'image et des réglages.
 
-- pas de `HashMap` itérée pour produire une sortie (tableaux triés ou `BTreeMap`) ;
-- fonctions transcendantes : celles de `libm` en WASM sont déterministes ; en natif, elles peuvent différer au dernier bit, donc le test doré compare natif et WASM sur des sorties arrondies au centième (format de sortie actuel) ;
-- générateurs aléatoires (RANSAC éventuel, k-means) à graine dérivée de l'image et des réglages.
+### 14.5 Mémoire
+
+Plan f32 de 2 MP = 8 Mo. La mémoire WASM ne rétrécit jamais : le pic est permanent pour l'onglet.
+
+| Poste | Taille à 2 MP |
+|---|---|
+| Image source + Oklab (3 plans) | ~33 Mo |
+| Bande de calcul σ₀ (128 lignes, ~10 plans) | ~10 Mo |
+| Pyramide (3 canaux, ⅓) | ~8 Mo |
+| Points de bord (~50 o × 0,1–0,6 M) | 5–30 Mo |
+| Postérisation (étiquettes, composantes, copie débruitée) | ~40 Mo |
+| **Objectif de pic** | **≤ 150 Mo à 2 MP, ≤ 250 Mo à 4 MP** |
+
+Ces chiffres sont mesurés dès la phase P2 (§13.5). Les plafonds de résolution par mode (§12.5) bornent le cas des très grandes images.
+
+### 14.6 Cache des étapes
+
+Les étapes A à F″ ne dépendent que de l'image et de Nettoyage, Détail, palette et mode de qualité. Le module WASM expose un objet `Analysis` qui les conserve. Un changement de Géométrie, Échelle ou Lissage, ou une édition de coin ou de repère, ne relance que G–J. Sans ce cache, l'interaction serait plus lente qu'aujourd'hui.
+
+### 14.7 Robustesse numérique
+
+- Normalisation de Hartley avant toute conique ; dénormalisation après.
+- Valeurs propres 2×2 : forme fermée avec le vecteur propre stable (choisir le couple de plus grande norme), sans division quand Sxx ≈ Syy et Sxy ≈ 0.
+- Racines de polynômes sous forme stable, q = −½(b + signe(b)√Δ).
+- Garde sur chaque division par un dénominateur pouvant s'annuler (Devernay, Schneider, Halíř–Flusser), avec un repli documenté.
+- Tests des solveurs : reconstruction A = VΛVᵀ, ‖VᵀV − I‖ < 10⁻¹², matrices aléatoires à graine fixe.
 
 ---
 
-## 14. Licences et sources
+## 15. Licences et sources
 
-Règle : on lit et on peut traduire le code **permissif** (en citant la source dans `THIRD_PARTY.md` et en tête du fichier) ; pour le **copyleft** et le code sans licence, on implémente uniquement depuis l'article, sans avoir le code ouvert, et on cite l'article en commentaire [R5 §2].
+Règle : on lit et on peut traduire le code **permissif**, en citant la source dans `THIRD_PARTY.md` et en tête du fichier. Pour le **copyleft** et le code sans licence, on implémente uniquement depuis l'article, sans avoir le code ouvert, et on cite l'article en commentaire [R5 §2].
 
 | Module | Sources lisibles (permissives) | Article seulement |
 |---|---|---|
+| Fonctions mathématiques | `libm` (MIT, dérivé de musl) | — |
 | Filtres, pyramide | imageproc (MIT), OpenCV (Apache-2.0), VLFeat (BSD-2) | Young–van Vliet |
-| Bords sous-pixel | OpenCV/imageproc Canny ; surface partielle : `subpixel-edges` (MIT) | Devernay 1995, IPOL 2017 (code AGPL) |
+| Bords sous-pixel | Canny d'OpenCV et d'imageproc ; surface partielle : `subpixel-edges` (MIT) | Devernay 1995, IPOL 2017 (code AGPL) |
 | Traits fins | hessienne de scikit-image (BSD-3) | Steger 1998 (code ImageJ GPL-2) |
 | Segments | `lsd.cpp` d'OpenCV (réécriture permissive), ED_Lib/EDLines (MIT), ELSED (Apache-2.0) | LSD IPOL (code AGPL) |
 | Coins | Förstner de scikit-image (BSD-3), cornerSubPix d'OpenCV | Förstner & Gülch 1987 |
-| Ellipses | EDCircles (MIT), fitEllipseDirect d'OpenCV, EllipseModel de scikit-image | ELSDc (AGPL), AAMED (GPL-2), Fornaciari (sans licence), Kanatani (code sans conditions) |
+| Ellipses | EDCircles (MIT), fitEllipseDirect d'OpenCV, EllipseModel de scikit-image | ELSDc (AGPL), AAMED (GPL-2), Fornaciari (sans licence), Kanatani (conditions non précisées) |
 | Taches | blob_log/doh de scikit-image, `mser.c` de VLFeat | — |
 | Tracé, postérisation | VTracer et visioncortex (MIT), ImageTracer.js (Unlicense) | Potrace 2003 (GPL) |
 | Béziers, arcs | curve-fit-nd (BSD-3), kurbo (MIT/Apache), lyon_geom (MIT/Apache), FitCurves.c (Graphics Gems) | — |
 | Régularisation | — | GlobFit 2011 (sans licence), Hoshyari 2018, régularisation CGAL (GPL-3) |
 
-Pièges relevés [R5 §1–2] : `pytlsd` (dépôt MIT mais `lsd.cpp` AGPL inclus), `h3ct0r/fast_ellipse_detector` (étiquette MIT sur du code sans licence), `ridge-detector` (MIT mais dérivé de GPL-2). Toujours lire les en-têtes de fichier. Aucun brevet actif connu sur les méthodes retenues ; celui de Microsoft sur Kopf-Lischinski (pixel art) est à vérifier avant un éventuel mode pixel art.
+**Pièges relevés** [R5 §1–2] :
+- `pytlsd` : dépôt sous MIT, mais il inclut `lsd.cpp` sous AGPL ;
+- `h3ct0r/fast_ellipse_detector` : étiquette MIT sur du code sans licence ;
+- `ridge-detector` : sous MIT, mais dérivé de code GPL-2.
+
+On lit donc toujours les en-têtes de fichier. Aucun brevet actif n'est connu sur les méthodes retenues. Celui de Microsoft sur Kopf-Lischinski (pixel art) est à vérifier avant un mode pixel art.
 
 ---
 
-## 15. Plan de construction
+## 16. Plan de construction
 
-Chaque phase se termine par ses tests synthétiques (§12.1), le benchmark de non-régression et `scripts/check.sh` vert. Le nouveau pipeline est développé à côté de l'ancien, derrière une option interne, jusqu'à ce qu'il le batte sur le benchmark.
+Chaque phase se termine par :
+- ses tests synthétiques (§13.1) et la batterie de défauts (§13.2), même partielle ;
+- le benchmark de non-régression ;
+- les chronomètres et la sonde mémoire ;
+- `scripts/check.sh` vert.
+
+Les phases P3 et suivantes améliorent le pipeline existant pièce par pièce, au lieu de construire un second pipeline complet à côté.
 
 | Phase | Contenu | Critère de sortie |
 |---|---|---|
-| P0 | Boîte à outils `num/`, `Plane`, générateur de scènes synthétiques | tests unitaires des solveurs (reconstruction A = VΛVᵀ, ‖VᵀV − I‖ < 10⁻¹²) |
-| P1 | Oklab, bruit, dérivées, pyramide | σ_n à 10 %, filtres égaux à la référence analytique |
-| P2 | Bords sous-pixel, chaînage, échelle, incertitude | cibles C du §12.1 |
-| P3 | Association frontière ↔ bords, statut bord réel / postérisation | 0 géométrie sur dégradés, aucune régression ΔE |
-| P4 | Segments, coins, arrondis, arcs, cercles, ellipses, taches ; graphe de repères ; interface des guides branchée dessus | cibles D |
-| P5 | DP MDL, Schneider + SDM, ajustement conjoint G1 | cibles G, ΔE ≤ baseline |
-| P6 | Régularisation globale, répétitions `<use>` | cibles I, taille SVG en baisse |
-| P7 | Seuils locaux, réglage qualité/temps, SIMD | 2 MP < 1 s en WASM (mode Équilibré) |
-| P8 | Retrait de l'ancien code et des constantes remplacées | 0 constante en pixels non justifiée |
+| P0 | `Plane`, conversions, fonctions transcendantes + règle clippy, PCG32, tri total, générateur de scènes | tests unitaires ; règle clippy active |
+| P1 | Oklab et jacobien, modèle de bruit, classification d'entrée, gaussiennes par bandes, pyramide, chronomètres | σ_n à 10 % ; filtres conformes à la référence analytique ; temps mesurés |
+| P2 | Bords sous-pixel, chaînage, analyse par point, variance, Steger ; calibration de σ_sys ; sorties de débogage | cibles C ; mémoire mesurée |
+| P3 | Association et statut bord réel / bord de postérisation, **branchés dans le pipeline actuel** à la place de `edges.rs` (SOFT_EDGE) | cas « dégradés » de la batterie : aucune géométrie de l'ancien ajusteur sur les bandes ; aucune régression ΔE |
+| P4 | Segments, coins, congés, arcs, cercles, ellipses, taches ; arène de repères ; tous affichés comme Candidats | cibles D, dont les fausses détections |
+| P5a | Critère §3, programmation dynamique (droites, arcs, « sur repère », Béziers de Schneider), statuts Suivi/Candidat dans l'interface, migration des éditions | cas « lignes interrompues » et « ellipse non suivie » ; ΔE ≤ référence ; migration ≥ 95 % |
+| P5b | Ellipses dans la programmation dynamique, SDM, ajustement conjoint G1 (Schur), cache `Analysis` | cibles G ; relance G–J ≤ 300 ms |
+| P6 | Régularisation globale, répétitions `<use>`, réparation de topologie F′, pontage et fusion des petites zones | cibles I et F′ ; cas « symétrie » ; taille du SVG en baisse |
+| P7 | Seuils locaux, réglage Qualité/temps, SIMD, optimisation du débruitage | 2 MP ≤ 1 s en SIMD (Équilibré) |
+| P8 | Retrait de l'ancien code et des constantes remplacées ; évaluation sur photos (préréglage Photo) ; comparaison avec vectorizer.ai | aucune constante non étiquetée ; décision sur le préréglage Photo |
 
 ---
 
-## 16. Risques et questions ouvertes
+## 17. Risques et questions ouvertes
 
-1. **Modèle de fond des NFA sur des images plates** : sur des aplats, des images postérisées ou en blocs JPEG, les orientations de gradient ne sont pas indépendantes et uniformes ; des alignements de blocs de 8 px peuvent paraître significatifs. Parades : débruitage léger, distribution empirique H(μ), plancher perceptif. À mesurer.
-2. **Espace de localisation** (§4.7) : hypothèse non publiée, à confirmer sur rendus synthétiques avant d'en faire le défaut.
-3. **Formule de variance** (§4.6) dérivée par la synthèse, pas vérifiée contre l'article de Kakarala & Hero.
-4. **Calibration de la loi de complexité locale** (§11.2) : première proposition, sans référence.
-5. **Coût de la DP avec Béziers** sur de très longues frontières : borné par le nombre de ruptures candidates ; à surveiller sur les photos.
-6. **Interface** : les clés de repères (type + position) doivent rester stables d'un tracé à l'autre malgré le nouveau détecteur ; les éditions de coins aussi.
-7. **Dégradés** : le statut « bord de postérisation » empêche les fausses géométries, mais le rendu des dégradés eux-mêmes (remplissages `linearGradient`/`radialGradient`) reste une étape distincte.
+1. **Modèle de fond des NFA sur des images plates** : sur des aplats, de la postérisation ou des blocs JPEG, les orientations ne sont pas indépendantes et uniformes. Des alignements de blocs peuvent paraître significatifs. Parades : calibration de ε sur ces images, distribution empirique, plancher perceptif. Cible : ≤ 1 fausse détection par MP (§13.1).
+2. **Espace de localisation** (§5.5, point 4) : hypothèse non publiée, à confirmer sur vérité terrain.
+3. **Formule de variance** (§5.6) : algèbre vérifiée, mais le modèle (marche droite, bruit blanc) reste à confronter à Kakarala & Hero (1992) et à la mesure. σ_sys absorbe l'écart.
+4. **Analyse par profil 1D** (§5.1) : approximation d'ordre (κσ)² sur les bords courbes, à mesurer sur les petits cercles.
+5. **Loi de complexité locale** (§12.2) : sans référence, à calibrer.
+6. **Coût sur les photos** : bornes de §14.3 et repli Béziers ; le préréglage Photo n'est basculé qu'après mesure (P8).
+7. **Réparation de topologie** (§8.2) : la plus nouvelle des étapes, sans référence directe dans la littérature. Le critère d'acceptation par ΔE est simple ; ses effets de bord sur les frontières voisines sont à surveiller.
+8. **Coutures** : la stratégie actuelle (traits de comblement) reste nécessaire. Sa mesure (§13.2) dira si le mode empilé doit devenir le défaut.
+9. **Dégradés** : le statut « bord de postérisation » empêche les fausses géométries ; le rendu des dégradés en SVG reste une étape distincte.
 
 ---
 
-## Annexe — Références principales
+## Annexe A — Glossaire
 
-Bords : Canny 1986 ; Di Zenzo 1986 ; Devernay 1995 ; Grompone von Gioi & Randall, IPOL 2017 ; Trujillo-Pino et al. 2013 ; Lindeberg, IJCV 30(2) 1998 (deux articles) ; Immerkær 1996 ; Steger, PAMI 20(2) 1998 ; Kakarala & Hero, PAMI 14(7) 1992.
-Segments et a contrario : Desolneux, Moisan & Morel 2000, 2001, 2008 ; Grompone von Gioi et al. (LSD), PAMI 2010 et IPOL 2012 ; Akinlar & Topal (EDLines 2011, EDPF 2012, EDCircles 2013) ; Fernandes & Oliveira (KHT) 2008.
-Coins : Harris & Stephens 1988 ; Förstner & Gülch 1987 ; Xia, Delon & Gousseau (ACJ) 2014 ; Mokhtarian & Suomela 1998 ; He & Yung 2008 ; Lachaud, Vialard & de Vieilleville 2007 ; Kerautret & Lachaud 2012.
-Coniques : Kåsa 1976 ; Taubin 1991 ; Al-Sharadqah & Chernov 2009 ; Fitzgibbon, Pilu & Fisher 1999 ; Halíř & Flusser 1998 ; Kanatani et al. 2011, 2012 ; Eberly (distance point–ellipse) ; Fornaciari, Prati & Cucchiara 2014 ; Pătrăucean et al. (ELSDc) 2017.
-Sélection de modèles : Kanatani, IJCV 26(3) 1998 et PAMI 26(10) 2004 ; Rosin & West, PAMI 17(12) 1995.
-Courbes : Schneider, Graphics Gems 1990 ; Wang, Pottmann & Liu, ACM TOG 2006 ; Taubin 1995 ; Selinger (Potrace) 2003 ; Hoshyari et al., SIGGRAPH 2018 ; Dominici et al. (PolyFit) 2020 ; Li et al. (GlobFit) 2011 ; Li et al. (Diffvg) 2020.
-Symétrie et répétition : Hu 1962 ; Kuhl & Giardina 1982 ; Zabrodsky, Peleg & Avnir 1995 ; Loy & Eklundh 2006.
+- **a contrario, NFA (nombre de fausses alarmes)** : on déclare une structure réelle si, dans une image de pur bruit de même taille, on s'attendrait à en voir moins d'une par hasard. NFA = nombre de structures testées × probabilité d'en voir une aussi nette par hasard.
+- **χ² (khi-deux)** : somme de carrés d'écarts normalisés ; sert à mesurer si des résidus sont compatibles avec le bruit attendu.
+- **MDL (longueur de description minimale)** : on préfère le modèle qui décrit les données avec le moins d'information au total, données résiduelles comprises. Un paramètre de plus doit « se payer » par une réduction suffisante des résidus.
+- **G-AIC, G-MDL (Kanatani)** : versions « géométriques » de ces critères, adaptées à l'ajustement de courbes avec peu de bruit et beaucoup de points ; elles fixent le prix λ d'un paramètre.
+- **Di Zenzo (tenseur de)** : façon de calculer le gradient d'une image en couleur en combinant les canaux, avec une direction et une force uniques.
+- **NMS (suppression des non-maxima)** : on ne garde, en travers d'un bord, que le pixel où le gradient est maximal.
+- **Devernay** : position sous-pixel du maximum par une parabole sur trois valeurs.
+- **Sélection d'échelle (Lindeberg)** : on cherche l'échelle de lissage à laquelle une structure répond le plus fort ; elle révèle sa taille ou son flou.
+- **Pyramide** : copies de l'image de plus en plus petites (÷2 à chaque niveau), pour détecter vite les grandes structures.
+- **Steger** : détecteur de traits fins (crêtes) qui donne la ligne centrale et la largeur.
+- **Förstner** : position précise d'un coin, comme le point le plus proche de toutes les droites tangentes aux bords voisins.
+- **Programmation dynamique** : méthode qui trouve le meilleur découpage d'une courbe en morceaux en réutilisant les meilleurs découpages de ses débuts.
+- **PELT** : règle d'élagage qui accélère cette programmation dynamique.
+- **G1** : deux morceaux se raccordent avec la même tangente (pas d'angle visible).
+- **Levenberg-Marquardt (LM)** : méthode itérative d'ajustement de paramètres par moindres carrés.
+- **KKT, complément de Schur** : manière de résoudre un ajustement par moindres carrés sous contraintes (par exemple « cette droite reste tangente à ce cercle »).
+- **Union-find** : structure qui regroupe des éléments en classes (« toutes ces droites sont parallèles »).
+- **Šidák** : correction d'un seuil quand on teste beaucoup de points à la fois, pour ne pas rejeter à tort une bonne droite parce qu'un de ses 500 points s'écarte un peu par hasard.
+- **Mahalanobis (distance de)** : distance entre deux estimations, mesurée en unités de leur incertitude.
+
+## Annexe B — Exemple complet
+
+*Un logo : un cercle orange coupé en trois par un mot blanc, sur un fond en dégradé bleu, enregistré en JPEG qualité 70, 1200×800 px.*
+
+1. **A** : JPEG détecté. La fonction de niveau de bruit donne un bruit plus fort dans le bleu sombre. Le plancher de bruit est relevé pour le JPEG, et la localisation se fera sur L seul.
+2. **C** : des chaînes de bords sont trouvées sur le contour du cercle (forte force, flou σ_b ≈ 0,6 px), sur les lettres, et presque rien dans le dégradé du fond : le gradient y est faible et partout sous le seuil H.
+3. **D** :
+   - les trois arcs du cercle (environ 100° chacun) sont regroupés, car leurs centres sont compatibles, et donnent un repère Cercle de NFA très faible ;
+   - les fûts des lettres donnent des segments ; leurs angles, des coins vifs ;
+   - les jambages arrondis donnent des arcs.
+4. **F** : la postérisation produit le fond en 4 bandes de bleu, le cercle en 3 morceaux, et les lettres.
+5. **F″** :
+   - les frontières entre bandes bleues ne trouvent aucun point de bord apparié : ce sont des **bords de postérisation**, tracés en Béziers lisses, sans aucun repère ;
+   - le contour du cercle est un **bord réel**, apparié tout du long ; le test de contraste se fait sur les couleurs locales, ce qui fonctionne malgré le dégradé derrière.
+6. **G** :
+   - sur chacun des trois morceaux du contour du cercle, le modèle « sur repère » (0 paramètre, coût = écarts au cercle global) bat l'arc libre et la Bézier ;
+   - les lettres se découpent en droites et arcs, avec des coins vifs aux empattements ;
+   - une petite bavure JPEG de 1 px sur le cercle est absorbée : elle reste sous τ_perc (Échelle = 0,5 donne ρ_éch = 0,015 ; boîte du cercle de 400 px, diagonale ≈ 566 px, donc τ_perc ≈ 8 px).
+7. **H** : les trois morceaux partagent les mêmes (C, r) ; les lettres sont réajustées avec des raccords G1 entre droites et arcs.
+8. **I** :
+   - les fûts verticaux des lettres sont mis exactement à la verticale ;
+   - les lettres de même hauteur partagent leurs droites de pied et de tête (colinéarité, même interrompue entre les lettres) ;
+   - les deux « o » identiques deviennent un tracé et un `<use>`.
+9. **J** :
+   - vérification : écart de couleur sous ΔE_min, sauf la bavure pontée volontairement ;
+   - émission : un vrai cercle en arcs SVG (`A`), des lettres en `L` et `A`, un fond en Béziers ;
+   - les traits de comblement suppriment les coutures.
+
+Dans l'interface, on voit le repère Cercle **suivi**, les droites des lettres **suivies**, et aucun repère sur le dégradé. Si l'utilisateur désactive le cercle, les trois morceaux redeviennent des arcs libres ou des Béziers.
+
+## Annexe C — Références principales
+
+**Bords** : Canny 1986 ; Di Zenzo 1986 ; Devernay 1995 ; Grompone von Gioi & Randall, IPOL 2017 ; Trujillo-Pino et al. 2013 ; Lindeberg, IJCV 30(2) 1998 (deux articles) ; Immerkær 1996 ; Steger, PAMI 20(2) 1998 ; Kakarala & Hero, PAMI 14(7) 1992 ; Verbeek & van Vliet 1994.
+
+**Segments et a contrario** : Desolneux, Moisan & Morel 2000, 2001, 2008 ; Grompone von Gioi et al. (LSD), PAMI 2010 et IPOL 2012 ; Akinlar & Topal (EDLines 2011, EDPF 2012, EDCircles 2013) ; Fernandes & Oliveira (KHT) 2008.
+
+**Coins** : Harris & Stephens 1988 ; Förstner & Gülch 1987 ; Xia, Delon & Gousseau (ACJ) 2014 ; Mokhtarian & Suomela 1998 ; He & Yung 2008 ; Lachaud, Vialard & de Vieilleville 2007 ; Kerautret & Lachaud 2012.
+
+**Coniques** : Kåsa 1976 ; Pratt 1987 ; Taubin 1991 ; Al-Sharadqah & Chernov 2009 ; Chernov & Lesort 2005 ; Fitzgibbon, Pilu & Fisher 1999 ; Halíř & Flusser 1998 ; Kanatani et al. 2011, 2012 ; Eberly (distance point–ellipse) ; Fornaciari, Prati & Cucchiara 2014 ; Pătrăucean et al. (ELSDc) 2017.
+
+**Sélection de modèles et changements de régime** : Kanatani, IJCV 26(3) 1998 et PAMI 26(10) 2004 ; Rosin & West, PAMI 17(12) 1995 ; Killick, Fearnhead & Eckley (PELT) 2012.
+
+**Courbes** : Schneider, Graphics Gems 1990 ; Wang, Pottmann & Liu, ACM TOG 2006 ; Taubin 1995 ; Selinger (Potrace) 2003 ; Hoshyari et al., SIGGRAPH 2018 ; Dominici et al. (PolyFit) 2020 ; Li et al. (GlobFit) 2011 ; Li et al. (Diffvg) 2020.
+
+**Symétrie et répétition** : Hu 1962 ; Kuhl & Giardina 1982 ; Zabrodsky, Peleg & Avnir 1995 ; Loy & Eklundh 2006.
+
+**Statistiques numériques** : Pébay 2008 (moments par combinaison de blocs).
