@@ -13,6 +13,14 @@ use std::ops::{Add, Mul, Neg, Sub};
 
 use crate::guide::{CANDIDATE_GEOMETRY, GuideKind, Guides};
 
+/// Arc tolerance (px) for the geometry setting g: 0 → no arcs; 0.5 → 0.5 px; 1 → 0.8 px.
+pub fn arc_tolerance(g: f64) -> f64 {
+    if g > 0.0 { 0.2 + 0.6 * g } else { 0.0 }
+}
+
+/// Largest turn (degrees) of a rounding that becomes a corner.
+const MAX_FILLET_CORNER_TURN: f64 = 135.0;
+
 /// Arc tolerance (px) used to look for candidate fillets.
 const CANDIDATE_ARC_TOL: f64 = 1.1;
 
@@ -190,6 +198,16 @@ pub struct Corner {
     /// Neighboring simplified-polygon vertices (limits of the corner zone).
     prev: usize,
     next: usize,
+    /// Points of a rounding (first, last index): a corner made from a fillet replaces them
+    /// when it is drawn sharp or with its own radius.
+    zone: Option<(usize, usize)>,
+}
+
+impl Corner {
+    /// Made from a rounding between two straight parts (see [`Prepared::add_fillet_corners`]).
+    pub fn is_fillet(&self) -> bool {
+        self.zone.is_some()
+    }
 }
 
 /// A run ready to fit: its boundary polyline and its corner candidates.
@@ -210,6 +228,69 @@ impl Prepared {
     /// The boundary points (with the end junctions of an open run).
     pub fn pts(&self) -> &[P] {
         &self.pts
+    }
+
+    /// Turn every rounded corner between two straight parts (a fillet that follows the points
+    /// within `arc_tol`, or a forced candidate) into a corner whose apex is where the two lines
+    /// meet: the corners tool can then make it sharp, or set its radius, tangent to those lines.
+    /// Corner candidates inside such a rounding are replaced by it.
+    pub fn add_fillet_corners(&mut self, arc_tol: f64, guides: &Guides) {
+        let n = self.pts.len();
+        if self.shape.is_some() || n < 8 {
+            return;
+        }
+        let mut work = self.pts.clone();
+        smooth(&mut work, self.closed);
+        // A loop starts in the middle of its longest straight part (no rounding is cut).
+        let start = if self.closed {
+            find_lines(&work)
+                .iter()
+                .max_by_key(|l| l.to - l.from)
+                .map_or(0, |l| usize::midpoint(l.from, l.to))
+        } else {
+            0
+        };
+        let seq: Vec<P> = if self.closed { (0..=n).map(|i| work[(start + i) % n]).collect() } else { work };
+        let at = |i: usize| (i + start) % n;
+        let lines = find_lines(&seq);
+        let m = seq.len();
+        for pair in lines.windows(2) {
+            let (a, b) = (&pair[0], &pair[1]);
+            let a_start = if a.from == 0 { seq[0] } else { a.project(seq[a.from]) };
+            let b_end = if b.to == m - 1 { seq[m - 1] } else { b.project(seq[b.to]) };
+            let zone = &seq[a.to..=b.from];
+            let found = fillet(zone, (a, a_start), (b, b_end), arc_tol, &[]).or_else(|| {
+                fillet(zone, (a, a_start), (b, b_end), CANDIDATE_ARC_TOL, &[])
+                    .filter(|f| guides.is_forced(GuideKind::Arc, f.middle))
+            });
+            let Some(f) = found.filter(|f| !guides.is_disabled(GuideKind::Arc, f.middle)) else { continue };
+            let turn = a.dir.dot(b.dir).clamp(-1.0, 1.0).acos();
+            let Some(apex) = intersect(a.origin, a.dir, b.origin, b.dir) else { continue };
+            // Beyond MAX_FILLET_CORNER_TURN the lines are nearly parallel (the rounded end of a
+            // stroke): their apex is far away, a sharp corner there would be a spike.
+            if !(CANDIDATE_TURN_DEG..=MAX_FILLET_CORNER_TURN).contains(&turn.to_degrees()) {
+                continue;
+            }
+            let half = (std::f64::consts::PI - turn) / 2.0;
+            // Replace the candidates found inside the rounding (or right at its apex).
+            let inside = |c: &Corner| {
+                let i = (c.index + n - start) % n;
+                (a.to..=b.from).contains(&i) || (c.apex - apex).len() <= 2.0
+            };
+            self.corners.retain(|c| !inside(c));
+            self.corners.push(Corner {
+                index: at(usize::midpoint(a.to, b.from)),
+                apex,
+                din: a.dir,
+                dout: b.dir,
+                gap: f.radius * (1.0 / half.sin() - 1.0),
+                turn,
+                prev: at(a.from),
+                next: at(b.to.min(m - 2)),
+                zone: Some((at(a.to), at(b.from))),
+            });
+        }
+        self.corners.sort_by_key(|c| c.index);
     }
 
     /// Whether the boundary was replaced by a circle or an ellipse.
@@ -399,7 +480,7 @@ fn find_corners(pts: &[P], keep: &[usize], closed: bool) -> Vec<Corner> {
             continue;
         }
         let gap = (-3..3).map(|k| dist_to_segment(apex, at(ci + k), at(ci + k + 1))).fold(f64::MAX, f64::min);
-        out.push(Corner { index: c, apex, din, dout, gap, turn, prev, next });
+        out.push(Corner { index: c, apex, din, dout, gap, turn, prev, next, zone: None });
     }
     out
 }
@@ -485,6 +566,18 @@ pub fn fit_prepared(
         }
     }
     let mut pts = run.pts.clone();
+    // Points of the roundings that a fillet corner replaces (drawn sharp or with its radius).
+    let mut hidden = vec![false; n];
+    for (corner, style) in run.corners.iter().zip(styles) {
+        if let (Some((from, to)), CornerStyle::Sharp | CornerStyle::Arc(_)) = (corner.zone, style) {
+            let mut i = from;
+            while i != to {
+                hidden[i] = true;
+                i = (i + 1) % n;
+            }
+            hidden[to] = true;
+        }
+    }
     if !run.closed {
         let first = Anchor { index: 0, p: pts[0], t_in: None, t_out: None, arc: None };
         let last = Anchor { index: n - 1, p: pts[n - 1], t_in: None, t_out: None, arc: None };
@@ -520,7 +613,9 @@ pub fn fit_prepared(
         let mut span = vec![a.p];
         let mut i = (a.index + 1) % n;
         while i != b.index {
-            span.push(pts[i]);
+            if !hidden[i] {
+                span.push(pts[i]);
+            }
             i = (i + 1) % n;
         }
         span.push(b.p);
@@ -1263,6 +1358,34 @@ mod tests {
         assert_eq!(lines(&c), 5, "{c:?}");
         assert_eq!(fillets.found.len(), 4, "{c:?}");
         assert!(fillets.found.iter().all(|r| (r - 15.0).abs() < 0.3), "{:?}", fillets.found);
+
+        // Its 4 roundings are corners whose apexes are the rectangle's corners; drawn sharp,
+        // they give back the exact rectangle.
+        let mut rect = rect;
+        rect.add_fillet_corners(0.5, &Guides::default());
+        let mut apexes: Vec<(i64, i64)> = rect
+            .corners
+            .iter()
+            .filter(|c| c.is_fillet())
+            .map(|c| (c.apex.x.round() as i64, c.apex.y.round() as i64))
+            .collect();
+        apexes.sort_unstable();
+        assert_eq!(apexes, [(0, 0), (0, 60), (120, 0), (120, 60)], "{:?}", rect.corners);
+        let styles: Vec<CornerStyle> = rect
+            .corners
+            .iter()
+            .map(|c| if c.is_fillet() { CornerStyle::Sharp } else { CornerStyle::Free })
+            .collect();
+        let c = fit_prepared(&rect, &styles, params(), &mut Fillets::default(), &mut Guides::default());
+        assert!(c.segs.iter().all(|s| matches!(s, Seg::Line(_))), "{c:?}");
+        for s in &c.segs {
+            let e = s.end();
+            assert!(
+                (e.x.abs() < 0.3 || (e.x - 120.0).abs() < 0.3)
+                    && (e.y.abs() < 0.3 || (e.y - 60.0).abs() < 0.3),
+                "{c:?}"
+            );
+        }
 
         let circle = sample(300, |t| P::new(50.0 + 30.0 * (t * TAU).cos(), 50.0 + 30.0 * (t * TAU).sin()));
         let c =

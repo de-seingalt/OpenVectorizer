@@ -92,10 +92,7 @@ pub fn vectorize(image: &RgbaImage, options: &Options) -> Result<Output, Error> 
 fn fit_params(o: &Options) -> fit::FitParams {
     // detail 0 → 1.25 px tolerance, 1 → 0.35 px.
     let tolerance = 0.35 + f64::from(1.0 - o.detail) * 0.9;
-    // Geometry 0 → no fillets; 0.5 → 0.5 px; 1 → 0.8 px.
-    let g = f64::from(o.geometry);
-    let arc_tol = if g > 0.0 { 0.2 + 0.6 * g } else { 0.0 };
-    fit::FitParams { tolerance, arc_tol }
+    fit::FitParams { tolerance, arc_tol: fit::arc_tolerance(f64::from(o.geometry)) }
 }
 
 #[cfg(test)]

@@ -19,7 +19,9 @@ use serde::{Deserialize, Serialize};
 use ts_rs::TS;
 
 use crate::RgbaImage;
-use crate::fit::{CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, fit_prepared, prepare};
+use crate::fit::{
+    CornerStyle, Curve, Fillets, FitParams, P, Prepared, Seg, arc_tolerance, fit_prepared, prepare,
+};
 use crate::guide::{CANDIDATE_GEOMETRY, Guide, GuideKind, Guides};
 use crate::options::CORNER_EDIT_REACH;
 use crate::palette::{Quantized, TRANSPARENT};
@@ -313,6 +315,11 @@ fn match_edits<'a>(runs: &[Prepared], edits: &'a [CornerEdit]) -> Vec<(usize, us
 
 /// Group the corners of each closed run that have nearly the same turn.
 fn corner_groups(runs: &[Prepared]) -> Vec<Vec<Option<u32>>> {
+    // Nearly the same turn, and alike: both sharp-ish or both roundings of a similar size.
+    let alike = |a: &crate::fit::Corner, b: &crate::fit::Corner| {
+        let (ga, gb) = (a.gap.max(0.3), b.gap.max(0.3));
+        b.turn - a.turn < GROUP_TURN && a.is_fillet() == b.is_fillet() && ga.max(gb) <= 2.0 * ga.min(gb)
+    };
     let mut next = 0u32;
     runs.iter()
         .map(|run| {
@@ -325,9 +332,7 @@ fn corner_groups(runs: &[Prepared]) -> Vec<Vec<Option<u32>>> {
             let mut i = 0;
             while i < order.len() {
                 let mut j = i + 1;
-                while j < order.len()
-                    && run.corners[order[j]].turn - run.corners[order[j - 1]].turn < GROUP_TURN
-                {
+                while j < order.len() && alike(&run.corners[order[j - 1]], &run.corners[order[j]]) {
                     j += 1;
                 }
                 if j - i >= 2 {
@@ -495,6 +500,7 @@ fn finish_isolated(runs: &mut Runs) {
         };
         let mut prepared = prepare(&vertices, &mids, (P::default(), P::default()), true, symmetry);
         prepared.detect_shape(runs.geometry, &mut runs.guides);
+        prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
         // A circle or an ellipse shows as such: its symmetry axes would only clutter the view.
         if prepared.has_shape()
             && let Some(i) = symmetry_guide
@@ -658,10 +664,15 @@ fn lookup_run(
         runs.isolated.push((idx, vertices.clone(), mids.clone()));
     }
     let mut prepared = prepare(&vertices, &mids, ends, closed, None);
+    prepared.add_fillet_corners(arc_tolerance(runs.geometry), &runs.guides);
     // Corners on the image frame are not shape corners: always sharp, never counted.
     let (w, h) = (grid.w as f64, grid.h as f64);
     let on_frame = |p: P| p.x <= 0.01 || p.y <= 0.01 || p.x >= w - 0.01 || p.y >= h - 0.01;
-    let (frame, corners) = prepared.corners.iter().partition(|c| on_frame(c.apex));
+    // A rounding of the drawing whose apex falls on the frame stays a corner of the drawing,
+    // unless the boundary really passes by the apex (a frame corner seen as a tiny rounding).
+    let passes_by = |apex: P| prepared.pts().iter().any(|&p| (p - apex).len() <= 1.0);
+    let (frame, corners): (Vec<_>, Vec<_>) =
+        prepared.corners.iter().partition(|c| on_frame(c.apex) && (!c.is_fillet() || passes_by(c.apex)));
     (prepared.frame, prepared.corners) = (frame, corners);
     runs.prepared.push(prepared);
     runs.index.insert(key, idx);

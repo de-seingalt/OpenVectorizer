@@ -96,6 +96,11 @@ impl Guides {
         listed(&self.disabled, kind, key)
     }
 
+    /// Whether the guide of `kind` at `key` is forced on.
+    pub fn is_forced(&self, kind: GuideKind, key: P) -> bool {
+        listed(&self.forced, kind, key)
+    }
+
     /// Record a guide found within the setting's tolerance (`within`) or only as a candidate;
     /// returns whether the tracing follows it.
     pub fn add(&mut self, kind: GuideKind, key: P, d: String, within: bool) -> bool {
